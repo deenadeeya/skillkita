@@ -1,10 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import AdminDashboard from "./AdminDashboard";
-import LandingPage from "./LandingPage";
-import ViewCourses from "./ViewCourses";
+import LandingPage from "./pages/LandingPage";
+import ViewCourses from "./pages/ViewCourses";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AccessDenied from "./pages/admin/AccessDenied";
 
-import "./index.css";
+import "./styles/global.css";
 
 const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
 const roleFromQuery = new URLSearchParams(window.location.search).get("role");
@@ -17,29 +20,6 @@ const activeRole = window.localStorage.getItem("skillkita-role") === "admin"
   ? "admin"
   : "public";
 
-const AccessDenied = () => (
-  <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F1E8] px-6 text-center">
-    <h1 className="text-4xl font-bold text-[#7A1F1F]">Admin Access Required</h1>
-    <p className="mt-3 text-base text-black md:text-lg">
-      This page is for admin users only.
-    </p>
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-      <a
-        href="/"
-        className="rounded-lg bg-[#7A1F1F] px-4 py-2 font-semibold text-white"
-      >
-        Back to Landing Page
-      </a>
-      <a
-        href="/admin?role=admin"
-        className="rounded-lg border border-[#7A1F1F] px-4 py-2 font-semibold text-[#7A1F1F]"
-      >
-        Enter as Admin
-      </a>
-    </div>
-  </div>
-);
-
 let Page = LandingPage;
 
 if (currentPath === "/courses") {
@@ -48,6 +28,14 @@ if (currentPath === "/courses") {
 
 if (currentPath === "/admin") {
   Page = activeRole === "admin" ? AdminDashboard : AccessDenied;
+}
+
+if (currentPath === "/admin/landing") {
+  Page = activeRole === "admin" ? AdminLandingEditor : AccessDenied;
+}
+
+if (currentPath === "/admin/login") {
+  Page = AdminLogin;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
