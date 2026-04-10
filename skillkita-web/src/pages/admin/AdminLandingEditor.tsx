@@ -35,6 +35,9 @@ const initialExperienceForm: ExperienceFormState = {
 };
 
 const AdminLandingEditor = () => {
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   const [landing, setLanding] = useState<LandingContentRow | null>(null);
   const [coverDescription, setCoverDescription] = useState("");
   const [whoDescription, setWhoDescription] = useState("");
@@ -52,6 +55,65 @@ const AdminLandingEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      setIsAuthChecking(true);
+      setErrorMessage(null);
+
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        setIsAuthChecking(false);
+        setIsAuthorized(false);
+        setErrorMessage(error.message);
+        return;
+      }
+
+      const user = data.session?.user;
+      if (!user) {
+        setIsAuthChecking(false);
+        setIsAuthorized(false);
+        window.location.href = "/login";
+        return;
+      }
+
+      const { data: profileRow, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("user_id,role,status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        setIsAuthChecking(false);
+        setIsAuthorized(false);
+        setErrorMessage(profileError.message);
+        return;
+      }
+
+      if (!profileRow || profileRow.role !== "admin") {
+        setIsAuthChecking(false);
+        setIsAuthorized(false);
+        await supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/login";
+        return;
+      }
+
+      window.localStorage.setItem("skillkita-role", "admin");
+      setIsAuthorized(true);
+      setIsAuthChecking(false);
+    };
+
+    void checkAdmin();
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
+      void checkAdmin();
+    });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   const editingExperience = useMemo(
     () => experiences.find((e) => e.id === editingExperienceId) ?? null,
@@ -113,8 +175,11 @@ const AdminLandingEditor = () => {
   }, [loadExperiences, loadLandingContent]);
 
   useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
     void loadAll();
-  }, [loadAll]);
+  }, [isAuthorized, loadAll]);
 
   const onWhoImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -322,20 +387,13 @@ const AdminLandingEditor = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader
-        menuLinks={[
-          { label: "Home", href: "/" },
-          { label: "View Courses", href: "/courses" },
-          { label: "Admin Courses", href: "/admin?role=admin" },
-          { label: "Edit Landing Page", href: "/admin/landing?role=admin" },
-        ]}
-      />
+      <SiteHeader />
 
       <div className="sk-container py-12">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
-              Edit Landing Page
+              Manage Landing Page
             </h1>
             <p className="mt-3 text-lg text-black md:text-xl">
               Update cover text, who-are-we section, and manage experiences.
@@ -349,6 +407,12 @@ const AdminLandingEditor = () => {
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {errorMessage}
+          </div>
+        )}
+
+        {isAuthChecking && (
+          <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+            Checking admin access...
           </div>
         )}
 

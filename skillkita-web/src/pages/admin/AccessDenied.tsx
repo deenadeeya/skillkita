@@ -12,10 +12,10 @@ const AccessDenied = () => (
         Back to Landing Page
       </a>
       <a
-        href="/admin/login"
+        href="/login"
         className="rounded-lg border border-[#7A1F1F] px-4 py-2 font-semibold text-[#7A1F1F]"
       >
-        Go to Admin Login
+        Go to Log in
       </a>
     </div>
   </div>
