@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import PlaceholderPoster from "../assets/placeholder.jpg";
 import { supabase } from "../lib/supabaseClient";
+import { CoursePosterMedia } from "../components/CoursePosterMedia";
 import SiteHeader from "../components/layout/SiteHeader";
 
 type PublicCourse = {
@@ -61,12 +62,7 @@ const ViewCourses = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader
-        menuLinks={[
-          { label: "Home", href: "/" },
-          { label: "View Courses", href: "/courses" },
-        ]}
-      />
+      <SiteHeader />
 
       <main className="sk-container py-12">
         <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
@@ -89,8 +85,8 @@ const ViewCourses = () => {
           )}
           {publicCourses.map((course) => (
             <article key={course.id} className="sk-card overflow-hidden p-4">
-              <img
-                src={course.posterUrl ?? PlaceholderPoster}
+              <CoursePosterMedia
+                url={course.posterUrl ?? PlaceholderPoster}
                 alt={`${course.name} poster`}
                 className="aspect-[210/297] w-full rounded-lg object-cover"
               />

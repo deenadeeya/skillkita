@@ -26,35 +26,9 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) throw new Error(error.message);
-      if (!data.user) throw new Error("Login failed. Please try again.");
-
-      // Authorization check: must exist in admin_users.
-      const { data: adminRow, error: adminError } = await supabase
-        .from("admin_users")
-        .select("user_id")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      if (adminError) {
-        throw new Error(
-          `Admin check failed: ${adminError.message}. Ensure table public.admin_users exists and RLS/policies allow select for authenticated users.`
-        );
-      }
-
-      if (!adminRow) {
-        await supabase.auth.signOut();
-        throw new Error("This account is not an admin.");
-      }
-
-      // Keep existing simple role gate for routing.
-      window.localStorage.setItem("skillkita-role", "admin");
-      window.location.href = "/admin?role=admin";
+      // Deprecated: kept for backward compatibility. Use /login instead.
+      // We simply redirect to the unified login page.
+      window.location.href = "/login";
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(err instanceof Error ? err.message : "Login failed.");
@@ -63,14 +37,14 @@ const AdminLogin = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader menuLinks={[{ label: "Home", href: "/" }]} />
+      <SiteHeader />
 
       <main className="sk-container py-12">
         <div className="mx-auto max-w-md">
           <div className="sk-card p-6">
             <h1 className="text-3xl font-bold text-[#0001fc]">Admin Login</h1>
             <p className="mt-2 text-sm text-black">
-              Sign in to manage courses and company profile.
+              This page has been replaced. Please use the main login.
             </p>
 
             {errorMessage && (
@@ -109,11 +83,11 @@ const AdminLogin = () => {
               </label>
 
               <button type="submit" disabled={isLoading} className="sk-button-primary w-full">
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading ? "Redirecting..." : "Go to Log in"}
               </button>
 
               <p className="text-center text-xs text-black/70">
-                You must be listed in <code className="font-semibold">admin_users</code>.
+                Use the unified <code className="font-semibold">/login</code> page.
               </p>
             </form>
           </div>

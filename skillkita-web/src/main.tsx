@@ -2,10 +2,15 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import LandingPage from "./pages/LandingPage";
 import ViewCourses from "./pages/ViewCourses";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminManageCourses from "./pages/admin/AdminManageCourses";
 import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
-import AdminLogin from "./pages/admin/AdminLogin";
 import AccessDenied from "./pages/admin/AccessDenied";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminQuotations from "./pages/admin/AdminQuotations";
+import Login from "./pages/auth/Login";
+import SignUp from "./pages/auth/SignUp";
+import EmployerDashboard from "./pages/employer/EmployerDashboard";
+import EmployerQuotationRequest from "./pages/employer/EmployerQuotationRequest";
 
 import "./styles/global.css";
 
@@ -27,15 +32,35 @@ if (currentPath === "/courses") {
 }
 
 if (currentPath === "/admin") {
-  Page = activeRole === "admin" ? AdminDashboard : AccessDenied;
+  Page = activeRole === "admin" ? AdminManageCourses : AccessDenied;
 }
 
 if (currentPath === "/admin/landing") {
   Page = activeRole === "admin" ? AdminLandingEditor : AccessDenied;
 }
 
-if (currentPath === "/admin/login") {
-  Page = AdminLogin;
+if (currentPath === "/admin/users") {
+  Page = activeRole === "admin" ? AdminUsers : AccessDenied;
+}
+
+if (currentPath === "/admin/quotations") {
+  Page = activeRole === "admin" ? AdminQuotations : AccessDenied;
+}
+
+if (currentPath === "/login") {
+  Page = Login;
+}
+
+if (currentPath === "/signup") {
+  Page = SignUp;
+}
+
+if (currentPath === "/employer") {
+  Page = EmployerDashboard;
+}
+
+if (currentPath === "/employer/quotation") {
+  Page = EmployerQuotationRequest;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

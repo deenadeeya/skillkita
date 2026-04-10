@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../assets/TRSCGroupPhoto.png";
+import { CoursePosterMedia } from "../components/CoursePosterMedia";
 import SiteHeader from "../components/layout/SiteHeader";
 import { supabase } from "../lib/supabaseClient";
 
@@ -124,13 +125,7 @@ const LandingPage = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader
-        menuLinks={[
-          { label: "Who Are We", href: "#who-are-we" },
-          { label: "Courses", href: "#courses" },
-          { label: "All Courses", href: "/courses" },
-        ]}
-      />
+      <SiteHeader />
 
       <main className="sk-container flex w-full flex-col items-center py-12 text-center">
         <h1 className="mb-6 mt-16 text-4xl font-bold text-[#0001fc] md:mt-20 md:text-6xl">
@@ -207,8 +202,8 @@ const LandingPage = () => {
                 {activeCourse?.details ??
                   "New courses will appear here once published in the admin dashboard."}
               </p>
-              <img
-                src={activeCoursePoster}
+              <CoursePosterMedia
+                url={activeCoursePoster}
                 alt={`${activeCourse?.name ?? "Course"} poster`}
                 className="mt-4 aspect-[210/297] w-full rounded-xl object-cover"
               />
