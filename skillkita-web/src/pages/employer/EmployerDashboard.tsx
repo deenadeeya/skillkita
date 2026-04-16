@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import SiteHeader from "../../components/layout/SiteHeader";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { employerNavItems } from "../../components/layout/navItems";
+import { createQuotationPdfSignedUrl } from "../../features/quotation/storage";
+import type { QuotationRequestRow } from "../../features/quotation/types";
 import {
   PRIVATE_DOC_LABELS,
   columnForKind,
@@ -31,6 +34,7 @@ type UserProfileRow = {
 
 const EmployerDashboard = () => {
   const [profile, setProfile] = useState<UserProfileRow | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [accessByCourse, setAccessByCourse] = useState<
     Record<string, "pending" | "approved" | "rejected" | undefined>
@@ -41,6 +45,10 @@ const EmployerDashboard = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [quotationRows, setQuotationRows] = useState<QuotationRequestRow[]>([]);
+  const [quotationsLoading, setQuotationsLoading] = useState(true);
+  const [quotationError, setQuotationError] = useState<string | null>(null);
+  const [downloadQuotationId, setDownloadQuotationId] = useState<string | null>(null);
 
   const loadData = useCallback(async (userId: string) => {
     setIsLoading(true);
@@ -117,6 +125,24 @@ const EmployerDashboard = () => {
     setIsLoading(false);
   }, []);
 
+  const loadQuotations = useCallback(async (userId: string) => {
+    setQuotationsLoading(true);
+    setQuotationError(null);
+    const { data, error } = await supabase
+      .from("quotation_requests")
+      .select("*")
+      .eq("employer_user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setQuotationError(error.message);
+      setQuotationRows([]);
+    } else {
+      setQuotationRows((data ?? []) as QuotationRequestRow[]);
+    }
+    setQuotationsLoading(false);
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       setErrorMessage(null);
@@ -131,6 +157,8 @@ const EmployerDashboard = () => {
         window.location.href = "/login";
         return;
       }
+
+      setEmail(user.email ?? null);
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
@@ -161,11 +189,11 @@ const EmployerDashboard = () => {
         return;
       }
 
-      await loadData(user.id);
+      await Promise.all([loadData(user.id), loadQuotations(user.id)]);
     };
 
     void load();
-  }, [loadData]);
+  }, [loadData, loadQuotations]);
 
   const requestAccess = async (courseId: string) => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -201,12 +229,31 @@ const EmployerDashboard = () => {
     }
   };
 
-  return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
+  const downloadQuotationPdf = async (path: string, quotationId: string) => {
+    setDownloadQuotationId(quotationId);
+    setQuotationError(null);
+    try {
+      const url = await createQuotationPdfSignedUrl(path);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setQuotationError(err instanceof Error ? err.message : "Download failed.");
+    } finally {
+      setDownloadQuotationId(null);
+    }
+  };
 
-      <main className="sk-container py-12">
-        <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Employer Dashboard</h1>
+  return (
+    <DashboardLayout
+      items={employerNavItems}
+      userName={profile?.full_name ?? "Employer"}
+      userEmail={email}
+      onLogout={() => {
+        void supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/";
+      }}
+    >
+        <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Dashboard</h1>
         <p className="mt-3 text-lg text-black md:text-xl">
           {profile ? `Welcome, ${profile.full_name}.` : "Welcome."}
         </p>
@@ -216,17 +263,75 @@ const EmployerDashboard = () => {
         </p>
 
         <div className="mt-6 rounded-xl border border-[#0001fc]/20 bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-[#7A1F1F]">Training quotation</p>
+          <p className="text-xl font-semibold text-[#7A1F1F]">Quotation Application History</p>
           <p className="mt-1 text-sm text-black/80">
             Request a formal quotation for a course. After admin sets pricing and approves, download your
-            PDF from the quotation page.
+            PDF below or from the quotation page.
           </p>
           <a
             href="/employer/quotation"
             className="mt-3 inline-block rounded-lg bg-[#0001fc] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0001fc]/90"
           >
-            Go to quotation request
+            Request a Quotation
           </a>
+
+          {quotationError && (
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {quotationError}
+            </p>
+          )}
+
+          {quotationsLoading && (
+            <p className="mt-4 text-sm text-black/70">Loading quotation history…</p>
+          )}
+          {!quotationsLoading && quotationRows.length === 0 && !quotationError && (
+            <p className="mt-4 text-sm text-black/70">No quotation requests yet.</p>
+          )}
+          {!quotationsLoading && quotationRows.length > 0 && (
+            <ul className="mt-4 space-y-3 border-t border-[#efe1db] pt-4">
+              {quotationRows.map((r) => (
+                <li
+                  key={r.id}
+                  className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 text-sm text-black"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
+                      <p className="mt-1 text-black/80">
+                        Proposed: {r.proposed_date} · Participants: {r.number_of_employers}
+                      </p>
+                      <p className="mt-1 text-xs text-black/60">
+                        Submitted: {new Date(r.created_at).toLocaleString()}
+                      </p>
+                      <p className="mt-1">
+                        Status:{" "}
+                        <span className="font-semibold capitalize">
+                          {r.status === "pending" && "Pending admin review"}
+                          {r.status === "approved" && "Approved — PDF ready"}
+                          {r.status === "rejected" && "Rejected"}
+                        </span>
+                      </p>
+                    </div>
+                    {r.status === "approved" && r.pdf_storage_path && (
+                      <button
+                        type="button"
+                        disabled={downloadQuotationId === r.id}
+                        onClick={() => void downloadQuotationPdf(r.pdf_storage_path!, r.id)}
+                        className="sk-button-primary shrink-0 px-4 py-2 text-sm"
+                      >
+                        {downloadQuotationId === r.id ? "Opening…" : "Download PDF"}
+                      </button>
+                    )}
+                  </div>
+                  {r.additional_description && (
+                    <p className="mt-2 border-t border-[#efe1db] pt-2 text-xs text-black/75">
+                      {r.additional_description}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {errorMessage && (
@@ -256,7 +361,15 @@ const EmployerDashboard = () => {
                         <p className="text-sm text-[#7A1F1F]">Date: {c.date}</p>
                         <p className="mt-1 text-xs text-black/70">
                           Status:{" "}
-                          <span className="font-semibold">
+                          <span
+                            className={
+                              status === "approved"
+                                ? "font-bold text-green-800"
+                                : status === "rejected"
+                                  ? "font-bold text-red-800"
+                                  : "font-semibold text-black/80"
+                            }
+                          >
                             {status === "approved"
                               ? "Approved — you can open private files below"
                               : status === "pending"
@@ -310,8 +423,7 @@ const EmployerDashboard = () => {
             <p className="mt-4 text-sm text-black">No public courses listed yet.</p>
           )}
         </section>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

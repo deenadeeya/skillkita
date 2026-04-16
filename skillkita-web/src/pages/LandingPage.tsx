@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../assets/TRSCGroupPhoto.png";
 import { CoursePosterMedia } from "../components/CoursePosterMedia";
+import DashboardLayout from "../components/layout/DashboardLayout";
 import SiteHeader from "../components/layout/SiteHeader";
+import { adminNavItems, employerNavItems } from "../components/layout/navItems";
 import { supabase } from "../lib/supabaseClient";
 
 const LandingPage = () => {
@@ -48,6 +50,9 @@ const LandingPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [activeCourseIndex, setActiveCourseIndex] = useState(0);
+  const [viewerRole, setViewerRole] = useState<"admin" | "employer" | null>(null);
+  const [viewerName, setViewerName] = useState<string>("User");
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -55,6 +60,36 @@ const LandingPage = () => {
       setErrorMessage(null);
 
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user = sessionData.session?.user ?? null;
+
+        if (user) {
+          setViewerEmail(user.email ?? null);
+          const { data: profileRow } = await supabase
+            .from("user_profiles")
+            .select("role,status,full_name")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (profileRow) {
+            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            if (r.role === "admin") {
+              setViewerRole("admin");
+              setViewerName(r.full_name ?? "Admin");
+            } else if (r.role === "employer" && r.status === "approved") {
+              setViewerRole("employer");
+              setViewerName(r.full_name ?? "Employer");
+            } else {
+              setViewerRole(null);
+            }
+          } else {
+            setViewerRole(null);
+          }
+        } else {
+          setViewerRole(null);
+          setViewerEmail(null);
+        }
+
         const [landingRes, coursesRes, expRes] = await Promise.all([
           supabase
             .from("landing_content")
@@ -112,7 +147,12 @@ const LandingPage = () => {
   };
 
   const activeCourse = upcomingCourses[activeCourseIndex];
-  const activeCoursePoster = activeCourse?.poster_url ?? PlaceholderPoster;
+  const nextCourse =
+    upcomingCourses.length > 1
+      ? upcomingCourses[(activeCourseIndex + 1) % upcomingCourses.length]
+      : null;
+
+  const visibleCourses = nextCourse ? [activeCourse, nextCourse] : [activeCourse].filter(Boolean);
 
   const whoParagraphs = useMemo(
     () =>
@@ -123,22 +163,21 @@ const LandingPage = () => {
     [whoDescription]
   );
 
-  return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container flex w-full flex-col items-center py-12 text-center">
-        <h1 className="mb-6 mt-16 text-4xl font-bold text-[#0001fc] md:mt-20 md:text-6xl">
+  const landingBody = (
+    <div className="flex w-full flex-col items-center py-12 text-center">
+        <h1 className="mb-6 mt-10 text-4xl font-bold text-[#0001fc] md:mt-5 md:text-6xl">
           Tawau Resources & Skills Centre
         </h1>
-
-        <p className="text-lg text-black md:text-xl">{coverDescription}</p>
+        {/*}
+        <p className="whitespace-pre-wrap text-lg text-black md:text-xl">{coverDescription}</p>
         {errorMessage && (
           <div className="mt-6 w-full max-w-3xl rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-700">
             {errorMessage}
           </div>
         )}
-
+        */}
+        
+        {/*
         <div className="mt-12 flex flex-row items-center justify-center gap-4">
           <a href="#who-are-we" className="sk-button-primary rounded-xl px-6 py-3">
             Who Are We
@@ -150,13 +189,21 @@ const LandingPage = () => {
             Show All Courses
           </a>
         </div>
+        */}
+        
+        
 
+        {/*
         <h2
           id="who-are-we"
           className="mb-12 mt-36 text-2xl font-bold text-[#0001fc] md:text-4xl"
         >
           Who Are We
         </h2>
+        */}
+        
+
+        
         <div className="mt-2 w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
           <img
             src={whoImageUrl}
@@ -164,7 +211,7 @@ const LandingPage = () => {
             className="h-full w-full object-cover"
           />
         </div>
-        <div className="mt-4 w-full max-w-3xl text-left">
+        <div className="mt-4 w-full max-w-3xl text-center">
           {whoParagraphs.map((p) => (
             <p key={p.slice(0, 32)} className="mt-4 text-lg text-black md:text-xl">
               {p}
@@ -191,23 +238,45 @@ const LandingPage = () => {
               <ChevronLeftIcon className="h-6 w-6" />
             </button>
 
-            <article className="w-full max-w-md rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-5">
-              <p className="text-sm font-semibold text-[#7A1F1F]">
-                {activeCourse ? `Date: ${activeCourse.date}` : "No upcoming courses yet."}
-              </p>
-              <h3 className="mt-1 text-lg font-bold text-[#0001fc] md:text-xl">
-                {activeCourse?.name ?? "Check back soon"}
-              </h3>
-              <p className="mt-2 text-sm text-black md:text-base">
-                {activeCourse?.details ??
-                  "New courses will appear here once published in the admin dashboard."}
-              </p>
-              <CoursePosterMedia
-                url={activeCoursePoster}
-                alt={`${activeCourse?.name ?? "Course"} poster`}
-                className="mt-4 aspect-[210/297] w-full rounded-xl object-cover"
-              />
-            </article>
+            <div className="grid w-full max-w-3xl grid-cols-1 gap-4 md:grid-cols-2">
+              {visibleCourses.length === 0 && (
+                <article className="w-full rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-5">
+                  <p className="text-sm font-semibold text-[#7A1F1F]">No upcoming courses yet.</p>
+                  <h3 className="mt-1 text-lg font-bold text-[#0001fc] md:text-xl">Check back soon</h3>
+                  <p className="mt-2 text-sm text-black md:text-base">
+                    New courses will appear here once published in the admin dashboard.
+                  </p>
+                  <CoursePosterMedia
+                    url={PlaceholderPoster}
+                    alt="Course poster"
+                    className="mt-4 aspect-[210/297] w-full rounded-xl object-cover"
+                  />
+                </article>
+              )}
+
+              {visibleCourses.map((course, idx) => (
+                <article
+                  key={`${course?.id ?? "empty"}-${idx}`}
+                  className="w-full rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-black/5 md:p-5"
+                >
+                  <p className="text-sm font-semibold text-[#7A1F1F]">
+                    {course ? `Date: ${course.date}` : "No upcoming courses yet."}
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold text-[#0001fc] md:text-xl">
+                    {course?.name ?? "Check back soon"}
+                  </h3>
+                  <p className="mt-2 text-sm text-black md:text-base">
+                    {course?.details ??
+                      "New courses will appear here once published in the admin dashboard."}
+                  </p>
+                  <CoursePosterMedia
+                    url={course?.poster_url ?? PlaceholderPoster}
+                    alt={`${course?.name ?? "Course"} poster`}
+                    className="mt-4 aspect-[210/297] w-full rounded-xl object-cover"
+                  />
+                </article>
+              ))}
+            </div>
 
             <button
               type="button"
@@ -274,7 +343,30 @@ const LandingPage = () => {
             ))}
           </div>
         </section>
-      </main>
+    </div>
+  );
+
+  return (
+    <div className="w-full min-h-screen bg-[#F5F1E8]">
+      <SiteHeader />
+
+      {viewerRole ? (
+        <DashboardLayout
+          showHeader={false}
+          items={viewerRole === "admin" ? adminNavItems : employerNavItems}
+          userName={viewerName}
+          userEmail={viewerEmail}
+          onLogout={() => {
+            void supabase.auth.signOut();
+            window.localStorage.removeItem("skillkita-role");
+            window.location.href = "/";
+          }}
+        >
+          <main className="sk-container">{landingBody}</main>
+        </DashboardLayout>
+      ) : (
+        <main className="sk-container">{landingBody}</main>
+      )}
     </div>
   );
 };

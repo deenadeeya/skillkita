@@ -1,0 +1,18 @@
+import { supabase } from "../../lib/supabaseClient";
+
+export const PROFILE_PICS_BUCKET = "profile-pics" as const;
+
+export async function uploadProfilePic(userId: string, file: File) {
+  const safeName = file.name.replaceAll("/", "_").replaceAll("\\", "_");
+  const path = `${userId}/${Date.now()}_${safeName}`;
+
+  const { error } = await supabase.storage
+    .from(PROFILE_PICS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(PROFILE_PICS_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+

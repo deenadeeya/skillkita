@@ -69,7 +69,7 @@ const ViewCourses = () => {
           Available Courses
         </h1>
         <p className="mt-3 text-lg text-black md:text-xl">
-          Browse our current public training programs.
+          Browse training programs that is currently available. Log in to contact us for more information regarding the courses.
         </p>
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

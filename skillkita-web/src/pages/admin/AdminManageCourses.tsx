@@ -2,14 +2,15 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "../../components/CoursePosterMedia";
-import SiteHeader from "../../components/layout/SiteHeader";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { adminNavItems } from "../../components/layout/navItems";
 import {
-  COURSE_PRIVATE_BUCKET,
-  PRIVATE_DOC_LABELS,
-  columnForKind,
-  createSignedUrlForPath,
-  type PrivateDocKind,
-  uploadCoursePrivateFile,
+    COURSE_PRIVATE_BUCKET,
+    PRIVATE_DOC_LABELS,
+    columnForKind,
+    createSignedUrlForPath,
+    uploadCoursePrivateFile,
+    type PrivateDocKind,
 } from "../../lib/coursePrivateStorage";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -115,6 +116,8 @@ const AdminManageCourses = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   const publicCourses = useMemo(
     () => courses.filter((course) => course.isVisible),
@@ -142,9 +145,11 @@ const AdminManageCourses = () => {
         return;
       }
 
+      setAdminEmail(user.email ?? null);
+
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status")
+        .select("user_id,role,status,full_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -165,6 +170,7 @@ const AdminManageCourses = () => {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
+      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
       setIsAuthorized(true);
       setIsAuthChecking(false);
     };
@@ -566,10 +572,16 @@ const AdminManageCourses = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <div className="sk-container py-12">
+    <DashboardLayout
+      items={adminNavItems}
+      userName={adminName}
+      userEmail={adminEmail}
+      onLogout={() => {
+        void supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/";
+      }}
+    >
         <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
           Manage Courses
         </h1>
@@ -910,8 +922,7 @@ const AdminManageCourses = () => {
             )}
           </div>
         </section>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

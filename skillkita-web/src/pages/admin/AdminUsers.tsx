@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import SiteHeader from "../../components/layout/SiteHeader";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { adminNavItems } from "../../components/layout/navItems";
 import { supabase } from "../../lib/supabaseClient";
 
 type ProfileRow = {
@@ -20,6 +21,8 @@ const AdminUsers = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   const pendingEmployers = useMemo(
     () => profiles.filter((p) => p.role === "employer" && p.status === "pending"),
@@ -73,9 +76,11 @@ const AdminUsers = () => {
         return;
       }
 
+      setAdminEmail(user.email ?? null);
+
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status")
+        .select("user_id,role,status,full_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -94,6 +99,7 @@ const AdminUsers = () => {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
+      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
       setIsAuthChecking(false);
       await load();
     };
@@ -147,10 +153,16 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container py-12">
+    <DashboardLayout
+      items={adminNavItems}
+      userName={adminName}
+      userEmail={adminEmail}
+      onLogout={() => {
+        void supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/";
+      }}
+    >
         <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Manage Users</h1>
         <p className="mt-3 text-lg text-black md:text-xl">
           Approve employers and promote users to admin.
@@ -263,8 +275,7 @@ const AdminUsers = () => {
               ))}
           </div>
         </section>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 

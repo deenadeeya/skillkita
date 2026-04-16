@@ -1,5 +1,5 @@
 /** True when URL path ends in .pdf (Supabase public URLs include the file extension). */
-export function isPosterPdfUrl(url: string): boolean {
+function isPosterPdfUrl(url: string): boolean {
   if (!url) return false;
   try {
     const path = new URL(url, "https://local.invalid").pathname.toLowerCase();

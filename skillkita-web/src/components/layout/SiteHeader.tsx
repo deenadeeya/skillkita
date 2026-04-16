@@ -12,6 +12,7 @@ const SiteHeader = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEmployer, setIsEmployer] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
 
   type ProfileRow = {
     role: "admin" | "employer";
@@ -67,7 +68,7 @@ const SiteHeader = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#7A1F1F] text-white shadow-sm">
-      <div className="sk-container relative flex h-16 items-center justify-between gap-4">
+      <div className="relative flex h-16 w-full items-center justify-between gap-4 px-4 md:px-6">
         <a href="/" className="flex min-w-0 shrink items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
             <img src={TRSCLogo} alt="TRSC logo" className="h-8 w-8 rounded-full" />
@@ -145,6 +146,18 @@ const SiteHeader = () => {
                   >
                     Quotations
                   </a>
+                  <a
+                    href="/admin/messages?role=admin"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Messages
+                  </a>
+                  <a
+                    href="/admin/profile?role=admin"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Profile
+                  </a>
                   <button
                     type="button"
                     onClick={() => void signOut()}
@@ -158,27 +171,51 @@ const SiteHeader = () => {
           )}
 
           {isEmployer && (
-            <>
-              <a
-                href="/employer"
-                className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-              >
-                Employer
-              </a>
-              <a
-                href="/employer/quotation"
-                className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-              >
-                Quotation
-              </a>
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => void signOut()}
+                onClick={() => setIsEmployerMenuOpen((p) => !p)}
                 className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
+                aria-expanded={isEmployerMenuOpen}
               >
-                Logout
+                Employer
               </button>
-            </>
+              {isEmployerMenuOpen && (
+                <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                  <a
+                    href="/employer/quotation"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Quotation
+                  </a>
+                  <a
+                    href="/employer"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Documents
+                  </a>
+                  <a
+                    href="/employer/talk-to-admin"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Talk to Admin
+                  </a>
+                  <a
+                    href="/employer/profile"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Profile
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -261,6 +298,20 @@ const SiteHeader = () => {
                 >
                   Quotations
                 </a>
+                <a
+                  href="/admin/messages?role=admin"
+                  onClick={closeMobileMenu}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                >
+                  Messages
+                </a>
+                <a
+                  href="/admin/profile?role=admin"
+                  onClick={closeMobileMenu}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                >
+                  Profile
+                </a>
                 <button
                   type="button"
                   onClick={() => void signOut()}
@@ -274,25 +325,39 @@ const SiteHeader = () => {
             {isEmployer && (
               <>
                 <a
-                  href="/employer"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Employer
-                </a>
-                <a
                   href="/employer/quotation"
                   onClick={closeMobileMenu}
                   className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                 >
                   Quotation
                 </a>
+                <a
+                  href="/employer"
+                  onClick={closeMobileMenu}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                >
+                  Documents
+                </a>
+                <a
+                  href="/employer/talk-to-admin"
+                  onClick={closeMobileMenu}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                >
+                  Talk to Admin
+                </a>
+                <a
+                  href="/employer/profile"
+                  onClick={closeMobileMenu}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                >
+                  Profile
+                </a>
                 <button
                   type="button"
                   onClick={() => void signOut()}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
                 >
-                  Logout
+                  Log Out
                 </button>
               </>
             )}
