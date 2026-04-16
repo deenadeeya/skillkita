@@ -2,7 +2,8 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
-import SiteHeader from "../../components/layout/SiteHeader";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { adminNavItems } from "../../components/layout/navItems";
 import { supabase } from "../../lib/supabaseClient";
 
 type LandingContentRow = {
@@ -37,6 +38,8 @@ const initialExperienceForm: ExperienceFormState = {
 const AdminLandingEditor = () => {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   const [landing, setLanding] = useState<LandingContentRow | null>(null);
   const [coverDescription, setCoverDescription] = useState("");
@@ -77,9 +80,11 @@ const AdminLandingEditor = () => {
         return;
       }
 
+      setAdminEmail(user.email ?? null);
+
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status")
+        .select("user_id,role,status,full_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -100,6 +105,7 @@ const AdminLandingEditor = () => {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
+      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
       setIsAuthorized(true);
       setIsAuthChecking(false);
     };
@@ -386,10 +392,16 @@ const AdminLandingEditor = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <div className="sk-container py-12">
+    <DashboardLayout
+      items={adminNavItems}
+      userName={adminName}
+      userEmail={adminEmail}
+      onLogout={() => {
+        void supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/";
+      }}
+    >
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
@@ -424,9 +436,10 @@ const AdminLandingEditor = () => {
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
                   Cover description
                 </span>
-                <input
+                <textarea
                   value={coverDescription}
                   onChange={(e) => setCoverDescription(e.currentTarget.value)}
+                  rows={3}
                   className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
                   placeholder="Offering HRD-Corp Levy Claimable Training Courses"
                   required
@@ -674,8 +687,7 @@ const AdminLandingEditor = () => {
             </div>
           </div>
         </section>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

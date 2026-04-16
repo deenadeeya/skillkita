@@ -7,10 +7,14 @@ import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
 import AccessDenied from "./pages/admin/AccessDenied";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminQuotations from "./pages/admin/AdminQuotations";
+import AdminMessages from "./pages/admin/AdminMessages";
+import AdminProfile from "./pages/admin/AdminProfile";
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
 import EmployerQuotationRequest from "./pages/employer/EmployerQuotationRequest";
+import EmployerTalkToAdmin from "./pages/employer/EmployerTalkToAdmin";
+import EmployerProfile from "./pages/employer/EmployerProfile";
 
 import "./styles/global.css";
 
@@ -47,6 +51,14 @@ if (currentPath === "/admin/quotations") {
   Page = activeRole === "admin" ? AdminQuotations : AccessDenied;
 }
 
+if (currentPath === "/admin/messages") {
+  Page = activeRole === "admin" ? AdminMessages : AccessDenied;
+}
+
+if (currentPath === "/admin/profile") {
+  Page = activeRole === "admin" ? AdminProfile : AccessDenied;
+}
+
 if (currentPath === "/login") {
   Page = Login;
 }
@@ -61,6 +73,14 @@ if (currentPath === "/employer") {
 
 if (currentPath === "/employer/quotation") {
   Page = EmployerQuotationRequest;
+}
+
+if (currentPath === "/employer/talk-to-admin") {
+  Page = EmployerTalkToAdmin;
+}
+
+if (currentPath === "/employer/profile") {
+  Page = EmployerProfile;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

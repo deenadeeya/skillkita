@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import SiteHeader from "../../components/layout/SiteHeader";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { adminNavItems } from "../../components/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
@@ -13,6 +14,8 @@ const AdminQuotations = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeReview, setActiveReview] = useState<QuotationRequestRow | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -82,9 +85,11 @@ const AdminQuotations = () => {
         return;
       }
 
+      setAdminEmail(user.email ?? null);
+
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status")
+        .select("user_id,role,status,full_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -96,6 +101,8 @@ const AdminQuotations = () => {
         return;
       }
 
+      window.localStorage.setItem("skillkita-role", "admin");
+      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
       setIsAuthChecking(false);
       await load();
     };
@@ -226,27 +233,26 @@ const AdminQuotations = () => {
     }
   };
 
-  if (isAuthChecking) {
-    return (
-      <div className="w-full min-h-screen bg-[#F5F1E8]">
-        <SiteHeader />
-        <main className="sk-container py-12">
-          <p className="text-black">Checking access…</p>
-        </main>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container py-12">
+    <DashboardLayout
+      items={adminNavItems}
+      userName={adminName}
+      userEmail={adminEmail}
+      onLogout={() => {
+        void supabase.auth.signOut();
+        window.localStorage.removeItem("skillkita-role");
+        window.location.href = "/";
+      }}
+    >
+      {isAuthChecking ? (
+        <p className="text-black">Checking access…</p>
+      ) : (
         <p className="text-sm font-semibold text-[#7A1F1F]">
           <a href="/admin" className="underline">
             ← Back to manage courses
           </a>
         </p>
+      )}
         <h1 className="mt-4 text-4xl font-bold text-[#0001fc]">Quotation requests</h1>
         <p className="mt-2 max-w-2xl text-sm text-black">
           Review employer submissions. Set company name (for the PDF), booking date, mode, unit price,
@@ -423,8 +429,7 @@ const AdminQuotations = () => {
             </div>
           )}
         </section>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 
