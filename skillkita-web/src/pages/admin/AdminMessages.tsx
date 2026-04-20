@@ -134,8 +134,8 @@ const AdminMessages = () => {
       items={adminNavItems}
       userName={adminProfile?.full_name ?? "Admin"}
       userEmail={adminEmail}
-      onLogout={() => {
-        void supabase.auth.signOut();
+      onLogout={async () => {
+        await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
         window.location.href = "/";
       }}

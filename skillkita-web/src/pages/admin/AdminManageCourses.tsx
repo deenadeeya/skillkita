@@ -576,8 +576,8 @@ const AdminManageCourses = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={() => {
-        void supabase.auth.signOut();
+      onLogout={async () => {
+        await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
         window.location.href = "/";
       }}

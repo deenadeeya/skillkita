@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { adminNavItems } from "../../components/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
-import { uploadQuotationPdf } from "../../features/quotation/storage";
+import { createQuotationPdfSignedUrl, uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -17,6 +17,7 @@ const AdminQuotations = () => {
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [downloadId, setDownloadId] = useState<string | null>(null);
   const [activeReview, setActiveReview] = useState<QuotationRequestRow | null>(null);
   const [companyName, setCompanyName] = useState("");
   const [courseBookingDate, setCourseBookingDate] = useState("");
@@ -233,13 +234,36 @@ const AdminQuotations = () => {
     }
   };
 
+  const getEmployerDisplayName = (row: QuotationRequestRow): string => {
+    const text = row.additional_description ?? "";
+    const firstLine = text.split("\n")[0] ?? "";
+    if (firstLine.toLowerCase().startsWith("employer:")) {
+      const name = firstLine.slice("employer:".length).trim();
+      if (name) return name;
+    }
+    return employerLabels[row.employer_user_id]?.full_name ?? `${row.employer_user_id.slice(0, 8)}…`;
+  };
+
+  const downloadPdf = async (path: string, quotationId: string) => {
+    setDownloadId(quotationId);
+    setErrorMessage(null);
+    try {
+      const url = await createQuotationPdfSignedUrl(path);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Download failed.");
+    } finally {
+      setDownloadId(null);
+    }
+  };
+
   return (
     <DashboardLayout
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={() => {
-        void supabase.auth.signOut();
+      onLogout={async () => {
+        await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
         window.location.href = "/";
       }}
@@ -402,8 +426,7 @@ const AdminQuotations = () => {
                   {rows.map((r) => (
                     <tr key={r.id} className="border-b border-[#efe1db]">
                       <td className="py-3 pr-3 align-top">
-                        {employerLabels[r.employer_user_id]?.full_name ??
-                          `${r.employer_user_id.slice(0, 8)}…`}
+                        {getEmployerDisplayName(r)}
                       </td>
                       <td className="py-3 pr-3 align-top">{r.course_name}</td>
                       <td className="py-3 pr-3 align-top">{r.proposed_date}</td>
@@ -418,9 +441,23 @@ const AdminQuotations = () => {
                             Review
                           </button>
                         )}
-                        {r.status !== "pending" && (
-                          <span className="text-black/50">—</span>
+                        {r.status === "approved" && (
+                          <>
+                            {r.pdf_storage_path ? (
+                              <button
+                                type="button"
+                                onClick={() => void downloadPdf(r.pdf_storage_path!, r.id)}
+                                className="font-semibold text-[#0001fc] underline"
+                                disabled={downloadId === r.id}
+                              >
+                                {downloadId === r.id ? "Preparing..." : "Download"}
+                              </button>
+                            ) : (
+                              <span className="text-red-700">Missing PDF</span>
+                            )}
+                          </>
                         )}
+                        {r.status === "rejected" && <span className="text-black/50">—</span>}
                       </td>
                     </tr>
                   ))}
