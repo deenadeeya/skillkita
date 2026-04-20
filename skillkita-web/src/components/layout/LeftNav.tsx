@@ -15,7 +15,7 @@ type Props = {
   currentPath: string;
   userName: string;
   userEmail?: string | null;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
 };
 
 function isItemActive(item: NavItem, currentPath: string): boolean {
@@ -39,9 +39,10 @@ const LeftNav = ({
   }, [items, currentPath]);
 
   const [openByLabel, setOpenByLabel] = useState<Record<string, boolean>>(initialOpen);
+  const [openChildByKey, setOpenChildByKey] = useState<Record<string, boolean>>({});
 
   return (
-    <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-black/10 bg-white">
+    <aside className="flex h-full w-full flex-col border-r border-black/10 bg-white md:w-[280px] md:shrink-0">
       <nav className="flex-1 overflow-auto p-3">
         {items.map((cat) => {
           const open = openByLabel[cat.label] ?? false;
@@ -72,20 +73,91 @@ const LeftNav = ({
                       ? currentPath === child.href || currentPath.startsWith(child.href + "/")
                       : false;
                     const ChildIcon = child.icon;
+                    const childKey = `${cat.label}::${child.label}`;
+                    const hasGrandChildren = (child.children?.length ?? 0) > 0;
+                    const childOpen = openChildByKey[childKey] ?? false;
                     return (
-                      <a
-                        key={child.label}
-                        href={child.href ?? "#"}
-                        className={[
-                          "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
-                          childActive
-                            ? "bg-[#7A1F1F] text-white"
-                            : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
-                        ].join(" ")}
-                      >
-                        {ChildIcon && <ChildIcon className={["h-5 w-5", childActive ? "text-white" : "text-[#7A1F1F]"].join(" ")} />}
-                        {child.label}
-                      </a>
+                      <div key={child.label}>
+                        {hasGrandChildren ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setOpenChildByKey((p) => ({ ...p, [childKey]: !childOpen }))}
+                              className={[
+                                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+                                childActive
+                                  ? "bg-[#7A1F1F] text-white"
+                                  : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
+                              ].join(" ")}
+                            >
+                              <span className="flex items-center gap-2">
+                                {ChildIcon && (
+                                  <ChildIcon
+                                    className={[
+                                      "h-5 w-5",
+                                      childActive ? "text-white" : "text-[#7A1F1F]",
+                                    ].join(" ")}
+                                  />
+                                )}
+                                {child.label}
+                              </span>
+                              <ChevronDownIcon className={["h-4 w-4 transition", childOpen ? "rotate-180" : ""].join(" ")} />
+                            </button>
+                            {childOpen && (
+                              <div className="mt-1 space-y-1 pl-4">
+                                {(child.children ?? []).map((g) => {
+                                  const grandActive = g.href
+                                    ? currentPath === g.href || currentPath.startsWith(g.href + "/")
+                                    : false;
+                                  const GrandIcon = g.icon;
+                                  return (
+                                    <a
+                                      key={g.label}
+                                      href={g.href ?? "#"}
+                                      className={[
+                                        "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
+                                        grandActive
+                                          ? "bg-[#7A1F1F] text-white"
+                                          : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
+                                      ].join(" ")}
+                                    >
+                                      {GrandIcon && (
+                                        <GrandIcon
+                                          className={[
+                                            "h-5 w-5",
+                                            grandActive ? "text-white" : "text-[#7A1F1F]",
+                                          ].join(" ")}
+                                        />
+                                      )}
+                                      {g.label}
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <a
+                            href={child.href ?? "#"}
+                            className={[
+                              "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
+                              childActive
+                                ? "bg-[#7A1F1F] text-white"
+                                : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
+                            ].join(" ")}
+                          >
+                            {ChildIcon && (
+                              <ChildIcon
+                                className={[
+                                  "h-5 w-5",
+                                  childActive ? "text-white" : "text-[#7A1F1F]",
+                                ].join(" ")}
+                              />
+                            )}
+                            {child.label}
+                          </a>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -110,7 +182,7 @@ const LeftNav = ({
 
         <button
           type="button"
-          onClick={onLogout}
+          onClick={() => void onLogout()}
           className="mt-3 w-full rounded-xl border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-[#7A1F1F]/5"
         >
           Logout

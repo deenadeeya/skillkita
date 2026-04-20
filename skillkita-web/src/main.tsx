@@ -1,20 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import LandingPage from "./pages/LandingPage";
+import HomePage from "./pages/HomePage";
+import AboutUs from "./pages/HomePage/AboutUs";
+import CompanyExperience from "./pages/HomePage/CompanyExperience";
 import ViewCourses from "./pages/ViewCourses";
-import AdminManageCourses from "./pages/admin/AdminManageCourses";
-import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
 import AccessDenied from "./pages/admin/AccessDenied";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminQuotations from "./pages/admin/AdminQuotations";
+import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
+import AdminManageCourses from "./pages/admin/AdminManageCourses";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminCreateQuotation from "./pages/admin/AdminCreateQuotation";
+import AdminQuotations from "./pages/admin/AdminQuotations";
+import AdminUsers from "./pages/admin/AdminUsers";
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
+import EmployerProfile from "./pages/employer/EmployerProfile";
 import EmployerQuotationRequest from "./pages/employer/EmployerQuotationRequest";
 import EmployerTalkToAdmin from "./pages/employer/EmployerTalkToAdmin";
-import EmployerProfile from "./pages/employer/EmployerProfile";
 
 import "./styles/global.css";
 
@@ -29,7 +32,15 @@ const activeRole = window.localStorage.getItem("skillkita-role") === "admin"
   ? "admin"
   : "public";
 
-let Page = LandingPage;
+let Page = HomePage;
+
+if (currentPath === "/about-us") {
+  Page = AboutUs;
+}
+
+if (currentPath === "/company-experience") {
+  Page = CompanyExperience;
+}
 
 if (currentPath === "/courses") {
   Page = ViewCourses;
@@ -49,6 +60,10 @@ if (currentPath === "/admin/users") {
 
 if (currentPath === "/admin/quotations") {
   Page = activeRole === "admin" ? AdminQuotations : AccessDenied;
+}
+
+if (currentPath === "/admin/quotations/create") {
+  Page = activeRole === "admin" ? AdminCreateQuotation : AccessDenied;
 }
 
 if (currentPath === "/admin/messages") {

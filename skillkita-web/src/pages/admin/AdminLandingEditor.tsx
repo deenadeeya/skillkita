@@ -1,7 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
-import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { adminNavItems } from "../../components/layout/navItems";
 import { supabase } from "../../lib/supabaseClient";
@@ -44,7 +43,7 @@ const AdminLandingEditor = () => {
   const [landing, setLanding] = useState<LandingContentRow | null>(null);
   const [coverDescription, setCoverDescription] = useState("");
   const [whoDescription, setWhoDescription] = useState("");
-  const [whoPreviewUrl, setWhoPreviewUrl] = useState<string>(TRSCGroupPhoto);
+  const [whoPreviewUrl, setWhoPreviewUrl] = useState<string>(PlaceholderPoster);
   const [whoFile, setWhoFile] = useState<File | null>(null);
 
   const [experiences, setExperiences] = useState<ExperienceRow[]>([]);
@@ -141,7 +140,7 @@ const AdminLandingEditor = () => {
       setLanding(null);
       setCoverDescription("");
       setWhoDescription("");
-      setWhoPreviewUrl(TRSCGroupPhoto);
+      setWhoPreviewUrl(PlaceholderPoster);
       return;
     }
 
@@ -149,7 +148,7 @@ const AdminLandingEditor = () => {
     setLanding(row);
     setCoverDescription(row.cover_description ?? "");
     setWhoDescription(row.who_description ?? "");
-    setWhoPreviewUrl(row.who_image_url ?? TRSCGroupPhoto);
+    setWhoPreviewUrl(row.who_image_url ?? PlaceholderPoster);
   }, []);
 
   const loadExperiences = useCallback(async () => {
@@ -396,8 +395,8 @@ const AdminLandingEditor = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={() => {
-        void supabase.auth.signOut();
+      onLogout={async () => {
+        await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
         window.location.href = "/";
       }}
@@ -668,25 +667,6 @@ const AdminLandingEditor = () => {
           </section>
         </div>
 
-        <section className="sk-card mt-10 p-6">
-          <h2 className="text-2xl font-bold text-[#7A1F1F]">Upcoming courses preview</h2>
-          <p className="mt-2 text-sm text-black">
-            This section is pulled directly from Supabase `courses` (visible courses).
-          </p>
-          <div className="mt-5 rounded-xl bg-[#f9f5ed] p-4 text-sm text-black">
-            Posters fallback to a default if not provided.
-            <div className="mt-3 flex items-center gap-3">
-              <img
-                src={PlaceholderPoster}
-                alt="Default poster"
-                className="h-20 w-14 rounded-lg object-cover ring-1 ring-black/5"
-              />
-              <span className="text-sm font-medium text-[#7A1F1F]">
-                Upcoming courses are controlled from the Courses admin.
-              </span>
-            </div>
-          </div>
-        </section>
     </DashboardLayout>
   );
 };

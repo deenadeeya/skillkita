@@ -13,30 +13,45 @@ export const adminNavItems: NavItem[] = [
   {
     label: "Home",
     icon: HomeIcon,
-    children: [{ label: "Landing Page", href: "/", icon: HomeIcon }],
-  },
-  {
-    label: "Dashboard",
-    icon: HomeIcon,
     children: [
-      { label: "Manage Course", href: "/admin", icon: ClipboardDocumentListIcon },
-      { label: "Manage Landing Page", href: "/admin/landing", icon: DocumentTextIcon },
+      { label: "Home Page", href: "/", icon: HomeIcon },
+      { label: "About Us", href: "/about-us", icon: DocumentTextIcon },
+      { label: "Company Experience", href: "/company-experience", icon: ClipboardDocumentListIcon },
+      { label: "Manage Home", href: "/admin/landing", icon: DocumentTextIcon },
     ],
   },
   {
-    label: "Customers",
-    icon: UsersIcon,
-    children: [{ label: "Manage Users", href: "/admin/users", icon: UsersIcon }],
+    label: "Course",
+    icon: ClipboardDocumentListIcon,
+    children: [
+      { label: "Browse Course", href: "/courses", icon: ClipboardDocumentListIcon },
+      { label: "Manage Course", href: "/admin", icon: ClipboardDocumentListIcon },
+    ],
   },
   {
-    label: "Quotations",
+    label: "Documents",
     icon: DocumentTextIcon,
-    children: [{ label: "Requests", href: "/admin/quotations", icon: DocumentTextIcon }],
+    children: [
+      {
+        label: "Quotation",
+        icon: DocumentTextIcon,
+        children: [
+          { label: "Create Quotation", href: "/admin/quotations/create", icon: DocumentTextIcon },
+          { label: "Quotation Requests", href: "/admin/quotations", icon: DocumentTextIcon },
+        ],
+      },
+      { label: "JD14", href: "/admin/jd14", icon: DocumentTextIcon },
+    ],
   },
   {
-    label: "Communication",
+    label: "Chat",
     icon: ChatBubbleLeftRightIcon,
     children: [{ label: "Messages", href: "/admin/messages?role=admin", icon: ChatBubbleLeftRightIcon }],
+  },
+  {
+    label: "Manage Users",
+    icon: UsersIcon,
+    children: [{ label: "Manage Users", href: "/admin/users", icon: UsersIcon }],
   },
   {
     label: "Settings",

@@ -55,6 +55,18 @@ with check (
   )
 );
 
+-- Admins can create approved quotations (e.g. manual/admin-entered).
+-- Note: employers can still only create 'pending' requests for themselves via the policy above.
+drop policy if exists "quotation_insert_admin" on public.quotation_requests;
+create policy "quotation_insert_admin"
+on public.quotation_requests for insert
+to authenticated
+with check (
+  public.is_admin()
+  and status = 'approved'
+  and reviewed_by = auth.uid()
+);
+
 drop policy if exists "quotation_update_admin" on public.quotation_requests;
 create policy "quotation_update_admin"
 on public.quotation_requests for update

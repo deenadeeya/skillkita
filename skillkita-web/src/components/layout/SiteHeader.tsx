@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { UserCircleIcon } from "@heroicons/react/24/solid";
+import { useEffect, useMemo, useState } from "react";
 import TRSCLogo from "../../assets/TRSCLogo.png";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -7,16 +8,23 @@ const PRIMARY_NAV = [
   { label: "Courses", href: "/courses" },
 ] as const;
 
-const SiteHeader = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+type Props = {
+  /** When provided, the mobile hamburger triggers this (e.g. open LeftNav drawer). */
+  onMenuClick?: () => void;
+};
+
+const SiteHeader = ({ onMenuClick }: Props) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEmployer, setIsEmployer] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
+  const [viewerName, setViewerName] = useState<string>("User");
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
   type ProfileRow = {
     role: "admin" | "employer";
     status: "pending" | "approved" | "rejected";
+    full_name?: string | null;
   };
 
   useEffect(() => {
@@ -27,24 +35,30 @@ const SiteHeader = () => {
       if (!user) {
         setIsAdmin(false);
         setIsEmployer(false);
+        setViewerName("User");
+        setViewerEmail(null);
         return;
       }
 
       const { data: profile, error } = await supabase
         .from("user_profiles")
-        .select("role,status")
+        .select("role,status,full_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (error || !profile) {
         setIsAdmin(false);
         setIsEmployer(false);
+        setViewerName("User");
+        setViewerEmail(user.email ?? null);
         return;
       }
 
       const row = profile as ProfileRow;
       setIsAdmin(row.role === "admin");
       setIsEmployer(row.role === "employer" && row.status === "approved");
+      setViewerName(row.full_name?.trim() ? row.full_name : row.role === "admin" ? "Admin" : "Employer");
+      setViewerEmail(user.email ?? null);
     };
 
     void check();
@@ -64,19 +78,57 @@ const SiteHeader = () => {
     window.location.href = "/";
   };
 
-  const closeMobileMenu = () => setIsMenuOpen(false);
+  const profileHref = useMemo(() => {
+    if (isAdmin) return "/admin/profile?role=admin";
+    if (isEmployer) return "/employer/profile";
+    return "/login";
+  }, [isAdmin, isEmployer]);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#7A1F1F] text-white shadow-sm">
       <div className="relative flex h-16 w-full items-center justify-between gap-4 px-4 md:px-6">
-        <a href="/" className="flex min-w-0 shrink items-center gap-3">
+        {/* Mobile: hamburger (left) + centered title + profile (right) */}
+        <div className="flex w-full items-center justify-between md:hidden">
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            onClick={() => {
+              onMenuClick?.();
+            }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+            disabled={!onMenuClick}
+          >
+            <span className="sr-only">Menu</span>
+            <span className="flex flex-col gap-1.5">
+              <span className="h-0.5 w-5 bg-white" />
+              <span className="h-0.5 w-5 bg-white" />
+              <span className="h-0.5 w-5 bg-white" />
+            </span>
+          </button>
+
+          <a href="/" className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
+              <img src={TRSCLogo} alt="TRSC logo" className="h-7 w-7 rounded-full" />
+            </span>
+            <span className="truncate text-sm font-semibold">TRSC SkillKita</span>
+          </a>
+
+          <a
+            href={profileHref}
+            aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+            title={viewerEmail ?? viewerName}
+          >
+            <UserCircleIcon className="h-7 w-7 text-white" />
+          </a>
+        </div>
+
+        {/* Desktop: logo + center nav + auth/profile menus */}
+        <a href="/" className="hidden min-w-0 shrink items-center gap-3 md:flex">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
             <img src={TRSCLogo} alt="TRSC logo" className="h-8 w-8 rounded-full" />
           </span>
-          <span className="hidden truncate text-sm font-semibold sm:block md:text-base">
-            TRSC SkillKita
-          </span>
-          <span className="truncate text-sm font-semibold sm:hidden">SkillKita</span>
+          <span className="truncate text-sm font-semibold md:text-base">TRSC SkillKita</span>
         </a>
 
         {/* Center: Home + Courses (public and admin) */}
@@ -123,10 +175,28 @@ const SiteHeader = () => {
               {isAdminMenuOpen && (
                 <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <a
+                    href="/#about-us"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    About Us
+                  </a>
+                  <a
+                    href="/#courses"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Company Experience
+                  </a>
+                  <a
                     href="/admin/landing"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
-                    Manage Landing Page
+                    Manage Home
+                  </a>
+                  <a
+                    href="/courses"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Browse Course
                   </a>
                   <a
                     href="/admin"
@@ -135,22 +205,22 @@ const SiteHeader = () => {
                     Manage Course
                   </a>
                   <a
-                    href="/admin/users"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                  >
-                    Manage Users
-                  </a>
-                  <a
                     href="/admin/quotations"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
-                    Quotations
+                    Quotation
                   </a>
                   <a
                     href="/admin/messages?role=admin"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
-                    Messages
+                    Chat
+                  </a>
+                  <a
+                    href="/admin/users"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Manage Users
                   </a>
                   <a
                     href="/admin/profile?role=admin"
@@ -218,151 +288,6 @@ const SiteHeader = () => {
             </div>
           )}
         </div>
-
-        <button
-          type="button"
-          aria-label="Toggle navigation menu"
-          aria-expanded={isMenuOpen}
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10 md:hidden"
-        >
-          <span className="sr-only">Menu</span>
-          <span className="flex flex-col gap-1.5">
-            <span className="h-0.5 w-5 bg-white" />
-            <span className="h-0.5 w-5 bg-white" />
-            <span className="h-0.5 w-5 bg-white" />
-          </span>
-        </button>
-
-        {isMenuOpen && (
-          <nav className="absolute right-4 top-[4.25rem] z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5 md:hidden">
-            {PRIMARY_NAV.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={closeMobileMenu}
-                className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-              >
-                {link.label}
-              </a>
-            ))}
-
-            <div className="my-2 h-px bg-black/10" />
-
-            {!isAdmin && !isEmployer && (
-              <>
-                <a
-                  href="/signup"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Sign up
-                </a>
-                <a
-                  href="/login"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Log in
-                </a>
-              </>
-            )}
-
-            {isAdmin && (
-              <>
-                <a
-                  href="/admin/landing"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Manage Landing Page
-                </a>
-                <a
-                  href="/admin"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Manage Course
-                </a>
-                <a
-                  href="/admin/users"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Manage Users
-                </a>
-                <a
-                  href="/admin/quotations"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Quotations
-                </a>
-                <a
-                  href="/admin/messages?role=admin"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Messages
-                </a>
-                <a
-                  href="/admin/profile?role=admin"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Profile
-                </a>
-                <button
-                  type="button"
-                  onClick={() => void signOut()}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Logout
-                </button>
-              </>
-            )}
-
-            {isEmployer && (
-              <>
-                <a
-                  href="/employer/quotation"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Quotation
-                </a>
-                <a
-                  href="/employer"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Documents
-                </a>
-                <a
-                  href="/employer/talk-to-admin"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Talk to Admin
-                </a>
-                <a
-                  href="/employer/profile"
-                  onClick={closeMobileMenu}
-                  className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Profile
-                </a>
-                <button
-                  type="button"
-                  onClick={() => void signOut()}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
-                >
-                  Log Out
-                </button>
-              </>
-            )}
-          </nav>
-        )}
       </div>
     </header>
   );
