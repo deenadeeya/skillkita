@@ -1,9 +1,7 @@
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { employerNavItems } from "../../components/layout/navItems";
-import { createQuotationPdfSignedUrl } from "../../features/quotation/storage";
-import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../lib/supabaseClient";
 
 type ProfileRow = {
@@ -12,34 +10,46 @@ type ProfileRow = {
   status: "pending" | "approved" | "rejected";
   full_name: string;
   company_name: string | null;
+  company_address: string | null;
 };
+
+type CourseLabel = { id: string; name: string; date: string; created_at: string };
 
 const EmployerQuotationRequest = () => {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [rows, setRows] = useState<QuotationRequestRow[]>([]);
   const [courseName, setCourseName] = useState("");
+  const [courseOptions, setCourseOptions] = useState<CourseLabel[]>([]);
   const [numberOfEmployers, setNumberOfEmployers] = useState("");
   const [proposedDate, setProposedDate] = useState("");
   const [additionalDescription, setAdditionalDescription] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [downloadId, setDownloadId] = useState<string | null>(null);
 
-  const loadRows = useCallback(async (userId: string) => {
+  const loadCourseOptions = useCallback(async () => {
     const { data, error } = await supabase
-      .from("quotation_requests")
-      .select("*")
-      .eq("employer_user_id", userId)
-      .order("created_at", { ascending: false });
+      .from("courses")
+      .select("id,name,date,created_at,is_visible")
+      .eq("is_visible", true)
+      .order("date", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(200);
 
     if (error) {
-      setRows([]);
+      setCourseOptions([]);
       setErrorMessage(error.message);
       return;
     }
-    setRows((data ?? []) as QuotationRequestRow[]);
+
+    setCourseOptions(
+      (data ?? []).map((r) => ({
+        id: (r as { id: string }).id,
+        name: (r as { name: string }).name,
+        date: (r as { date: string }).date,
+        created_at: (r as { created_at: string }).created_at,
+      }))
+    );
   }, []);
 
   useEffect(() => {
@@ -56,7 +66,7 @@ const EmployerQuotationRequest = () => {
 
       const { data: profileRow, error: pErr } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name,company_name")
+        .select("user_id,role,status,full_name,company_name,company_address")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -72,19 +82,39 @@ const EmployerQuotationRequest = () => {
       }
 
       setProfile(pr);
-      await loadRows(user.id);
+      await loadCourseOptions();
       setIsLoading(false);
     };
     void run();
-  }, [loadRows]);
+  }, [loadCourseOptions]);
+
+  const courseNameSuggestions = useMemo(() => {
+    const uniq = new Map<string, CourseLabel>();
+    for (const c of courseOptions) {
+      const key = c.name.trim().toLowerCase();
+      if (!key) continue;
+      if (!uniq.has(key)) uniq.set(key, c);
+    }
+    return Array.from(uniq.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [courseOptions]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
+    const normalized = courseName.trim().toLowerCase();
+    const isKnownCourse =
+      normalized.length > 0 &&
+      courseOptions.some((c) => c.name.trim().toLowerCase() === normalized);
+
     const n = parseInt(numberOfEmployers, 10);
     if (!courseName.trim() || !proposedDate || !Number.isFinite(n) || n < 1) {
       setErrorMessage("Please fill course name, a valid number of participants (≥ 1), and proposed date.");
+      return;
+    }
+
+    if (!isKnownCourse) {
+      setErrorMessage("Please select an existing course from the list.");
       return;
     }
 
@@ -118,24 +148,7 @@ const EmployerQuotationRequest = () => {
       return;
     }
 
-    setCourseName("");
-    setNumberOfEmployers("");
-    setProposedDate("");
-    setAdditionalDescription("");
-    await loadRows(uid);
-  };
-
-  const downloadPdf = async (path: string, quotationId: string) => {
-    setDownloadId(quotationId);
-    setErrorMessage(null);
-    try {
-      const url = await createQuotationPdfSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Download failed.");
-    } finally {
-      setDownloadId(null);
-    }
+    window.location.href = "/employer";
   };
 
   return (
@@ -196,8 +209,17 @@ const EmployerQuotationRequest = () => {
                   onChange={(e) => setCourseName(e.target.value)}
                   className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm transition placeholder:text-gray-400 focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
                   placeholder="e.g. HRD Corp–claimable leadership workshop"
+                  list="employer-course-name-options"
                   required
                 />
+                <datalist id="employer-course-name-options">
+                  {courseNameSuggestions.map((c) => (
+                    <option key={c.id} value={c.name} />
+                  ))}
+                </datalist>
+                <p className="mt-1 text-xs text-black/60">
+                  Start typing to search and select an existing course.
+                </p>
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
@@ -248,55 +270,7 @@ const EmployerQuotationRequest = () => {
           </form>
         </section>
 
-        <section className="sk-card mt-10 p-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F]">Quotation Application History</h2>
-          {isLoading && <p className="mt-4 text-sm text-black">Loading…</p>}
-          {!isLoading && rows.length === 0 && (
-            <p className="mt-4 text-sm text-black">No quotation requests yet.</p>
-          )}
-          {!isLoading && rows.length > 0 && (
-            <ul className="mt-4 space-y-4">
-              {rows.map((r) => (
-                <li
-                  key={r.id}
-                  className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 text-sm text-black"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
-                      <p className="mt-1 text-black/80">
-                        Proposed: {r.proposed_date} · Participants: {r.number_of_employers}
-                      </p>
-                      <p className="mt-1">
-                        Status:{" "}
-                        <span className="font-semibold capitalize">
-                          {r.status === "pending" && "Pending admin review"}
-                          {r.status === "approved" && "Approved — PDF ready"}
-                          {r.status === "rejected" && "Rejected"}
-                        </span>
-                      </p>
-                    </div>
-                    {r.status === "approved" && r.pdf_storage_path && (
-                      <button
-                        type="button"
-                        disabled={downloadId === r.id}
-                        onClick={() => void downloadPdf(r.pdf_storage_path!, r.id)}
-                        className="sk-button-primary shrink-0 px-4 py-2 text-sm"
-                      >
-                        {downloadId === r.id ? "Opening…" : "Download PDF"}
-                      </button>
-                    )}
-                  </div>
-                  {r.additional_description && (
-                    <p className="mt-2 border-t border-[#efe1db] pt-2 text-xs text-black/75">
-                      {r.additional_description}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        
     </DashboardLayout>
   );
 };

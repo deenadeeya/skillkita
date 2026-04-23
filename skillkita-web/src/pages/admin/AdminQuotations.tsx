@@ -2,11 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { adminNavItems } from "../../components/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
-import { createQuotationPdfSignedUrl, uploadQuotationPdf } from "../../features/quotation/storage";
+import {
+  createQuotationPdfSignedUrl,
+  deleteQuotationPdf,
+  uploadQuotationPdf,
+} from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../lib/supabaseClient";
 
-type EmployerLabel = { full_name: string; company_name: string | null };
+type EmployerLabel = {
+  full_name: string;
+  company_name: string | null;
+  company_address: string | null;
+};
 
 const AdminQuotations = () => {
   const [rows, setRows] = useState<QuotationRequestRow[]>([]);
@@ -18,9 +26,10 @@ const AdminQuotations = () => {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [downloadId, setDownloadId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeReview, setActiveReview] = useState<QuotationRequestRow | null>(null);
   const [companyName, setCompanyName] = useState("");
-  const [courseBookingDate, setCourseBookingDate] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [courseMode, setCourseMode] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [amountRm, setAmountRm] = useState("");
@@ -48,16 +57,25 @@ const AdminQuotations = () => {
     if (ids.length > 0) {
       const { data: profs, error: pErr } = await supabase
         .from("user_profiles")
-        .select("user_id,full_name,company_name")
+        .select("user_id,full_name,company_name,company_address")
         .in("user_id", ids);
 
       if (!pErr && profs) {
         const map: Record<string, EmployerLabel> = {};
-        (profs as { user_id: string; full_name: string; company_name: string | null }[]).forEach(
-          (p) => {
-            map[p.user_id] = { full_name: p.full_name, company_name: p.company_name };
-          }
-        );
+        (
+          profs as {
+            user_id: string;
+            full_name: string;
+            company_name: string | null;
+            company_address: string | null;
+          }[]
+        ).forEach((p) => {
+          map[p.user_id] = {
+            full_name: p.full_name,
+            company_name: p.company_name,
+            company_address: p.company_address,
+          };
+        });
         setEmployerLabels(map);
       }
     } else {
@@ -113,17 +131,17 @@ const AdminQuotations = () => {
 
   useEffect(() => {
     if (activeReview) {
-      setCompanyName(
-        activeReview.company_name?.trim() || activeReview.company_name_snapshot || ""
+      setCompanyName(activeReview.company_name?.trim() || activeReview.company_name_snapshot || "");
+      setCompanyAddress(
+        activeReview.company_address?.trim() ||
+          employerLabels[activeReview.employer_user_id]?.company_address?.trim() ||
+          ""
       );
-      setCourseBookingDate(activeReview.course_booking_date ?? "");
       setCourseMode(activeReview.course_mode ?? "");
-      setUnitPrice(
-        activeReview.unit_price != null ? String(activeReview.unit_price) : ""
-      );
+      setUnitPrice(activeReview.unit_price != null ? String(activeReview.unit_price) : "");
       setAmountRm(activeReview.amount_rm != null ? String(activeReview.amount_rm) : "");
     }
-  }, [activeReview]);
+  }, [activeReview, employerLabels]);
 
   const openReview = (row: QuotationRequestRow) => {
     setErrorMessage(null);
@@ -166,16 +184,13 @@ const AdminQuotations = () => {
     const amount = parseFloat(amountRm);
     if (
       !companyName.trim() ||
-      !courseBookingDate.trim() ||
       !courseMode.trim() ||
       !Number.isFinite(unit) ||
       unit < 0 ||
       !Number.isFinite(amount) ||
       amount < 0
     ) {
-      setErrorMessage(
-        "Fill company name, course booking date, course mode, unit price (RM), and amount (RM) with valid numbers."
-      );
+      setErrorMessage("Fill company name, course mode, unit price (RM), and amount (RM) with valid numbers.");
       return;
     }
 
@@ -186,7 +201,6 @@ const AdminQuotations = () => {
       const pdfInput = {
         company_name: companyName.trim(),
         course_name: activeReview.course_name,
-        course_booking_date: courseBookingDate,
         course_mode: courseMode.trim(),
         unit_price: unit,
         amount_rm: amount,
@@ -195,12 +209,13 @@ const AdminQuotations = () => {
         additional_description: activeReview.additional_description,
       };
 
-      const blob = buildQuotationPdfBlob(pdfInput);
-      const path = await uploadQuotationPdf(
-        activeReview.employer_user_id,
-        activeReview.id,
-        blob
-      );
+      const blob = buildQuotationPdfBlob(pdfInput, {
+        quotation_id:
+          activeReview.quotation_no != null ? String(activeReview.quotation_no) : activeReview.id,
+        approved_date: new Date().toISOString(),
+        employer_company_address: companyAddress.trim() || undefined,
+      });
+      const path = await uploadQuotationPdf(activeReview.employer_user_id, activeReview.id, blob);
 
       const { data: sessionData } = await supabase.auth.getSession();
       const reviewer = sessionData.session?.user?.id ?? null;
@@ -210,7 +225,7 @@ const AdminQuotations = () => {
         .update({
           status: "approved",
           company_name: companyName.trim(),
-          course_booking_date: courseBookingDate,
+          company_address: companyAddress.trim() ? companyAddress.trim() : null,
           course_mode: courseMode.trim(),
           unit_price: unit,
           amount_rm: amount,
@@ -257,6 +272,47 @@ const AdminQuotations = () => {
     }
   };
 
+  const handleDelete = async (row: QuotationRequestRow) => {
+    const ok = window.confirm(
+      `Delete this quotation request?\n\nCourse: ${row.course_name}\nStatus: ${row.status}\n\nThis cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeleteId(row.id);
+    setErrorMessage(null);
+    try {
+      const { data: deletedRows, error } = await supabase
+        .from("quotation_requests")
+        .delete()
+        .eq("id", row.id)
+        .select("id");
+      if (error) throw new Error(error.message);
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error("Delete blocked (no rows removed). Check Supabase RLS delete policy.");
+      }
+
+      setRows((p) => p.filter((r) => r.id !== row.id));
+      if (activeReview?.id === row.id) closeReview();
+
+      if (row.pdf_storage_path) {
+        try {
+          await deleteQuotationPdf(row.pdf_storage_path);
+        } catch (e) {
+          setErrorMessage(
+            (e instanceof Error ? e.message : "PDF delete failed.") +
+              " The request was deleted, but PDF cleanup failed."
+          );
+        }
+      }
+
+      await load();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
   return (
     <DashboardLayout
       items={adminNavItems}
@@ -277,162 +333,164 @@ const AdminQuotations = () => {
           </a>
         </p>
       )}
-        <h1 className="mt-4 text-4xl font-bold text-[#0001fc]">Quotation requests</h1>
-        <p className="mt-2 max-w-2xl text-sm text-black">
-          Review employer submissions. Set company name (for the PDF), booking date, mode, unit price,
-          and total amount (RM), then approve to generate the PDF. Employers download it from their
-          quotation page.
-        </p>
+      <h1 className="mt-4 text-4xl font-bold text-[#0001fc]">Quotation requests</h1>
+      <p className="mt-2 max-w-2xl text-sm text-black">
+        Review employer submissions. Set company name/address (for the PDF), mode, unit price, and total amount (RM),
+        then approve to generate the PDF.
+      </p>
 
-        {errorMessage && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
+      {errorMessage && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
 
-        {activeReview && activeReview.status === "pending" && (
-          <section className="sk-card mt-8 p-6">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <h2 className="text-xl font-bold text-[#7A1F1F]">Review &amp; price</h2>
-              <button
-                type="button"
-                onClick={closeReview}
-                className="text-sm font-semibold text-[#7A1F1F] underline"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-lg border border-[#efe1db] bg-[#faf7f2] p-4 text-sm">
-              <p>
-                <span className="font-semibold text-[#7A1F1F]">Employer:</span>{" "}
-                {employerLabels[activeReview.employer_user_id]?.full_name ?? "—"}
-                {employerLabels[activeReview.employer_user_id]?.company_name
-                  ? ` (${employerLabels[activeReview.employer_user_id]!.company_name})`
-                  : ""}
-              </p>
-              <p className="mt-1">
-                <span className="font-semibold">Course:</span> {activeReview.course_name}
-              </p>
-              <p className="mt-1">
-                <span className="font-semibold">Participants:</span>{" "}
-                {activeReview.number_of_employers}
-              </p>
-              <p className="mt-1">
-                <span className="font-semibold">Proposed date:</span> {activeReview.proposed_date}
-              </p>
-              {activeReview.additional_description && (
-                <p className="mt-2 text-black/80">{activeReview.additional_description}</p>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Company name (on quotation PDF)
-                </span>
-                <input
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Course booking date
-                </span>
-                <input
-                  type="date"
-                  value={courseBookingDate}
-                  onChange={(e) => setCourseBookingDate(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
-                <input
-                  value={courseMode}
-                  onChange={(e) => setCourseMode(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="e.g. Face-to-face, Online, Hybrid"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Unit price (RM)
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={unitPrice}
-                  onChange={(e) => setUnitPrice(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={amountRm}
-                  onChange={(e) => setAmountRm(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={() => void handleApprove()}
-                className="sk-button-primary"
-              >
-                {isSaving ? "Saving…" : "Approve & generate PDF"}
-              </button>
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={() => void handleReject(activeReview)}
-                className="sk-button-secondary border-red-200 text-red-800 hover:bg-red-50"
-              >
-                Reject
-              </button>
-            </div>
-          </section>
-        )}
-
+      {activeReview && activeReview.status === "pending" && (
         <section className="sk-card mt-8 p-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F]">All requests</h2>
-          {isLoading && <p className="mt-4 text-sm">Loading…</p>}
-          {!isLoading && rows.length === 0 && (
-            <p className="mt-4 text-sm text-black">No quotation requests yet.</p>
-          )}
-          {!isLoading && rows.length > 0 && (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[#efe1db] text-[#7A1F1F]">
-                    <th className="py-2 pr-3 font-semibold">Employer</th>
-                    <th className="py-2 pr-3 font-semibold">Course</th>
-                    <th className="py-2 pr-3 font-semibold">Proposed</th>
-                    <th className="py-2 pr-3 font-semibold">Status</th>
-                    <th className="py-2 font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id} className="border-b border-[#efe1db]">
-                      <td className="py-3 pr-3 align-top">
-                        {getEmployerDisplayName(r)}
-                      </td>
-                      <td className="py-3 pr-3 align-top">{r.course_name}</td>
-                      <td className="py-3 pr-3 align-top">{r.proposed_date}</td>
-                      <td className="py-3 pr-3 align-top capitalize">{r.status}</td>
-                      <td className="py-3 align-top">
-                        {r.status === "pending" && (
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2 className="text-xl font-bold text-[#7A1F1F]">Review &amp; price</h2>
+            <button
+              type="button"
+              onClick={closeReview}
+              className="text-sm font-semibold text-[#7A1F1F] underline"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-[#efe1db] bg-[#faf7f2] p-4 text-sm">
+            <p>
+              <span className="font-semibold text-[#7A1F1F]">Employer:</span>{" "}
+              {employerLabels[activeReview.employer_user_id]?.full_name ?? "—"}
+              {employerLabels[activeReview.employer_user_id]?.company_name
+                ? ` (${employerLabels[activeReview.employer_user_id]!.company_name})`
+                : ""}
+            </p>
+            <p className="mt-1">
+              <span className="font-semibold">Course:</span> {activeReview.course_name}
+            </p>
+            <p className="mt-1">
+              <span className="font-semibold">Participants:</span> {activeReview.number_of_employers}
+            </p>
+            <p className="mt-1">
+              <span className="font-semibold">Proposed booking date:</span> {activeReview.proposed_date}
+            </p>
+            {activeReview.additional_description && (
+              <p className="mt-2 text-black/80">{activeReview.additional_description}</p>
+            )}
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                Company name (on quotation PDF)
+              </span>
+              <input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                Company address (on quotation PDF)
+              </span>
+              <textarea
+                value={companyAddress}
+                onChange={(e) => setCompanyAddress(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                placeholder="Optional"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
+              <select
+                value={courseMode}
+                onChange={(e) => setCourseMode(e.target.value)}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                required
+              >
+                <option value="" disabled>
+                  Select…
+                </option>
+                <option value="Face-to-Face">Face-to-Face</option>
+                <option value="Online">Online</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Unit price (RM)</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={amountRm}
+                onChange={(e) => setAmountRm(e.target.value)}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+              />
+            </label>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => void handleApprove()}
+              className="sk-button-primary"
+            >
+              {isSaving ? "Saving…" : "Approve & generate PDF"}
+            </button>
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => void handleReject(activeReview)}
+              className="sk-button-secondary border-red-200 text-red-800 hover:bg-red-50"
+            >
+              Reject
+            </button>
+          </div>
+        </section>
+      )}
+
+      <section className="sk-card mt-8 p-6">
+        <h2 className="text-xl font-bold text-[#7A1F1F]">All requests</h2>
+        {isLoading && <p className="mt-4 text-sm">Loading…</p>}
+        {!isLoading && rows.length === 0 && <p className="mt-4 text-sm text-black">No quotation requests yet.</p>}
+        {!isLoading && rows.length > 0 && (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#efe1db] text-[#7A1F1F]">
+                  <th className="py-2 pr-3 font-semibold">Employer</th>
+                  <th className="py-2 pr-3 font-semibold">Course</th>
+                  <th className="py-2 pr-3 font-semibold">Proposed</th>
+                  <th className="py-2 pr-3 font-semibold">Status</th>
+                  <th className="py-2 font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-b border-[#efe1db]">
+                    <td className="py-3 pr-3 align-top">{getEmployerDisplayName(r)}</td>
+                    <td className="py-3 pr-3 align-top">{r.course_name}</td>
+                    <td className="py-3 pr-3 align-top">{r.proposed_date}</td>
+                    <td className="py-3 pr-3 align-top capitalize">{r.status}</td>
+                    <td className="py-3 align-top">
+                      {r.status === "pending" && (
+                        <>
                           <button
                             type="button"
                             onClick={() => openReview(r)}
@@ -440,10 +498,13 @@ const AdminQuotations = () => {
                           >
                             Review
                           </button>
-                        )}
-                        {r.status === "approved" && (
-                          <>
-                            {r.pdf_storage_path ? (
+                          <span className="px-2 text-black/30">·</span>
+                        </>
+                      )}
+                      {r.status === "approved" && (
+                        <>
+                          {r.pdf_storage_path ? (
+                            <>
                               <button
                                 type="button"
                                 onClick={() => void downloadPdf(r.pdf_storage_path!, r.id)}
@@ -452,22 +513,42 @@ const AdminQuotations = () => {
                               >
                                 {downloadId === r.id ? "Preparing..." : "Download"}
                               </button>
-                            ) : (
+                              <span className="px-2 text-black/30">·</span>
+                            </>
+                          ) : (
+                            <>
                               <span className="text-red-700">Missing PDF</span>
-                            )}
-                          </>
-                        )}
-                        {r.status === "rejected" && <span className="text-black/50">—</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+                              <span className="px-2 text-black/30">·</span>
+                            </>
+                          )}
+                        </>
+                      )}
+                      {r.status === "rejected" && (
+                        <>
+                          <span className="text-black/50">—</span>
+                          <span className="px-2 text-black/30">·</span>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(r)}
+                        className="font-semibold text-red-700 underline disabled:text-red-300"
+                        disabled={deleteId === r.id || isSaving}
+                      >
+                        {deleteId === r.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </DashboardLayout>
   );
 };
 
 export default AdminQuotations;
+

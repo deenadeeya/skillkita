@@ -34,3 +34,10 @@ export async function createQuotationPdfSignedUrl(
   }
   return data.signedUrl;
 }
+
+export async function deleteQuotationPdf(path: string): Promise<void> {
+  const { error } = await supabase.storage.from(QUOTATION_PDF_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(error.message);
+  }
+}

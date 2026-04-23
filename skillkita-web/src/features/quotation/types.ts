@@ -2,8 +2,10 @@ export type QuotationStatus = "pending" | "approved" | "rejected";
 
 export type QuotationRequestRow = {
   id: string;
+  quotation_no: number | null;
   employer_user_id: string;
   company_name_snapshot: string;
+  company_address: string | null;
   course_name: string;
   number_of_employers: number;
   proposed_date: string;

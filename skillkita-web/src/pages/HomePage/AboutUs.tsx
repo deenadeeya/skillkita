@@ -38,7 +38,11 @@ const AboutUs = () => {
             .maybeSingle();
 
           if (profileRow) {
-            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            const r = profileRow as {
+              role: "admin" | "employer";
+              status: string;
+              full_name?: string;
+            };
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
@@ -90,7 +94,9 @@ const AboutUs = () => {
     <div className="w-full">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0001fc] md:text-5xl">About Us</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#0001fc] md:text-5xl">
+            About Us
+          </h1>
           <p className="mt-2 text-sm font-semibold text-black/70 md:text-base">
             Company info and description.
           </p>
@@ -120,7 +126,9 @@ const AboutUs = () => {
               </p>
             )}
             {!isLoading && paragraphs.length === 0 && (
-              <p className="text-sm text-black/70">No description yet. Update it in “Manage Home”.</p>
+              <p className="text-sm text-black/70">
+                No description yet. Update it in “Manage Home”.
+              </p>
             )}
             {paragraphs.map((p) => (
               <p key={p.slice(0, 32)} className="mt-3 text-base text-black md:text-lg">

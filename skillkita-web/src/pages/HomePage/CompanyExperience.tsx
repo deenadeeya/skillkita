@@ -40,7 +40,11 @@ const CompanyExperience = () => {
             .maybeSingle();
 
           if (profileRow) {
-            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            const r = profileRow as {
+              role: "admin" | "employer";
+              status: string;
+              full_name?: string;
+            };
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
@@ -88,7 +92,6 @@ const CompanyExperience = () => {
             Activities and past experiences.
           </p>
         </div>
-        
       </div>
 
       {errorMessage && (
@@ -116,9 +119,7 @@ const CompanyExperience = () => {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-xl font-bold text-[#0001fc]">{exp.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-[#7A1F1F]">
-                    Date: {exp.date}
-                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#7A1F1F]">Date: {exp.date}</p>
                 </div>
               </div>
               <p className="mt-3 text-sm text-black">{exp.details}</p>

@@ -17,13 +17,46 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     const check = async () => {
+      const stay =
+        new URLSearchParams(window.location.search).get("stay") === "1" ||
+        new URLSearchParams(window.location.search).get("force") === "1";
+
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
+      const user = data.session?.user;
+      if (!user) return;
+
+      setHasSession(true);
+
+      // If you're already signed in, we used to always bounce to "/".
+      // That breaks common flows like "pending employer" testing where you still want /login.
+      if (stay) return;
+
+      const { data: profile, error } = await supabase
+        .from("user_profiles")
+        .select("role,status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // If profile can't be loaded, don't guess—allow the login UI to render and show errors on submit.
+      if (error || !profile) return;
+
+      const row = profile as Pick<UserProfileRow, "role" | "status">;
+
+      if (row.role === "admin") {
         window.location.href = "/";
+        return;
       }
+
+      if (row.role === "employer" && row.status === "approved") {
+        window.location.href = "/";
+        return;
+      }
+
+      // pending/rejected employers (and any other non-approved states): stay on /login
     };
     void check();
   }, []);
@@ -64,14 +97,14 @@ const Login = () => {
 
       if (row.role === "admin") {
         window.localStorage.setItem("skillkita-role", "admin");
-        window.location.href = "/admin";
+        window.location.href = "/";
         return;
       }
 
       // employer
       window.localStorage.setItem("skillkita-role", "employer");
       if (row.status === "approved") {
-        window.location.href = "/employer";
+        window.location.href = "/";
         return;
       }
 
@@ -113,6 +146,26 @@ const Login = () => {
             {pendingMessage && (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 {pendingMessage}
+              </div>
+            )}
+
+            {hasSession && (
+              <div className="mt-4 rounded-xl border border-black/10 bg-white p-4 text-sm text-black">
+                <p className="font-semibold text-[#7A1F1F]">You’re already signed in</p>
+                <p className="mt-1 text-black/70">
+                  If you want to log in as a different account, sign out first.
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 w-full rounded-lg border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-[#7A1F1F]/5"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.localStorage.removeItem("skillkita-role");
+                    window.location.href = "/login?stay=1";
+                  }}
+                >
+                  Sign out
+                </button>
               </div>
             )}
 

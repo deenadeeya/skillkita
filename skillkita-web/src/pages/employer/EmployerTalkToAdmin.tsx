@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { employerNavItems } from "../../components/layout/navItems";
-import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -22,16 +21,13 @@ const EmployerTalkToAdmin = () => {
   const [profile, setProfile] = useState<UserProfileRow | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [admins, setAdmins] = useState<AdminListRow[]>([]);
-  const [selectedAdmin, setSelectedAdmin] = useState<AdminListRow | null>(null);
-  const [conversation, setConversation] = useState<ChatConversationRow | null>(null);
+  const [conversations, setConversations] = useState<ChatConversationRow[]>([]);
+  const [adminById, setAdminById] = useState<Record<string, AdminListRow>>({});
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const selectedAdminId = useMemo(() => {
-    const adminId = new URLSearchParams(window.location.search).get("admin");
-    return adminId && adminId.length > 0 ? adminId : null;
-  }, []);
+  const inboxHref = useMemo(() => "/employer/messages", []);
 
   const ensureConversation = useCallback(
     async (employerId: string, adminId: string) => {
@@ -106,52 +102,68 @@ const EmployerTalkToAdmin = () => {
         return;
       }
 
-      const { data: adminRows, error: adminErr } = await supabase
-        .from("user_profiles")
-        .select("user_id,full_name")
-        .eq("role", "admin")
-        .order("full_name", { ascending: true });
+      const [adminRes, convRes] = await Promise.all([
+        supabase
+          .from("user_profiles")
+          .select("user_id,full_name")
+          .eq("role", "admin")
+          .order("full_name", { ascending: true }),
+        supabase
+          .from("chat_conversations")
+          .select("id,employer_user_id,admin_user_id,created_at")
+          .eq("employer_user_id", user.id)
+          .order("created_at", { ascending: false }),
+      ]);
 
-      if (adminErr) {
-        setErrorMessage(adminErr.message);
+      if (adminRes.error) {
+        setErrorMessage(adminRes.error.message);
         setAdmins([]);
+        setConversations([]);
         setIsLoading(false);
         return;
       }
 
-      const adminList = (adminRows ?? []) as AdminListRow[];
-      setAdmins(adminList);
-
-      if (selectedAdminId) {
-        const sel = adminList.find((a) => a.user_id === selectedAdminId) ?? null;
-        setSelectedAdmin(sel);
-        if (!sel) {
-          setConversation(null);
-          setIsLoading(false);
-          return;
-        }
-
-        try {
-          const conv = await ensureConversation(user.id, sel.user_id);
-          setConversation(conv);
-        } catch (e) {
-          setErrorMessage(e instanceof Error ? e.message : "Could not open conversation.");
-          setConversation(null);
-        }
-      } else {
-        setSelectedAdmin(null);
-        setConversation(null);
+      if (convRes.error) {
+        setErrorMessage(convRes.error.message);
+        setAdmins([]);
+        setConversations([]);
+        setIsLoading(false);
+        return;
       }
 
+      const adminList = (adminRes.data ?? []) as AdminListRow[];
+      setAdmins(adminList);
+      const map: Record<string, AdminListRow> = {};
+      adminList.forEach((a) => {
+        map[a.user_id] = a;
+      });
+      setAdminById(map);
+
+      setConversations((convRes.data ?? []) as ChatConversationRow[]);
       setIsLoading(false);
     };
 
     void load();
-  }, [ensureConversation, selectedAdminId]);
+  }, [ensureConversation]);
 
-  const backToPicker = () => {
-    window.location.href = "/employer/talk-to-admin";
+  const openConversation = async (adminId: string) => {
+    if (!profile) return;
+    setErrorMessage(null);
+    try {
+      const conv = await ensureConversation(profile.user_id, adminId);
+      window.location.href = `/employer/messages/chat?conversation=${encodeURIComponent(conv.id)}`;
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Could not open conversation.");
+    }
   };
+
+  const talkedToAdminIds = useMemo(() => {
+    return new Set(conversations.map((c) => c.admin_user_id));
+  }, [conversations]);
+
+  const availableAdminsToStart = useMemo(() => {
+    return admins.filter((a) => !talkedToAdminIds.has(a.user_id));
+  }, [admins, talkedToAdminIds]);
 
   return (
     <DashboardLayout
@@ -164,19 +176,10 @@ const EmployerTalkToAdmin = () => {
         window.location.href = "/";
       }}
     >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Talk to Admin</h1>
-            <p className="mt-3 text-lg text-black md:text-xl">
-              {profile ? `Hi ${profile.full_name}.` : "Hi."} Choose an admin and start a chat.
-            </p>
-          </div>
-          {selectedAdmin && (
-            <button type="button" onClick={backToPicker} className="sk-button-secondary px-4 py-2">
-              Change admin
-            </button>
-          )}
-        </div>
+        <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Messages</h1>
+        <p className="mt-3 text-lg text-black md:text-xl">
+          {profile ? `Hi ${profile.full_name}.` : "Hi."} Your inbox is below. Click a sender to open the chat room.
+        </p>
 
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -190,49 +193,67 @@ const EmployerTalkToAdmin = () => {
           </div>
         )}
 
-        {!isLoading && !selectedAdmin && (
-          <section className="sk-card mt-10 p-6">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Choose an admin</h2>
-            <p className="mt-2 text-sm text-black/80">
-              You can message an admin about quotations, documents, or any support request.
-            </p>
+        {!isLoading && (
+          <section className="sk-card mt-8 p-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold text-[#7A1F1F]">Inbox</h2>
+              <span className="text-sm font-semibold text-[#7A1F1F]">{conversations.length}</span>
+            </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {admins.map((a) => (
-                <button
-                  key={a.user_id}
-                  type="button"
-                  onClick={() => {
-                    window.location.href = `/employer/talk-to-admin?admin=${encodeURIComponent(a.user_id)}`;
-                  }}
-                  className="rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
-                >
-                  <p className="text-sm font-semibold text-[#0001fc]">{a.full_name}</p>
-                  <p className="mt-1 text-xs text-black/60">Click to open chat</p>
-                </button>
-              ))}
-              {admins.length === 0 && (
-                <div className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-                  No admins found yet.
-                </div>
+            <div className="mt-4 space-y-2">
+              {conversations.map((c) => {
+                const a = adminById[c.admin_user_id];
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => void openConversation(c.admin_user_id)}
+                    className="w-full rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
+                  >
+                    <p className="text-sm font-semibold text-[#0001fc]">{a?.full_name ?? "Admin"}</p>
+                    <p className="mt-1 text-xs text-black/60">
+                      Started: {new Date(c.created_at).toLocaleDateString()}
+                    </p>
+                  </button>
+                );
+              })}
+
+              {conversations.length === 0 && (
+                <p className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+                  No conversations yet. Start one below.
+                </p>
               )}
             </div>
-          </section>
-        )}
 
-        {!isLoading && selectedAdmin && conversation && (
-          <div className="mt-8">
-            <ChatChannel
-              conversationId={conversation.id}
-              currentUserId={profile!.user_id}
-              header={
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold text-[#7A1F1F]">Chatting with</p>
-                  <p className="text-xl font-bold text-[#0001fc]">{selectedAdmin.full_name}</p>
-                </div>
-              }
-            />
-          </div>
+            <div className="mt-6 border-t border-black/5 pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-bold text-[#7A1F1F]">Start new chat</h3>
+                <a href={inboxHref} className="text-xs font-semibold text-black/60 underline">
+                  Refresh
+                </a>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {availableAdminsToStart.map((a) => (
+                  <button
+                    key={a.user_id}
+                    type="button"
+                    onClick={() => void openConversation(a.user_id)}
+                    className="rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
+                  >
+                    <p className="text-sm font-semibold text-[#0001fc]">{a.full_name}</p>
+                    <p className="mt-1 text-xs text-black/60">Click to open chat</p>
+                  </button>
+                ))}
+
+                {availableAdminsToStart.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+                    No other admins available.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
         )}
     </DashboardLayout>
   );

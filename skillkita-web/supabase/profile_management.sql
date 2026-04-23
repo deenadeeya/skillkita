@@ -11,7 +11,8 @@
 -- 1) Add columns to user_profiles
 alter table public.user_profiles
   add column if not exists short_name text,
-  add column if not exists profile_pic_url text;
+  add column if not exists profile_pic_url text,
+  add column if not exists company_address text;
 
 -- 2) Storage policies (bucket must exist: profile-pics)
 -- Note: storage.objects policies are global; keep names distinct.
