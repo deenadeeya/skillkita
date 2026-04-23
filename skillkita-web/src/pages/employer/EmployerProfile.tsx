@@ -34,8 +34,8 @@ const EmployerProfile = () => {
       items={employerNavItems}
       userName={name}
       userEmail={email}
-      onLogout={async () => {
-        await supabase.auth.signOut();
+      onLogout={() => {
+        void supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
         window.location.href = "/";
       }}

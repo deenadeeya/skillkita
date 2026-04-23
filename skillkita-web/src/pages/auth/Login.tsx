@@ -17,12 +17,39 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     const check = async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        window.location.href = "/";
+      const user = data.session?.user;
+      if (!user) return;
+
+      setHasSession(true);
+
+      const stay =
+        new URLSearchParams(window.location.search).get("stay") === "1" ||
+        new URLSearchParams(window.location.search).get("force") === "1";
+
+      // If the user explicitly wants to open /login (e.g. to switch accounts), don't redirect.
+      if (stay) return;
+
+      const { data: profile, error } = await supabase
+        .from("user_profiles")
+        .select("role,status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error || !profile) return;
+
+      const row = profile as Pick<UserProfileRow, "role" | "status">;
+      if (row.role === "admin") {
+        window.location.href = "/admin";
+        return;
+      }
+      if (row.role === "employer" && row.status === "approved") {
+        window.location.href = "/employer";
+        return;
       }
     };
     void check();
@@ -113,6 +140,26 @@ const Login = () => {
             {pendingMessage && (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 {pendingMessage}
+              </div>
+            )}
+
+            {hasSession && (
+              <div className="mt-4 rounded-xl border border-black/10 bg-white p-4 text-sm text-black">
+                <p className="font-semibold text-[#7A1F1F]">You’re already signed in</p>
+                <p className="mt-1 text-black/70">
+                  If you want to log in as a different account, sign out first.
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 w-full rounded-lg border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-[#7A1F1F]/5"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.localStorage.removeItem("skillkita-role");
+                    window.location.href = "/login?stay=1";
+                  }}
+                >
+                  Sign out
+                </button>
               </div>
             )}
 

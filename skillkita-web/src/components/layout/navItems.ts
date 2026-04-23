@@ -64,16 +64,36 @@ export const employerNavItems: NavItem[] = [
   {
     label: "Home",
     icon: HomeIcon,
-    children: [{ label: "Landing Page", href: "/", icon: HomeIcon }],
+    children: [
+      { label: "Home Page", href: "/", icon: HomeIcon },
+      { label: "About Us", href: "/about-us", icon: DocumentTextIcon },
+      { label: "Company experience", href: "/company-experience", icon: ClipboardDocumentListIcon },
+    ],
   },
   {
-    label: "Employer",
-    icon: HomeIcon,
+    label: "Course",
+    icon: ClipboardDocumentListIcon,
+    children: [{ label: "Browse Course", href: "/courses", icon: ClipboardDocumentListIcon }],
+  },
+  {
+    label: "Documents",
+    icon: DocumentTextIcon,
     children: [
-      { label: "Documents", href: "/employer", icon: DocumentTextIcon },
-      { label: "Quotation", href: "/employer/quotation", icon: ClipboardDocumentListIcon },
-      { label: "Talk to Admin", href: "/employer/talk-to-admin", icon: ChatBubbleLeftRightIcon },
+      {
+        label: "Quotation",
+        icon: DocumentTextIcon,
+        children: [
+          { label: "Create Quotation", href: "/employer/quotation", icon: DocumentTextIcon },
+          { label: "Quotation Requests", href: "/employer", icon: DocumentTextIcon },
+        ],
+      },
+      { label: "JD14", href: "/employer/jd14", icon: DocumentTextIcon },
     ],
+  },
+  {
+    label: "Chat",
+    icon: ChatBubbleLeftRightIcon,
+    children: [{ label: "Messages", href: "/employer/talk-to-admin", icon: ChatBubbleLeftRightIcon }],
   },
   {
     label: "Settings",

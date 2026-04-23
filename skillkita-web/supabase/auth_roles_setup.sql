@@ -9,6 +9,7 @@ create table if not exists public.user_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
   company_name text,
+  company_address text,
   phone text,
   role text not null check (role in ('employer','admin')),
   status text not null check (status in ('pending','approved','rejected')),
@@ -16,6 +17,10 @@ create table if not exists public.user_profiles (
   approved_at timestamptz,
   approved_by uuid references auth.users(id)
 );
+
+-- Forward-compatible: if the table already exists, ensure company_address exists.
+alter table public.user_profiles
+  add column if not exists company_address text;
 
 alter table public.user_profiles enable row level security;
 

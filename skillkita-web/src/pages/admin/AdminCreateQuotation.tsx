@@ -7,7 +7,7 @@ import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../lib/supabaseClient";
 
-type EmployerLabel = { full_name: string; company_name: string | null };
+type EmployerLabel = { full_name: string; company_name: string | null; company_address: string | null };
 
 const AdminCreateQuotation = () => {
   const [approvedEmployers, setApprovedEmployers] = useState<(EmployerLabel & { user_id: string })[]>([]);
@@ -21,33 +21,51 @@ const AdminCreateQuotation = () => {
   const [createEmployerUserId, setCreateEmployerUserId] = useState("");
   const [createManualEmployerName, setCreateManualEmployerName] = useState("");
   const [createCompanyName, setCreateCompanyName] = useState("");
+  const [createCompanyAddress, setCreateCompanyAddress] = useState("");
   const [createCourseName, setCreateCourseName] = useState("");
   const [createParticipants, setCreateParticipants] = useState("");
   const [createProposedDate, setCreateProposedDate] = useState("");
   const [createAdditionalDescription, setCreateAdditionalDescription] = useState("");
-  const [createCourseBookingDate, setCreateCourseBookingDate] = useState("");
   const [createCourseMode, setCreateCourseMode] = useState("");
   const [createUnitPrice, setCreateUnitPrice] = useState("");
   const [createAmountRm, setCreateAmountRm] = useState("");
 
   const loadApprovedEmployers = useCallback(async () => {
-    const { data, error } = await supabase
+    // Prefer reading company_address, but gracefully fall back if the DB
+    // hasn't been migrated yet (otherwise the employer dropdown looks empty).
+    const primary = await supabase
       .from("user_profiles")
-      .select("user_id,full_name,company_name,role,status")
+      .select("user_id,full_name,company_name,company_address,role,status")
       .eq("role", "employer")
       .eq("status", "approved")
       .order("full_name", { ascending: true });
 
-    if (error) {
+    const shouldFallback =
+      !!primary.error &&
+      primary.error.message.toLowerCase().includes("company_address") &&
+      primary.error.message.toLowerCase().includes("does not exist");
+
+    const res = shouldFallback
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id,full_name,company_name,role,status")
+          .eq("role", "employer")
+          .eq("status", "approved")
+          .order("full_name", { ascending: true })
+      : primary;
+
+    if (res.error) {
       setApprovedEmployers([]);
+      setErrorMessage(res.error.message);
       return;
     }
 
     setApprovedEmployers(
-      (data ?? []).map((r) => ({
+      (res.data ?? []).map((r) => ({
         user_id: (r as { user_id: string }).user_id,
         full_name: (r as { full_name: string }).full_name,
         company_name: (r as { company_name: string | null }).company_name,
+        company_address: (r as { company_address?: string | null }).company_address ?? null,
       }))
     );
   }, []);
@@ -101,6 +119,7 @@ const AdminCreateQuotation = () => {
       value: e.user_id,
       label: `${e.full_name}${e.company_name ? ` (${e.company_name})` : ""}`,
       company_name: e.company_name,
+      company_address: e.company_address,
     }));
   }, [approvedEmployers]);
 
@@ -113,7 +132,10 @@ const AdminCreateQuotation = () => {
     if (!createCompanyName.trim() && match.company_name?.trim()) {
       setCreateCompanyName(match.company_name);
     }
-  }, [approvedEmployers, createCompanyName, createEmployerUserId, isManualEmployer]);
+    if (!createCompanyAddress.trim() && match.company_address?.trim()) {
+      setCreateCompanyAddress(match.company_address);
+    }
+  }, [approvedEmployers, createCompanyAddress, createCompanyName, createEmployerUserId, isManualEmployer]);
 
   const handleAdminCreate = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -133,7 +155,6 @@ const AdminCreateQuotation = () => {
       !Number.isFinite(participants) ||
       participants < 1 ||
       !createProposedDate ||
-      !createCourseBookingDate ||
       !createCourseMode.trim() ||
       !Number.isFinite(unit) ||
       unit < 0 ||
@@ -141,7 +162,7 @@ const AdminCreateQuotation = () => {
       amount < 0
     ) {
       setErrorMessage(
-        "Fill employer (or manual employer name), company name, course name, participants (≥1), proposed date, booking date, mode, unit price (RM), and amount (RM)."
+        "Fill employer (or manual employer name), company name, course name, participants (≥1), proposed booking date, mode, unit price (RM), and amount (RM)."
       );
       return;
     }
@@ -165,13 +186,13 @@ const AdminCreateQuotation = () => {
       const payload = {
         employer_user_id: targetEmployerUserId,
         company_name_snapshot: snapshot,
+        company_address: createCompanyAddress.trim() ? createCompanyAddress.trim() : null,
         course_name: createCourseName.trim(),
         number_of_employers: participants,
         proposed_date: createProposedDate,
         additional_description: mergedAdditional,
         status: "approved" as const,
         company_name: createCompanyName.trim(),
-        course_booking_date: createCourseBookingDate,
         course_mode: createCourseMode.trim(),
         unit_price: unit,
         amount_rm: amount,
@@ -199,7 +220,6 @@ const AdminCreateQuotation = () => {
       const pdfInput = {
         company_name: createCompanyName.trim(),
         course_name: createCourseName.trim(),
-        course_booking_date: createCourseBookingDate,
         course_mode: createCourseMode.trim(),
         unit_price: unit,
         amount_rm: amount,
@@ -208,7 +228,11 @@ const AdminCreateQuotation = () => {
         additional_description: mergedAdditional,
       };
 
-      const blob = buildQuotationPdfBlob(pdfInput);
+      const blob = buildQuotationPdfBlob(pdfInput, {
+        quotation_id: created.quotation_no != null ? String(created.quotation_no) : created.id,
+        approved_date: new Date().toISOString(),
+        employer_company_address: createCompanyAddress.trim() || undefined,
+      });
       const path = await uploadQuotationPdf(targetEmployerUserId, created.id, blob);
 
       const { error: updErr } = await supabase
@@ -224,11 +248,11 @@ const AdminCreateQuotation = () => {
       setCreateEmployerUserId("");
       setCreateManualEmployerName("");
       setCreateCompanyName("");
+      setCreateCompanyAddress("");
       setCreateCourseName("");
       setCreateParticipants("");
       setCreateProposedDate("");
       setCreateAdditionalDescription("");
-      setCreateCourseBookingDate("");
       setCreateCourseMode("");
       setCreateUnitPrice("");
       setCreateAmountRm("");
@@ -323,6 +347,19 @@ const AdminCreateQuotation = () => {
             </label>
 
             <label className="block md:col-span-2">
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                Company address (PDF)
+              </span>
+              <textarea
+                value={createCompanyAddress}
+                onChange={(e) => setCreateCompanyAddress(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                placeholder="Optional"
+              />
+            </label>
+
+            <label className="block md:col-span-2">
               <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course name</span>
               <input
                 value={createCourseName}
@@ -345,7 +382,9 @@ const AdminCreateQuotation = () => {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Proposed date</span>
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                Proposed booking date
+              </span>
               <input
                 type="date"
                 value={createProposedDate}
@@ -369,25 +408,20 @@ const AdminCreateQuotation = () => {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course booking date</span>
-              <input
-                type="date"
-                value={createCourseBookingDate}
-                onChange={(e) => setCreateCourseBookingDate(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block">
               <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
-              <input
+              <select
                 value={createCourseMode}
                 onChange={(e) => setCreateCourseMode(e.target.value)}
                 className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                placeholder="e.g. Face-to-face, Online"
                 required
-              />
+              >
+                <option value="" disabled>
+                  Select…
+                </option>
+                <option value="Face-to-Face">Face-to-Face</option>
+                <option value="Online">Online</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
             </label>
 
             <label className="block">
