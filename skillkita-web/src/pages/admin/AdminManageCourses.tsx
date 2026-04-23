@@ -104,7 +104,6 @@ const emptyPrivateSelections: Record<PrivateDocKind, File | null> = {
 const AdminManageCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [form, setForm] = useState<CourseFormState>(initialFormState);
-  const [posterPreview, setPosterPreview] = useState<string>(PlaceholderPoster);
   const [selectedPosterFile, setSelectedPosterFile] = useState<File | null>(null);
   const [privateSelections, setPrivateSelections] =
     useState<Record<PrivateDocKind, File | null>>(emptyPrivateSelections);
@@ -118,11 +117,21 @@ const AdminManageCourses = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [courseSearch, setCourseSearch] = useState("");
 
   const publicCourses = useMemo(
     () => courses.filter((course) => course.isVisible),
     [courses]
   );
+
+  const filteredCourses = useMemo(() => {
+    const q = courseSearch.trim().toLowerCase();
+    if (!q) return courses;
+    return courses.filter((c) => {
+      const haystack = `${c.name}\n${c.details}\n${c.date}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [courseSearch, courses]);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -271,14 +280,11 @@ const AdminManageCourses = () => {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    setPosterPreview(objectUrl);
     setSelectedPosterFile(file);
   };
 
   const resetForm = () => {
     setForm(initialFormState);
-    setPosterPreview(PlaceholderPoster);
     setSelectedPosterFile(null);
     setPrivateSelections({ ...emptyPrivateSelections });
     setEditingCourseId(null);
@@ -524,7 +530,6 @@ const AdminManageCourses = () => {
       details: course.details,
       isVisible: course.isVisible,
     });
-    setPosterPreview(course.posterUrl ?? PlaceholderPoster);
     setSelectedPosterFile(null);
     setPrivateSelections({ ...emptyPrivateSelections });
   };
@@ -600,39 +605,99 @@ const AdminManageCourses = () => {
           </div>
         )}
 
-        <div className={`mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr,1.9fr] ${!isAuthorized ? "opacity-60 pointer-events-none" : ""}`}>
+        <div
+          className={`mt-10 space-y-8 ${!isAuthorized ? "opacity-60 pointer-events-none" : ""}`}
+        >
           <section className="sk-card p-6">
+            <h2 className="text-2xl font-bold text-[#7A1F1F]">
+              Employer access to private files
+            </h2>
+            <p className="mt-2 text-sm text-black">
+              When an employer requests access, approve or reject here. Approved employers can open private
+              documents from their dashboard.
+            </p>
+            <div className="mt-5 space-y-3">
+              {pendingAccess.length === 0 && (
+                <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+                  No pending requests.
+                </p>
+              )}
+              {pendingAccess.map((req) => {
+                const courseName = Array.isArray(req.courses)
+                  ? req.courses[0]?.name
+                  : req.courses?.name;
+                return (
+                  <article
+                    key={req.id}
+                    className="flex flex-col gap-3 rounded-xl border border-[#efe1db] p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold text-[#0001fc]">{courseName ?? "Course"}</p>
+                      <p className="text-sm text-black">
+                        {employerNames[req.employer_user_id] ?? req.employer_user_id}
+                      </p>
+                      <p className="text-xs text-black/60">
+                        Requested: {new Date(req.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => void approveEmployerAccess(req.id, true)}
+                        className="sk-button-primary px-3 py-2"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => void approveEmployerAccess(req.id, false)}
+                        className="sk-button-secondary px-3 py-2"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="sk-card p-5 md:p-6">
             <h2 className="text-2xl font-bold text-[#7A1F1F]">
               {editingCourseId ? "Update Course" : "Add New Course"}
             </h2>
-            <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Course Name
-                </span>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="Enter course name"
-                  required
-                />
-              </label>
+            <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                    Course Name
+                  </span>
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                    placeholder="Enter course name"
+                    required
+                  />
+                </label>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Date
-                </span>
-                <input
-                  type="date"
-                  name="date"
-                  value={form.date}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  required
-                />
-              </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                    Date
+                  </span>
+                  <input
+                    type="date"
+                    name="date"
+                    value={form.date}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                    required
+                  />
+                </label>
+              </div>
 
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
@@ -642,45 +707,36 @@ const AdminManageCourses = () => {
                   name="details"
                   value={form.details}
                   onChange={handleInputChange}
-                  rows={4}
+                  rows={3}
                   className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
                   placeholder="Add summary, trainer, venue, etc."
                   required
                 />
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Poster
-                </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif,.pdf,application/pdf"
-                  onChange={handlePosterChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                />
-                <CoursePosterMedia
-                  url={posterPreview}
-                  alt="Course poster preview"
-                  className="mt-3 aspect-[210/297] w-full max-w-[160px] rounded-lg object-cover"
-                  forcePdf={
-                    selectedPosterFile
-                      ? selectedPosterFile.type === "application/pdf" ||
-                        selectedPosterFile.name.toLowerCase().endsWith(".pdf")
-                      : false
-                  }
-                />
-              </label>
+              <div className="grid grid-cols-1 gap-3">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                    Poster
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,.pdf,application/pdf"
+                    onChange={handlePosterChange}
+                    className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  />
+                </label>
+              </div>
 
-              <div className="rounded-xl border border-[#efe1db] bg-[#f9f5ed] p-4">
+              <div className="rounded-xl border border-[#efe1db] bg-[#f9f5ed] p-3">
                 <p className="text-sm font-semibold text-[#7A1F1F]">
-                  Private documents (not on public pages)
+                  Private Documents (Restricted Access)
                 </p>
                 <p className="mt-1 text-xs text-black/75">
                   Upload syllabus, trainer documents, etc. Employers can open these only after you approve
                   their access request.
                 </p>
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => (
                     <label key={kind} className="block">
                       <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
@@ -696,38 +752,41 @@ const AdminManageCourses = () => {
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-semibold text-[#7A1F1F]">
-                <input
-                  type="checkbox"
-                  name="isVisible"
-                  checked={form.isVisible}
-                  onChange={handleInputChange}
-                  className="h-4 w-4"
-                />
-                Show to public
-              </label>
+              <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#7A1F1F]">
+                  <input
+                    type="checkbox"
+                    name="isVisible"
+                    checked={form.isVisible}
+                    onChange={handleInputChange}
+                    className="h-4 w-4"
+                  />
+                  Show to public
+                </label>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="sk-button-primary"
-                >
-                  {isSaving
-                    ? "Saving..."
-                    : editingCourseId
-                      ? "Update Course"
-                      : "Add Course"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={isSaving}
-                  className="sk-button-secondary"
-                >
-                  Clear
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="sk-button-primary"
+                  >
+                    {isSaving
+                      ? "Saving..."
+                      : editingCourseId
+                        ? "Update Course"
+                        : "Add Course"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    disabled={isSaving}
+                    className="sk-button-secondary"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
+
             </form>
           </section>
 
@@ -739,13 +798,30 @@ const AdminManageCourses = () => {
               </p>
             </div>
 
+            <div className="mt-4">
+              <input
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                placeholder="Search courses by name, date, or details..."
+                className="w-full rounded-xl border border-[#d8c9c2] bg-white px-4 py-2 text-sm text-black outline-none focus:border-[#7A1F1F]"
+              />
+              <p className="mt-2 text-xs font-semibold text-black/60">
+                Showing {filteredCourses.length} of {courses.length}
+              </p>
+            </div>
+
             <div className="mt-5 space-y-4">
               {isLoading && (
                 <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
                   Loading courses...
                 </p>
               )}
-              {courses.map((course) => (
+              {filteredCourses.map((course) => {
+                const hasAnyPrivateFile = Boolean(
+                  course.privateFiles &&
+                    Object.values(course.privateFiles).some((v) => Boolean(v))
+                );
+                return (
                 <article
                   key={course.id}
                   className="rounded-xl border border-[#efe1db] p-4"
@@ -778,9 +854,21 @@ const AdminManageCourses = () => {
                       </p>
                       <p className="mt-2 text-sm text-black">{course.details}</p>
 
-                      <div className="mt-4 rounded-lg border border-dashed border-[#c5b5ad] bg-[#faf7f2] p-3">
-                        <p className="text-xs font-semibold text-[#7A1F1F]">
-                          Private files (admin)
+                      <div
+                        className={[
+                          "mt-4 rounded-lg border border-dashed p-3",
+                          hasAnyPrivateFile
+                            ? "border-[#c5b5ad] bg-[#faf7f2]"
+                            : "border-gray-300 bg-gray-100",
+                        ].join(" ")}
+                      >
+                        <p
+                          className={[
+                            "text-xs font-semibold",
+                            hasAnyPrivateFile ? "text-[#7A1F1F]" : "text-gray-700",
+                          ].join(" ")}
+                        >
+                          Files
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => {
@@ -792,7 +880,12 @@ const AdminManageCourses = () => {
                                 type="button"
                                 disabled={isSaving || !path}
                                 onClick={() => void openPrivateDoc(path)}
-                                className="rounded-md border border-[#7A1F1F] bg-white px-2 py-1 text-xs font-semibold text-[#7A1F1F] disabled:cursor-not-allowed disabled:opacity-50"
+                                className={[
+                                  "rounded-md border bg-white px-2 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50",
+                                  hasAnyPrivateFile
+                                    ? "border-[#7A1F1F] text-[#7A1F1F]"
+                                    : "border-gray-400 text-gray-700",
+                                ].join(" ")}
                               >
                                 {path ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
                               </button>
@@ -830,98 +923,16 @@ const AdminManageCourses = () => {
                     </div>
                   </div>
                 </article>
-              ))}
-              {!isLoading && courses.length === 0 && (
+              );
+              })}
+              {!isLoading && filteredCourses.length === 0 && (
                 <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-                  No courses yet. Add one on the left.
+                  No courses match your search.
                 </p>
               )}
             </div>
           </section>
         </div>
-
-        <section className="sk-card mt-10 p-6">
-          <h2 className="text-2xl font-bold text-[#7A1F1F]">Employer access to private files</h2>
-          <p className="mt-2 text-sm text-black">
-            When an employer requests access, approve or reject here. Approved employers can open private
-            documents from their dashboard.
-          </p>
-          <div className="mt-5 space-y-3">
-            {pendingAccess.length === 0 && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-                No pending requests.
-              </p>
-            )}
-            {pendingAccess.map((req) => {
-              const courseName = Array.isArray(req.courses)
-                ? req.courses[0]?.name
-                : req.courses?.name;
-              return (
-                <article
-                  key={req.id}
-                  className="flex flex-col gap-3 rounded-xl border border-[#efe1db] p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="font-semibold text-[#0001fc]">{courseName ?? "Course"}</p>
-                    <p className="text-sm text-black">
-                      {employerNames[req.employer_user_id] ?? req.employer_user_id}
-                    </p>
-                    <p className="text-xs text-black/60">
-                      Requested: {new Date(req.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => void approveEmployerAccess(req.id, true)}
-                      className="sk-button-primary px-3 py-2"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => void approveEmployerAccess(req.id, false)}
-                      className="sk-button-secondary px-3 py-2"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="sk-card mt-10 p-6">
-          <h2 className="text-2xl font-bold text-[#7A1F1F]">Public Preview</h2>
-          <p className="mt-2 text-sm text-black">
-            This section simulates what users can see on the public website.
-          </p>
-
-          <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {publicCourses.map((course) => (
-              <article key={course.id} className="rounded-xl bg-[#f9f5ed] p-4">
-                <CoursePosterMedia
-                  url={course.posterUrl ?? PlaceholderPoster}
-                  alt={`${course.name} poster`}
-                  className="mx-auto aspect-[210/297] w-1/2 rounded-lg object-cover"
-                />
-                <h3 className="mt-3 text-lg font-semibold text-[#0001fc]">
-                  {course.name}
-                </h3>
-                <p className="mt-1 text-sm text-black">Date: {course.date}</p>
-                <p className="mt-2 text-sm text-black">{course.details}</p>
-              </article>
-            ))}
-            {publicCourses.length === 0 && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-                No courses are visible to public right now.
-              </p>
-            )}
-          </div>
-        </section>
     </DashboardLayout>
   );
 };

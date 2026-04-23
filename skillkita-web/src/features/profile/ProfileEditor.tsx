@@ -15,6 +15,7 @@ const ProfileEditor = ({ expectedRole }: Props) => {
   const [fullName, setFullName] = useState("");
   const [shortName, setShortName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [phone, setPhone] = useState("");
 
   const [pendingPic, setPendingPic] = useState<File | null>(null);
@@ -41,45 +42,66 @@ const ProfileEditor = ({ expectedRole }: Props) => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-    const user = sessionData.session?.user;
-    if (!user) {
-      window.location.href = "/login";
-      return;
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const user = sessionData.session?.user;
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      setEmail(user.email ?? null);
+
+      // Prefer reading company_address, but gracefully fall back if the DB
+      // hasn't been migrated yet (otherwise the page can get stuck "Loading…").
+      const primary = await supabase
+        .from("user_profiles")
+        .select("user_id,role,status,full_name,short_name,company_name,company_address,phone,profile_pic_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const shouldFallback =
+        !!primary.error &&
+        primary.error.message.toLowerCase().includes("company_address") &&
+        primary.error.message.toLowerCase().includes("does not exist");
+
+      const res = shouldFallback
+        ? await supabase
+            .from("user_profiles")
+            .select("user_id,role,status,full_name,short_name,company_name,phone,profile_pic_url")
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : primary;
+
+      if (res.error) throw res.error;
+      if (!res.data) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const p = res.data as UserProfileRow;
+      if (p.role !== expectedRole) {
+        window.location.href = "/";
+        return;
+      }
+
+      if (expectedRole === "admin") {
+        window.localStorage.setItem("skillkita-role", "admin");
+      }
+
+      setProfile(p);
+      setFullName(p.full_name ?? "");
+      setShortName(p.short_name ?? "");
+      setCompanyName(p.company_name ?? "");
+      setCompanyAddress(p.company_address ?? "");
+      setPhone(p.phone ?? "");
+      setPendingPic(null);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Could not load profile.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setEmail(user.email ?? null);
-
-    const { data: row, error } = await supabase
-      .from("user_profiles")
-      .select("user_id,role,status,full_name,short_name,company_name,phone,profile_pic_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (error) throw error;
-    if (!row) {
-      window.location.href = "/login";
-      return;
-    }
-
-    const p = row as UserProfileRow;
-    if (p.role !== expectedRole) {
-      window.location.href = "/";
-      return;
-    }
-
-    if (expectedRole === "admin") {
-      window.localStorage.setItem("skillkita-role", "admin");
-    }
-
-    setProfile(p);
-    setFullName(p.full_name ?? "");
-    setShortName(p.short_name ?? "");
-    setCompanyName(p.company_name ?? "");
-    setPhone(p.phone ?? "");
-    setPendingPic(null);
-    setIsLoading(false);
   }, [expectedRole]);
 
   useEffect(() => {
@@ -108,13 +130,34 @@ const ProfileEditor = ({ expectedRole }: Props) => {
 
       if (canEditEmployerFields) {
         update.company_name = companyName.trim() ? companyName.trim() : null;
+        update.company_address = companyAddress.trim() ? companyAddress.trim() : null;
         update.phone = phone.trim() ? phone.trim() : null;
       }
 
-      const { error } = await supabase.from("user_profiles").update(update).eq("user_id", profile.user_id);
-      if (error) throw error;
+      const primary = await supabase.from("user_profiles").update(update).eq("user_id", profile.user_id);
+      const shouldFallback =
+        !!primary.error &&
+        primary.error.message.toLowerCase().includes("company_address") &&
+        primary.error.message.toLowerCase().includes("does not exist");
 
-      setSuccessMessage("Profile updated.");
+      const res = shouldFallback
+        ? await supabase
+            .from("user_profiles")
+            .update({
+              ...update,
+              // DB not migrated yet; omit field so other updates still work.
+              company_address: undefined,
+            })
+            .eq("user_id", profile.user_id)
+        : primary;
+
+      if (res.error) throw res.error;
+
+      setSuccessMessage(
+        shouldFallback
+          ? "Profile updated, but company address cannot be saved until the database is migrated."
+          : "Profile updated."
+      );
       await load();
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not update profile.");
@@ -216,18 +259,34 @@ const ProfileEditor = ({ expectedRole }: Props) => {
           )}
 
           {showCompany && (
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                Company representing
-              </span>
-              <input
-                value={companyName}
-                onChange={(e) => setCompanyName(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                placeholder="Optional"
-                disabled={isSaving}
-              />
-            </label>
+            <>
+              <label className="block md:col-span-2">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                  Company representing
+                </span>
+                <input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  placeholder="Optional"
+                  disabled={isSaving}
+                />
+              </label>
+
+              <label className="block md:col-span-2">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                  Company address
+                </span>
+                <textarea
+                  value={companyAddress}
+                  onChange={(e) => setCompanyAddress(e.currentTarget.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  placeholder="Optional"
+                  disabled={isSaving}
+                />
+              </label>
+            </>
           )}
 
           {showPhone && (

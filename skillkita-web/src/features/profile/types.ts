@@ -5,6 +5,7 @@ export type UserProfileRow = {
   full_name: string;
   short_name: string | null;
   company_name: string | null;
+  company_address?: string | null;
   phone: string | null;
   profile_pic_url: string | null;
 };

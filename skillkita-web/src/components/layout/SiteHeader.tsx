@@ -16,8 +16,11 @@ type Props = {
 const SiteHeader = ({ onMenuClick }: Props) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEmployer, setIsEmployer] = useState(false);
+  const [hasAuthSession, setHasAuthSession] = useState(false);
+  const [employerStatus, setEmployerStatus] = useState<"pending" | "approved" | "rejected" | null>(null);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
@@ -35,10 +38,14 @@ const SiteHeader = ({ onMenuClick }: Props) => {
       if (!user) {
         setIsAdmin(false);
         setIsEmployer(false);
+        setHasAuthSession(false);
+        setEmployerStatus(null);
         setViewerName("User");
         setViewerEmail(null);
         return;
       }
+
+      setHasAuthSession(true);
 
       const { data: profile, error } = await supabase
         .from("user_profiles")
@@ -49,6 +56,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
       if (error || !profile) {
         setIsAdmin(false);
         setIsEmployer(false);
+        setEmployerStatus(null);
         setViewerName("User");
         setViewerEmail(user.email ?? null);
         return;
@@ -57,6 +65,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
       const row = profile as ProfileRow;
       setIsAdmin(row.role === "admin");
       setIsEmployer(row.role === "employer" && row.status === "approved");
+      setEmployerStatus(row.role === "employer" ? row.status : null);
       setViewerName(row.full_name?.trim() ? row.full_name : row.role === "admin" ? "Admin" : "Employer");
       setViewerEmail(user.email ?? null);
     };
@@ -81,8 +90,9 @@ const SiteHeader = ({ onMenuClick }: Props) => {
   const profileHref = useMemo(() => {
     if (isAdmin) return "/admin/profile?role=admin";
     if (isEmployer) return "/employer/profile";
-    return "/login";
-  }, [isAdmin, isEmployer]);
+    if (employerStatus === "pending" || employerStatus === "rejected") return "/employer/profile";
+    return hasAuthSession ? "/login?stay=1" : "/login";
+  }, [employerStatus, hasAuthSession, isAdmin, isEmployer]);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#7A1F1F] text-white shadow-sm">
@@ -145,7 +155,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-2 md:flex">
-          {!isAdmin && !isEmployer && (
+          {!hasAuthSession && (
             <>
               <a
                 href="/signup"
@@ -282,6 +292,73 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                     className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
                     Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {hasAuthSession && !isAdmin && !isEmployer && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsAccountMenuOpen((p) => !p)}
+                className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
+                aria-expanded={isAccountMenuOpen}
+              >
+                {employerStatus === "pending"
+                  ? "Employer (pending)"
+                  : employerStatus === "rejected"
+                    ? "Employer (rejected)"
+                    : "Account"}
+              </button>
+              {isAccountMenuOpen && (
+                <div className="absolute right-0 top-12 z-50 w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                  <div className="px-3 py-2 text-xs text-black/70">
+                    <div className="font-semibold text-[#7A1F1F]">{viewerName}</div>
+                    {viewerEmail && <div className="mt-1 break-all">{viewerEmail}</div>}
+                    {employerStatus === "pending" && (
+                      <div className="mt-2 text-[11px] leading-snug">
+                        Your employer account is pending admin approval. You can browse public pages and update your
+                        profile while you wait.
+                      </div>
+                    )}
+                    {employerStatus === "rejected" && (
+                      <div className="mt-2 text-[11px] leading-snug text-red-700">
+                        Your employer request was rejected. Please contact support if you believe this is a mistake.
+                      </div>
+                    )}
+                  </div>
+
+                  <a
+                    href="/courses"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Browse courses
+                  </a>
+
+                  {(employerStatus === "pending" || employerStatus === "rejected") && (
+                    <a
+                      href="/employer/profile"
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    >
+                      Profile
+                    </a>
+                  )}
+
+                  <a
+                    href="/login?stay=1"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Account / sign-in status
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
+                  >
+                    Log out
                   </button>
                 </div>
               )}

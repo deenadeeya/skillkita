@@ -3,10 +3,16 @@
 
 create extension if not exists "pgcrypto";
 
+-- Human-friendly sequential quotation number (unique), used on the PDF.
+-- This is separate from the UUID primary key.
+create sequence if not exists public.quotation_requests_no_seq;
+
 create table if not exists public.quotation_requests (
   id uuid primary key default gen_random_uuid(),
+  quotation_no bigint not null default nextval('public.quotation_requests_no_seq'),
   employer_user_id uuid not null references auth.users(id) on delete cascade,
   company_name_snapshot text not null,
+  company_address text,
   course_name text not null,
   number_of_employers int not null check (number_of_employers > 0),
   proposed_date date not null,
@@ -24,6 +30,22 @@ create table if not exists public.quotation_requests (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Forward-compatible: if the table already exists, ensure columns exist.
+alter table public.quotation_requests
+  add column if not exists quotation_no bigint,
+  add column if not exists company_address text;
+
+alter table public.quotation_requests
+  alter column quotation_no set default nextval('public.quotation_requests_no_seq');
+
+-- Backfill existing rows that predate quotation_no.
+update public.quotation_requests
+set quotation_no = nextval('public.quotation_requests_no_seq')
+where quotation_no is null;
+
+create unique index if not exists quotation_requests_quotation_no_uq
+  on public.quotation_requests (quotation_no);
 
 create index if not exists quotation_requests_employer_idx
   on public.quotation_requests (employer_user_id, created_at desc);
@@ -73,6 +95,12 @@ on public.quotation_requests for update
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
+
+drop policy if exists "quotation_delete_admin" on public.quotation_requests;
+create policy "quotation_delete_admin"
+on public.quotation_requests for delete
+to authenticated
+using (public.is_admin());
 
 -- Storage: bucket quotation-pdfs, object path {employer_user_id}/{quotation_id}.pdf
 drop policy if exists "quotation_pdf_admin_all" on storage.objects;

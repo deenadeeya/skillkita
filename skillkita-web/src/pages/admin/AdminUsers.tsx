@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { adminNavItems } from "../../components/layout/navItems";
 import { supabase } from "../../lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 type ProfileRow = {
   user_id: string;
@@ -28,6 +29,22 @@ const AdminUsers = () => {
     () => profiles.filter((p) => p.role === "employer" && p.status === "pending"),
     [profiles]
   );
+
+  const existingEmployers = useMemo(
+    () =>
+      profiles.filter((p) => p.role === "employer" && p.status === "approved"),
+    [profiles]
+  );
+
+  const admins = useMemo(
+    () => profiles.filter((p) => p.role === "admin"),
+    [profiles]
+  );
+
+  const [newAdminFullName, setNewAdminFullName] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [newAdminSuccess, setNewAdminSuccess] = useState<string | null>(null);
 
   const load = async () => {
     setIsLoading(true);
@@ -110,6 +127,7 @@ const AdminUsers = () => {
   const setEmployerStatus = async (userId: string, status: "approved" | "rejected") => {
     setIsSaving(true);
     setErrorMessage(null);
+    setNewAdminSuccess(null);
 
     const { data: sessionData } = await supabase.auth.getSession();
     const adminId = sessionData.session?.user?.id ?? null;
@@ -133,21 +151,86 @@ const AdminUsers = () => {
     setIsSaving(false);
   };
 
-  const promoteToAdmin = async (userId: string) => {
+  const createAdmin = async () => {
     setIsSaving(true);
     setErrorMessage(null);
+    setNewAdminSuccess(null);
 
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({ role: "admin", status: "approved", approved_at: new Date().toISOString() })
-      .eq("user_id", userId);
+    const fullName = newAdminFullName.trim();
+    const email = newAdminEmail.trim();
+    const password = newAdminPassword;
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!fullName || !email || !password) {
+      setErrorMessage("Please provide full name, email, and password.");
       setIsSaving(false);
       return;
     }
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setErrorMessage("Missing Supabase env vars. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      setIsSaving(false);
+      return;
+    }
+
+    const isolatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+
+    const { data: signUpData, error: signUpError } = await isolatedClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (signUpError) {
+      setErrorMessage(signUpError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const newUserId = signUpData.user?.id ?? null;
+    if (!newUserId) {
+      setErrorMessage("Admin user created, but could not read new user id. Please refresh and verify in users list.");
+      setIsSaving(false);
+      await load();
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const adminId = sessionData.session?.user?.id ?? null;
+
+    const { error: promoteError } = await supabase
+      .from("user_profiles")
+      .update({
+        role: "admin",
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        approved_by: adminId,
+      })
+      .eq("user_id", newUserId);
+
+    if (promoteError) {
+      setErrorMessage(
+        `Created auth user, but failed to promote to admin: ${promoteError.message}`
+      );
+      setIsSaving(false);
+      await load();
+      return;
+    }
+
+    setNewAdminSuccess(
+      "Admin created successfully. If email confirmations are enabled, they may need to confirm before logging in."
+    );
+    setNewAdminFullName("");
+    setNewAdminEmail("");
+    setNewAdminPassword("");
     await load();
     setIsSaving(false);
   };
@@ -165,12 +248,18 @@ const AdminUsers = () => {
     >
         <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Manage Users</h1>
         <p className="mt-3 text-lg text-black md:text-xl">
-          Approve employers and promote users to admin.
+          Approve employers or create new admin.
         </p>
 
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {errorMessage}
+          </div>
+        )}
+
+        {newAdminSuccess && (
+          <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            {newAdminSuccess}
           </div>
         )}
 
@@ -182,11 +271,14 @@ const AdminUsers = () => {
 
         <section className="sk-card mt-10 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Pending employers</h2>
+            <h2 className="text-2xl font-bold text-[#7A1F1F]">Pending Employer</h2>
             <p className="text-sm font-semibold text-[#7A1F1F]">
               {pendingEmployers.length} pending
             </p>
           </div>
+          <p className="mt-2 text-sm text-black">
+            Admin can reject or approve the new users.
+          </p>
 
           <div className="mt-5 space-y-3">
             {isLoading && (
@@ -239,41 +331,138 @@ const AdminUsers = () => {
         </section>
 
         <section className="sk-card mt-8 p-6">
-          <h2 className="text-2xl font-bold text-[#7A1F1F]">All users</h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-[#7A1F1F]">Employers</h2>
+            <p className="text-sm font-semibold text-[#7A1F1F]">
+              {existingEmployers.length} employers
+            </p>
+          </div>
           <p className="mt-2 text-sm text-black">
-            To create a new admin, ask them to sign up first, then promote them here.
+            Display the company name they are associated with.
           </p>
 
           <div className="mt-5 space-y-3">
+            {isLoading && (
+              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+                Loading users...
+              </p>
+            )}
+
+            {!isLoading && existingEmployers.length === 0 && (
+              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+                No approved employers found.
+              </p>
+            )}
+
             {!isLoading &&
-              profiles.map((p) => (
+              existingEmployers.map((p) => (
                 <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
                       <p className="mt-1 text-sm text-black/80">
-                        Role:{" "}
-                        <span className="font-semibold text-[#7A1F1F]">{p.role}</span>{" "}
-                        · Status:{" "}
-                        <span className="font-semibold text-[#7A1F1F]">{p.status}</span>
+                        Company:{" "}
+                        <span className="font-semibold text-[#7A1F1F]">
+                          {p.company_name ?? "—"}
+                        </span>
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {p.role !== "admin" && (
-                        <button
-                          type="button"
-                          disabled={isSaving}
-                          onClick={() => void promoteToAdmin(p.user_id)}
-                          className="sk-button bg-[#0001fc] px-3 py-2 text-white hover:bg-[#0001fc]/90"
-                        >
-                          Promote to admin
-                        </button>
-                      )}
+                      <p className="mt-1 text-xs font-semibold text-black/70">
+                        Approved: {p.approved_at ? new Date(p.approved_at).toLocaleString() : "—"}
+                      </p>
                     </div>
                   </div>
                 </article>
               ))}
           </div>
+        </section>
+
+        <section className="sk-card mt-8 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-[#7A1F1F]">Admins</h2>
+            <p className="text-sm font-semibold text-[#7A1F1F]">{admins.length} admins</p>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-[#efe1db] bg-white/60 p-5">
+            <h3 className="text-lg font-bold text-[#7A1F1F]">
+              Create New Admin
+            </h3>
+            <p className="mt-2 text-sm text-black">
+              Create a new admin by submitting Full Name, Email and Password.
+            </p>
+
+            <form
+              className="mt-4 grid gap-3 md:grid-cols-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void createAdmin();
+              }}
+            >
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-black">Full Name</span>
+                <input
+                  value={newAdminFullName}
+                  onChange={(e) => setNewAdminFullName(e.target.value)}
+                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  placeholder="e.g. Jane Doe"
+                  autoComplete="name"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-black">Email</span>
+                <input
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  placeholder="admin@example.com"
+                  type="email"
+                  autoComplete="email"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-black">Password</span>
+                <input
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  placeholder="Minimum 6 characters"
+                  type="password"
+                  autoComplete="new-password"
+                />
+              </label>
+
+              <div className="md:col-span-3 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="sk-button-primary px-4 py-2"
+                >
+                  {isSaving ? "Saving..." : "Create admin"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {!isLoading && admins.length === 0 && (
+              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+                No admins found.
+              </p>
+            )}
+
+            {!isLoading &&
+              admins.map((p) => (
+                <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
+                  <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                  <p className="mt-1 text-xs font-semibold text-black/70">
+                    Created: {new Date(p.created_at).toLocaleString()}
+                  </p>
+                </article>
+              ))}
+          </div>
+
+          
         </section>
     </DashboardLayout>
   );
