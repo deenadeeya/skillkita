@@ -349,7 +349,21 @@ const ViewCourses = () => {
           </p>
         )}
         {filteredCourses.map((course) => (
-          <article key={course.id} className="sk-card overflow-hidden p-3 md:p-4">
+          <article
+            key={course.id}
+            className="sk-card overflow-hidden p-3 md:p-4 cursor-pointer transition hover:shadow-md focus-within:ring-2 focus-within:ring-[#7A1F1F]/30"
+            role="link"
+            tabIndex={0}
+            onClick={() => {
+              window.location.href = `/courses/view?id=${encodeURIComponent(course.id)}`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                window.location.href = `/courses/view?id=${encodeURIComponent(course.id)}`;
+              }
+            }}
+          >
             <CoursePosterMedia
               url={course.posterUrl ?? PlaceholderPoster}
               alt={`${course.name} poster`}

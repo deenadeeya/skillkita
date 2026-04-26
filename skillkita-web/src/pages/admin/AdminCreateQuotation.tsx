@@ -8,9 +8,11 @@ import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../lib/supabaseClient";
 
 type EmployerLabel = { full_name: string; company_name: string | null; company_address: string | null };
+type CourseLabel = { id: string; name: string };
 
 const AdminCreateQuotation = () => {
   const [approvedEmployers, setApprovedEmployers] = useState<(EmployerLabel & { user_id: string })[]>([]);
+  const [courses, setCourses] = useState<CourseLabel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
@@ -22,6 +24,7 @@ const AdminCreateQuotation = () => {
   const [createManualEmployerName, setCreateManualEmployerName] = useState("");
   const [createCompanyName, setCreateCompanyName] = useState("");
   const [createCompanyAddress, setCreateCompanyAddress] = useState("");
+  const [createCourseId, setCreateCourseId] = useState("");
   const [createCourseName, setCreateCourseName] = useState("");
   const [createParticipants, setCreateParticipants] = useState("");
   const [createProposedDate, setCreateProposedDate] = useState("");
@@ -70,6 +73,16 @@ const AdminCreateQuotation = () => {
     );
   }, []);
 
+  const loadCourses = useCallback(async () => {
+    const res = await supabase.from("courses").select("id,name").order("name", { ascending: true });
+    if (res.error) {
+      setCourses([]);
+      setErrorMessage(res.error.message);
+      return;
+    }
+    setCourses(((res.data ?? []) as CourseLabel[]).filter((c) => Boolean(c?.id) && Boolean(c?.name)));
+  }, []);
+
   useEffect(() => {
     const checkAdmin = async () => {
       setIsAuthChecking(true);
@@ -109,10 +122,11 @@ const AdminCreateQuotation = () => {
       setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
       setIsAuthChecking(false);
       await loadApprovedEmployers();
+      await loadCourses();
     };
 
     void checkAdmin();
-  }, [loadApprovedEmployers]);
+  }, [loadApprovedEmployers, loadCourses]);
 
   const createEmployerOptions = useMemo(() => {
     return approvedEmployers.map((e) => ({
@@ -124,6 +138,11 @@ const AdminCreateQuotation = () => {
   }, [approvedEmployers]);
 
   const isManualEmployer = createEmployerUserId === "__manual__";
+  const isManualCourse = createCourseId === "__manual__";
+
+  const createCourseOptions = useMemo(() => {
+    return courses.map((c) => ({ value: c.id, label: c.name }));
+  }, [courses]);
 
   useEffect(() => {
     if (isManualEmployer) return;
@@ -136,6 +155,15 @@ const AdminCreateQuotation = () => {
       setCreateCompanyAddress(match.company_address);
     }
   }, [approvedEmployers, createCompanyAddress, createCompanyName, createEmployerUserId, isManualEmployer]);
+
+  useEffect(() => {
+    if (isManualCourse) return;
+    const match = courses.find((c) => c.id === createCourseId);
+    if (!match) return;
+    if (match.name.trim() && createCourseName !== match.name) {
+      setCreateCourseName(match.name);
+    }
+  }, [courses, createCourseId, createCourseName, isManualCourse]);
 
   const handleAdminCreate = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -249,6 +277,7 @@ const AdminCreateQuotation = () => {
       setCreateManualEmployerName("");
       setCreateCompanyName("");
       setCreateCompanyAddress("");
+      setCreateCourseId("");
       setCreateCourseName("");
       setCreateParticipants("");
       setCreateProposedDate("");
@@ -361,12 +390,46 @@ const AdminCreateQuotation = () => {
 
             <label className="block md:col-span-2">
               <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course name</span>
-              <input
-                value={createCourseName}
-                onChange={(e) => setCreateCourseName(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
+              {!isManualCourse && (
+                <p className="mt-1 mb-1 text-xs text-black/60">
+                  Pick an existing course, or choose “Manual / new course” to type a name.
+                </p>
+              )}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <select
+                  value={createCourseId}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setCreateCourseId(next);
+                    if (next === "__manual__") return;
+                    const match = courses.find((c) => c.id === next);
+                    if (match?.name) setCreateCourseName(match.name);
+                  }}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  required
+                >
+                  <option value="" disabled>
+                    Select existing course...
+                  </option>
+                  <option value="__manual__">Manual / new course</option>
+                  {createCourseOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+
+                {isManualCourse && (
+                  <input
+                    value={createCourseName}
+                    onChange={(e) => setCreateCourseName(e.target.value)}
+                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+                    placeholder="Type course name"
+                    required
+                  />
+                )}
+              </div>
+              
             </label>
 
             <label className="block">

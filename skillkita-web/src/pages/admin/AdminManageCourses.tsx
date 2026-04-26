@@ -1,15 +1,12 @@
-import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "../../components/CoursePosterMedia";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { adminNavItems } from "../../components/layout/navItems";
 import {
-    COURSE_PRIVATE_BUCKET,
     PRIVATE_DOC_LABELS,
     columnForKind,
     createSignedUrlForPath,
-    uploadCoursePrivateFile,
     type PrivateDocKind,
 } from "../../lib/coursePrivateStorage";
 import { supabase } from "../../lib/supabaseClient";
@@ -25,31 +22,35 @@ type Course = {
   id: string;
   name: string;
   date: string;
+  trainerNames: string;
+  time: string;
+  venue: string;
+  mycoid: string;
+  price: string;
+  contactPerson: string;
+  contactPhone: string;
+  syllabus: string;
   details: string;
   posterUrl: string | null;
   isVisible: boolean;
   privateFiles: CoursePrivatePaths | null;
 };
 
-type CourseFormState = {
-  name: string;
-  date: string;
-  details: string;
-  isVisible: boolean;
-};
-
-const initialFormState: CourseFormState = {
-  name: "",
-  date: "",
-  details: "",
-  isVisible: true,
-};
+// NOTE: course create/update form moved to `AdminCreateCourse.tsx`
 
 type CourseRow = {
   id: string;
   name: string;
   date: string;
   details: string;
+  trainer_names: string | null;
+  course_time: string | null;
+  venue: string | null;
+  mycoid: string | null;
+  price: string | null;
+  contact_person: string | null;
+  contact_phone: string | null;
+  syllabus: string | null;
   poster_url: string | null;
   is_visible: boolean;
   created_at: string;
@@ -87,6 +88,14 @@ function mapRowToCourse(row: CourseRow): Course {
     id: row.id,
     name: row.name,
     date: row.date,
+    trainerNames: row.trainer_names ?? "",
+    time: row.course_time ?? "",
+    venue: row.venue ?? "",
+    mycoid: row.mycoid ?? "",
+    price: row.price ?? "",
+    contactPerson: row.contact_person ?? "",
+    contactPhone: row.contact_phone ?? "",
+    syllabus: row.syllabus ?? "",
     details: row.details,
     posterUrl: row.poster_url,
     isVisible: row.is_visible,
@@ -94,22 +103,10 @@ function mapRowToCourse(row: CourseRow): Course {
   };
 }
 
-const emptyPrivateSelections: Record<PrivateDocKind, File | null> = {
-  syllabus: null,
-  tentative: null,
-  trainer_hrd: null,
-  trainer_cv: null,
-};
-
 const AdminManageCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [form, setForm] = useState<CourseFormState>(initialFormState);
-  const [selectedPosterFile, setSelectedPosterFile] = useState<File | null>(null);
-  const [privateSelections, setPrivateSelections] =
-    useState<Record<PrivateDocKind, File | null>>(emptyPrivateSelections);
   const [pendingAccess, setPendingAccess] = useState<EmployerAccessRow[]>([]);
   const [employerNames, setEmployerNames] = useState<Record<string, string>>({});
-  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -128,7 +125,8 @@ const AdminManageCourses = () => {
     const q = courseSearch.trim().toLowerCase();
     if (!q) return courses;
     return courses.filter((c) => {
-      const haystack = `${c.name}\n${c.details}\n${c.date}`.toLowerCase();
+      const haystack =
+        `${c.name}\n${c.trainerNames}\n${c.venue}\n${c.mycoid}\n${c.contactPerson}\n${c.contactPhone}\n${c.details}\n${c.syllabus}\n${c.date}\n${c.time}`.toLowerCase();
       return haystack.includes(q);
     });
   }, [courseSearch, courses]);
@@ -202,7 +200,7 @@ const AdminManageCourses = () => {
     const { data, error } = await supabase
       .from("courses")
       .select(
-        "id,name,date,details,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,tentative_storage_path,trainer_hrd_storage_path,trainer_cv_storage_path)"
+        "id,name,date,details,trainer_names,course_time,venue,mycoid,price,contact_person,contact_phone,syllabus,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,tentative_storage_path,trainer_hrd_storage_path,trainer_cv_storage_path)"
       )
       .order("created_at", { ascending: false });
 
@@ -260,80 +258,6 @@ const AdminManageCourses = () => {
     void loadPendingAccess();
   }, [isAuthorized, loadCourses, loadPendingAccess]);
 
-  const handleInputChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const target = event.currentTarget;
-
-    if (target instanceof HTMLInputElement && target.type === "checkbox") {
-      setForm((prev) => ({ ...prev, [target.name]: target.checked }));
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, [target.name]: target.value }));
-  };
-
-  const handlePosterChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setSelectedPosterFile(null);
-      return;
-    }
-
-    setSelectedPosterFile(file);
-  };
-
-  const resetForm = () => {
-    setForm(initialFormState);
-    setSelectedPosterFile(null);
-    setPrivateSelections({ ...emptyPrivateSelections });
-    setEditingCourseId(null);
-  };
-
-  const handlePrivateFileChange = (
-    kind: PrivateDocKind,
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0] ?? null;
-    setPrivateSelections((prev) => ({ ...prev, [kind]: file }));
-  };
-
-  const buildMergedPrivatePaths = async (
-    courseId: string,
-    existing: CoursePrivatePaths | null
-  ): Promise<CoursePrivatePaths> => {
-    const kinds: PrivateDocKind[] = [
-      "syllabus",
-      "tentative",
-      "trainer_hrd",
-      "trainer_cv",
-    ];
-    const merged: CoursePrivatePaths = {
-      syllabus_storage_path: null,
-      tentative_storage_path: null,
-      trainer_hrd_storage_path: null,
-      trainer_cv_storage_path: null,
-    };
-
-    for (const kind of kinds) {
-      const col = columnForKind(kind) as keyof CoursePrivatePaths;
-      const file = privateSelections[kind];
-      if (file) {
-        try {
-          merged[col] = await uploadCoursePrivateFile(courseId, kind, file);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          throw new Error(
-            `Private file upload failed (${PRIVATE_DOC_LABELS[kind]}; storage bucket "${COURSE_PRIVATE_BUCKET}", path prefix "${courseId}/${kind}/"): ${msg}`
-          );
-        }
-      } else {
-        merged[col] = existing?.[col] ?? null;
-      }
-    }
-    return merged;
-  };
-
   const openPrivateDoc = async (path: string | null | undefined) => {
     if (!path) return;
     try {
@@ -369,169 +293,12 @@ const AdminManageCourses = () => {
     setIsSaving(false);
   };
 
-  const uploadPosterIfNeeded = async (): Promise<string | null> => {
-    if (!selectedPosterFile) {
-      return null;
-    }
-
-    const fileExt = selectedPosterFile.name.split(".").pop() || "png";
-    const safeExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const fileName = `${crypto.randomUUID()}.${safeExt || "png"}`;
-    const filePath = `courses/${fileName}`;
-
-    const contentType =
-      selectedPosterFile.type ||
-      (safeExt === "pdf" ? "application/pdf" : undefined);
-
-    const { error: uploadError } = await supabase.storage
-      .from("course-posters")
-      .upload(filePath, selectedPosterFile, {
-        upsert: false,
-        contentType,
-      });
-
-    if (uploadError) {
-      throw new Error(uploadError.message);
-    }
-
-    const { data } = supabase.storage
-      .from("course-posters")
-      .getPublicUrl(filePath);
-
-    return data.publicUrl ?? null;
+  const goToCreateCourse = () => {
+    window.location.href = "/admin/courses/create";
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setErrorMessage(null);
-
-    if (!form.name.trim() || !form.date.trim() || !form.details.trim()) {
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      let posterUrl: string | null = null;
-      try {
-        posterUrl = await uploadPosterIfNeeded();
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        throw new Error(
-          `Poster upload failed (storage bucket "course-posters", path prefix "courses/"): ${msg}`
-        );
-      }
-
-      if (editingCourseId !== null) {
-        const payload: Partial<CourseRow> = {
-          name: form.name.trim(),
-          date: form.date,
-          details: form.details.trim(),
-          is_visible: form.isVisible,
-        };
-
-        if (posterUrl) {
-          payload.poster_url = posterUrl;
-        }
-
-        const { error } = await supabase
-          .from("courses")
-          .update(payload)
-          .eq("id", editingCourseId);
-
-        if (error) {
-          throw new Error(`Course update failed (table "courses"): ${error.message}`);
-        }
-
-        const existingCourse = courses.find((c) => c.id === editingCourseId);
-        const mergedPrivate = await buildMergedPrivatePaths(
-          editingCourseId,
-          existingCourse?.privateFiles ?? null
-        );
-        if (Object.values(mergedPrivate).some(Boolean)) {
-          const { error: pfError } = await supabase.from("course_private_files").upsert(
-            {
-              course_id: editingCourseId,
-              ...mergedPrivate,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "course_id" }
-          );
-          if (pfError) {
-            throw new Error(
-              `Private document metadata failed (table "course_private_files"): ${pfError.message}`
-            );
-          }
-        }
-
-        await loadCourses();
-        resetForm();
-        setIsSaving(false);
-        return;
-      }
-
-      const { data: inserted, error } = await supabase
-        .from("courses")
-        .insert({
-          name: form.name.trim(),
-          date: form.date,
-          details: form.details.trim(),
-          is_visible: form.isVisible,
-          poster_url: posterUrl,
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        const rlsHint = error.message.toLowerCase().includes("row-level security")
-          ? " Check RLS: table \"courses\" needs FOR INSERT ... WITH CHECK (public.is_admin()) for role authenticated, and is_admin() must return true for your user."
-          : "";
-        throw new Error(`Course insert failed (table "courses"): ${error.message}${rlsHint}`);
-      }
-
-      if (!inserted?.id) {
-        throw new Error("Could not create course.");
-      }
-
-      const mergedPrivate = await buildMergedPrivatePaths(inserted.id, null);
-      if (Object.values(mergedPrivate).some(Boolean)) {
-        const { error: pfError } = await supabase.from("course_private_files").upsert(
-          {
-            course_id: inserted.id,
-            ...mergedPrivate,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "course_id" }
-        );
-        if (pfError) {
-          const rlsHint = pfError.message.toLowerCase().includes("row-level security")
-            ? " Check RLS on \"course_private_files\" (admin ALL) or storage policies on bucket \"course-private-files\" if the failure was during upload."
-            : "";
-          throw new Error(
-            `Private document metadata failed (table "course_private_files"): ${pfError.message}${rlsHint}`
-          );
-        }
-      }
-
-      await loadCourses();
-      resetForm();
-      setIsSaving(false);
-    } catch (err) {
-      setIsSaving(false);
-      setErrorMessage(err instanceof Error ? err.message : "Failed to save course.");
-    }
-  };
-
-  const handleEdit = (course: Course) => {
-    setEditingCourseId(course.id);
-    setForm({
-      name: course.name,
-      date: course.date,
-      details: course.details,
-      isVisible: course.isVisible,
-    });
-    setSelectedPosterFile(null);
-    setPrivateSelections({ ...emptyPrivateSelections });
+  const goToEditCourse = (courseId: string) => {
+    window.location.href = `/admin/courses/edit?id=${encodeURIComponent(courseId)}`;
   };
 
   const handleDelete = async (courseId: string) => {
@@ -547,9 +314,6 @@ const AdminManageCourses = () => {
     }
 
     await loadCourses();
-    if (editingCourseId === courseId) {
-      resetForm();
-    }
     setIsSaving(false);
   };
 
@@ -665,129 +429,22 @@ const AdminManageCourses = () => {
           </section>
 
           <section className="sk-card p-5 md:p-6">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">
-              {editingCourseId ? "Update Course" : "Add New Course"}
-            </h2>
-            <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                    Course Name
-                  </span>
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                    placeholder="Enter course name"
-                    required
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                    Date
-                  </span>
-                  <input
-                    type="date"
-                    name="date"
-                    value={form.date}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                    required
-                  />
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Other Information
-                </span>
-                <textarea
-                  name="details"
-                  value={form.details}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="Add summary, trainer, venue, etc."
-                  required
-                />
-              </label>
-
-              <div className="grid grid-cols-1 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                    Poster
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif,.pdf,application/pdf"
-                    onChange={handlePosterChange}
-                    className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  />
-                </label>
-              </div>
-
-              <div className="rounded-xl border border-[#efe1db] bg-[#f9f5ed] p-3">
-                <p className="text-sm font-semibold text-[#7A1F1F]">
-                  Private Documents (Restricted Access)
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-[#7A1F1F]">Course creation</h2>
+                <p className="mt-2 text-sm text-black">
+                  Create new courses on a dedicated page (with OCR and private documents).
                 </p>
-                <p className="mt-1 text-xs text-black/75">
-                  Upload syllabus, trainer documents, etc. Employers can open these only after you approve
-                  their access request.
-                </p>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => (
-                    <label key={kind} className="block">
-                      <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                        {PRIVATE_DOC_LABELS[kind]}
-                      </span>
-                      <input
-                        type="file"
-                        onChange={(e) => handlePrivateFileChange(kind, e)}
-                        className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
-                      />
-                    </label>
-                  ))}
-                </div>
               </div>
-
-              <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
-                <label className="flex items-center gap-2 text-sm font-semibold text-[#7A1F1F]">
-                  <input
-                    type="checkbox"
-                    name="isVisible"
-                    checked={form.isVisible}
-                    onChange={handleInputChange}
-                    className="h-4 w-4"
-                  />
-                  Show to public
-                </label>
-
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="sk-button-primary"
-                  >
-                    {isSaving
-                      ? "Saving..."
-                      : editingCourseId
-                        ? "Update Course"
-                        : "Add Course"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    disabled={isSaving}
-                    className="sk-button-secondary"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-            </form>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={goToCreateCourse}
+                className="sk-button-primary px-4 py-2"
+              >
+                Add New Course
+              </button>
+            </div>
           </section>
 
           <section className="sk-card p-6">
@@ -802,7 +459,7 @@ const AdminManageCourses = () => {
               <input
                 value={courseSearch}
                 onChange={(e) => setCourseSearch(e.target.value)}
-                placeholder="Search courses by name, date, or details..."
+                placeholder="Search courses by name or details..."
                 className="w-full rounded-xl border border-[#d8c9c2] bg-white px-4 py-2 text-sm text-black outline-none focus:border-[#7A1F1F]"
               />
               <p className="mt-2 text-xs font-semibold text-black/60">
@@ -849,9 +506,37 @@ const AdminManageCourses = () => {
                         </span>
                       </div>
 
-                      <p className="mt-2 text-sm font-medium text-[#7A1F1F]">
-                        Date: {course.date}
-                      </p>
+                      <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-black/80 md:grid-cols-2">
+                        <p>
+                          <span className="font-semibold text-[#7A1F1F]">Date:</span>{" "}
+                          {course.date}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[#7A1F1F]">Time:</span>{" "}
+                          {course.time || "—"}
+                        </p>
+                        <p className="md:col-span-2">
+                          <span className="font-semibold text-[#7A1F1F]">Venue:</span>{" "}
+                          {course.venue || "—"}
+                        </p>
+                        <p className="md:col-span-2">
+                          <span className="font-semibold text-[#7A1F1F]">Trainer:</span>{" "}
+                          {course.trainerNames || "—"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[#7A1F1F]">MyCOID:</span>{" "}
+                          {course.mycoid || "—"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[#7A1F1F]">Price:</span>{" "}
+                          {course.price || "—"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[#7A1F1F]">Contact:</span>{" "}
+                          {[course.contactPerson, course.contactPhone].filter(Boolean).join(" • ") || "—"}
+                        </p>
+                      </div>
+
                       <p className="mt-2 text-sm text-black">{course.details}</p>
 
                       <div
@@ -897,7 +582,7 @@ const AdminManageCourses = () => {
                       <div className="mt-4 flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => handleEdit(course)}
+                          onClick={() => goToEditCourse(course.id)}
                           disabled={isSaving}
                           className="sk-button bg-[#0001fc] text-white hover:bg-[#0001fc]/90"
                         >
