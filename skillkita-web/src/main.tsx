@@ -4,8 +4,10 @@ import HomePage from "./pages/HomePage";
 import AboutUs from "./pages/HomePage/AboutUs";
 import CompanyExperience from "./pages/HomePage/CompanyExperience";
 import ViewCourses from "./pages/ViewCourses";
+import CoursePage from "./pages/CoursePage";
 import AccessDenied from "./pages/admin/AccessDenied";
 import AdminLandingEditor from "./pages/admin/AdminLandingEditor";
+import AdminCreateCourse from "./pages/admin/AdminCreateCourse";
 import AdminManageCourses from "./pages/admin/AdminManageCourses";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminProfile from "./pages/admin/AdminProfile";
@@ -46,8 +48,20 @@ if (currentPath === "/courses") {
   Page = ViewCourses;
 }
 
+if (currentPath === "/courses/view") {
+  Page = CoursePage;
+}
+
 if (currentPath === "/admin") {
   Page = activeRole === "admin" ? AdminManageCourses : AccessDenied;
+}
+
+if (currentPath === "/admin/courses/create") {
+  Page = activeRole === "admin" ? AdminCreateCourse : AccessDenied;
+}
+
+if (currentPath === "/admin/courses/edit") {
+  Page = activeRole === "admin" ? AdminCreateCourse : AccessDenied;
 }
 
 if (currentPath === "/admin/landing") {
