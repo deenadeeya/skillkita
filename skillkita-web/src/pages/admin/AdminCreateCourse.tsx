@@ -1,9 +1,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { adminNavItems } from "../../components/layout/navItems";
-import PlaceholderPoster from "../../assets/placeholder.jpg";
-import { CoursePosterMedia } from "../../components/CoursePosterMedia";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems } from "../../app/layout/navItems";
 import {
   COURSE_PRIVATE_BUCKET,
   PRIVATE_DOC_LABELS,
@@ -12,7 +10,7 @@ import {
   uploadCoursePrivateFile,
   type PrivateDocKind,
 } from "../../lib/coursePrivateStorage";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 import {
   createOcrWorker,
   extractPosterFields,
@@ -23,6 +21,10 @@ import {
   ocrPdfPoster,
   type OcrState,
 } from "./OCRCourses";
+import { CoursePosterOcrPanel } from "../../features/courses/components/admin/CoursePosterOcrPanel";
+import { CoursePrivateDocumentsPicker } from "../../features/courses/components/admin/CoursePrivateDocumentsPicker";
+import { CourseDetailsForm } from "../../features/courses/components/admin/CourseDetailsForm";
+import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 
 type CoursePrivatePaths = {
   syllabus_storage_path: string | null;
@@ -478,26 +480,13 @@ export default function AdminCreateCourse() {
         window.location.href = "/";
       }}
     >
-      <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
-        {editingId ? "Update Course" : "Add New Course"}
-      </h1>
-      <p className="mt-3 text-lg text-black md:text-xl">
-        {editingId ? "Edit and update course details." : "Create a new course and publish it to the catalog."}
-      </p>
-
-      {errorMessage && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {errorMessage}
-        </div>
-      )}
-
-      {isAuthChecking && (
-        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-          Checking admin access...
-        </div>
-      )}
-
-      <div className={`mt-10 ${!isAuthorized ? "opacity-60 pointer-events-none" : ""}`}>
+      <AdminPageFrame
+        title={editingId ? "Update Course" : "Add New Course"}
+        subtitle={editingId ? "Edit and update course details." : "Create a new course and publish it to the catalog."}
+        errorMessage={errorMessage}
+        isAuthChecking={isAuthChecking}
+        isAuthorized={isAuthorized}
+      >
         <section className="sk-card p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-bold text-[#7A1F1F]">
@@ -514,291 +503,55 @@ export default function AdminCreateCourse() {
           </div>
 
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Course Name / Nama Kursus
-                </span>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  required
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Date / Tarikh
-                </span>
-                <input
-                  type="date"
-                  name="date"
-                  value={form.date}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  required
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Time / Pukul
-                </span>
-                <input
-                  name="time"
-                  value={form.time}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="e.g. 9:00 AM - 5:00 PM"
-                />
-              </label>
-
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Venue / Lokasi
-                </span>
-                <input
-                  name="venue"
-                  value={form.venue}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Trainer name(s) / Nama jurulatih
-                </span>
-                <input
-                  name="trainerNames"
-                  value={form.trainerNames}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">MyCOID</span>
-                <input
-                  name="mycoid"
-                  value={form.mycoid}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Price / Harga (RM)
-                </span>
-                <input
-                  name="price"
-                  value={form.price}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="e.g. RM 300"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Person to contact
-                </span>
-                <input
-                  name="contactPerson"
-                  value={form.contactPerson}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Phone number
-                </span>
-                <input
-                  name="contactPhone"
-                  value={form.contactPhone}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Syllabus / Sylibus Content / Kandungan Kursus
-                </span>
-                <textarea
-                  name="syllabus"
-                  value={form.syllabus}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                />
-              </label>
-            </div>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                Other Information
-              </span>
-              <textarea
-                name="details"
-                value={form.details}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Poster</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,.pdf,application/pdf"
-                onChange={handlePosterChange}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              />
-            </label>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px,1fr]">
-              <CoursePosterMedia
-                url={selectedPosterFile ? URL.createObjectURL(selectedPosterFile) : PlaceholderPoster}
-                alt="Poster preview"
-                className="aspect-[210/297] w-full rounded-lg object-cover"
+            <CourseDetailsForm
+              form={form}
+              isSaving={isSaving}
+              onInputChange={handleInputChange}
+              submitLabel={editingId ? "Update Course" : "Add Course"}
+            >
+              <CoursePosterOcrPanel
+                selectedPosterFile={selectedPosterFile}
+                isSaving={isSaving}
+                ocrState={
+                  ocrState as unknown as
+                    | { status: "idle" }
+                    | { status: "running"; progressLabel?: string; progressPct?: number }
+                    | { status: "error"; message: string }
+                    | { status: "done" }
+                }
+                onPosterChange={(file) => {
+                  if (!file) {
+                    setSelectedPosterFile(null);
+                    return;
+                  }
+                  // Delegate to existing handler path for consistent behavior
+                  handlePosterChange({
+                    target: { files: [file] },
+                  } as unknown as ChangeEvent<HTMLInputElement>);
+                }}
+                canRunOcr={Boolean(
+                  selectedPosterFile && (isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile))
+                )}
+                onRunOcr={() => void runPosterOcr()}
+                onClearOcr={() => setOcrState({ status: "idle" })}
               />
 
-              <div className="rounded-xl border border-[#efe1db] bg-white p-3">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-[#7A1F1F]">Poster OCR (PDF / Image)</p>
-                    <p className="mt-1 text-xs text-black/70">
-                      Upload a poster then extract and auto-fill fields. Runs in-browser.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={
-                        isSaving ||
-                        !selectedPosterFile ||
-                        !(isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile)) ||
-                        ocrState.status === "running"
-                      }
-                      onClick={() => void runPosterOcr()}
-                      className="sk-button-secondary px-3 py-2"
-                    >
-                      {ocrState.status === "running" ? "Extracting…" : "Extract text"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={ocrState.status === "running"}
-                      onClick={() => setOcrState({ status: "idle" })}
-                      className="sk-button-secondary px-3 py-2"
-                    >
-                      Clear OCR
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  {ocrState.status === "idle" && (
-                    <p className="text-xs text-black/60">
-                      Tip: best results come from high-contrast, text-heavy posters.
-                    </p>
-                  )}
-                  {ocrState.status === "running" && (
-                    <div className="text-xs text-black/70">
-                      <p className="font-semibold">{ocrState.progressLabel}</p>
-                      {typeof ocrState.progressPct === "number" && (
-                        <p className="mt-1">Progress: {ocrState.progressPct}%</p>
-                      )}
-                    </div>
-                  )}
-                  {ocrState.status === "error" && (
-                    <p className="text-xs font-semibold text-red-700">
-                      OCR failed: {ocrState.message}
-                    </p>
-                  )}
-                  {ocrState.status === "done" && (
-                    <p className="text-xs font-semibold text-emerald-700">
-                      OCR done. Fields updated from extracted text.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#efe1db] bg-[#f9f5ed] p-3">
-              <p className="text-sm font-semibold text-[#7A1F1F]">
-                Private Documents (Restricted Access)
-              </p>
-              <p className="mt-1 text-xs text-black/75">
-                Upload syllabus, trainer documents, etc. Employers can open these only after you approve
-                their access request.
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => (
-                  <label key={kind} className="block">
-                    <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                      {PRIVATE_DOC_LABELS[kind]}
-                    </span>
-                    <input
-                      type="file"
-                      onChange={(e) => handlePrivateFileChange(kind, e)}
-                      className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
-                    />
-                  </label>
-                ))}
-              </div>
-
-              {editingId && existingPrivatePaths && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => {
-                    const col = columnForKind(kind) as keyof CoursePrivatePaths;
-                    const path = existingPrivatePaths[col];
-                    return (
-                      <button
-                        key={kind}
-                        type="button"
-                        disabled={!path}
-                        onClick={() => void openPrivateDoc(path)}
-                        className="rounded-md border border-[#7A1F1F] bg-white px-2 py-1 text-xs font-semibold text-[#7A1F1F] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {path ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-3 pt-1 md:flex-row md:items-center md:justify-between">
-              <label className="flex items-center gap-2 text-sm font-semibold text-[#7A1F1F]">
-                <input
-                  type="checkbox"
-                  name="isVisible"
-                  checked={form.isVisible}
-                  onChange={handleInputChange}
-                  className="h-4 w-4"
-                />
-                Show to public
-              </label>
-
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="sk-button-primary"
-              >
-                {isSaving ? "Saving..." : editingId ? "Update Course" : "Add Course"}
-              </button>
-            </div>
+              <CoursePrivateDocumentsPicker
+                privateSelections={privateSelections}
+                onPickFile={(kind, file) => {
+                  handlePrivateFileChange(
+                    kind,
+                    ({ target: { files: file ? [file] : [] } } as unknown as ChangeEvent<HTMLInputElement>)
+                  );
+                }}
+                editingId={editingId}
+                existingPrivatePaths={existingPrivatePaths}
+                onOpenExisting={(path) => void openPrivateDoc(path)}
+              />
+            </CourseDetailsForm>
           </form>
         </section>
-      </div>
+      </AdminPageFrame>
     </DashboardLayout>
   );
 }

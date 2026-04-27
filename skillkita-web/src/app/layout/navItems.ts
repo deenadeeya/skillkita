@@ -16,7 +16,11 @@ export const adminNavItems: NavItem[] = [
     children: [
       { label: "Home Page", href: "/", icon: HomeIcon },
       { label: "About Us", href: "/about-us", icon: DocumentTextIcon },
-      { label: "Company Experience", href: "/company-experience", icon: ClipboardDocumentListIcon },
+      {
+        label: "Company Experience",
+        href: "/company-experience",
+        icon: ClipboardDocumentListIcon,
+      },
       { label: "Manage Home", href: "/admin/landing", icon: DocumentTextIcon },
     ],
   },
@@ -46,7 +50,9 @@ export const adminNavItems: NavItem[] = [
   {
     label: "Chat",
     icon: ChatBubbleLeftRightIcon,
-    children: [{ label: "Messages", href: "/admin/messages?role=admin", icon: ChatBubbleLeftRightIcon }],
+    children: [
+      { label: "Messages", href: "/admin/messages?role=admin", icon: ChatBubbleLeftRightIcon },
+    ],
   },
   {
     label: "Manage Users",
@@ -67,7 +73,11 @@ export const employerNavItems: NavItem[] = [
     children: [
       { label: "Home Page", href: "/", icon: HomeIcon },
       { label: "About Us", href: "/about-us", icon: DocumentTextIcon },
-      { label: "Company experience", href: "/company-experience", icon: ClipboardDocumentListIcon },
+      {
+        label: "Company experience",
+        href: "/company-experience",
+        icon: ClipboardDocumentListIcon,
+      },
     ],
   },
   {

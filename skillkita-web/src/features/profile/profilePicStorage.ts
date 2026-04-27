@@ -1,4 +1,4 @@
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 
 export const PROFILE_PICS_BUCKET = "profile-pics" as const;
 

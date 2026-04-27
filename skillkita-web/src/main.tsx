@@ -22,17 +22,9 @@ import EmployerQuotationRequest from "./pages/employer/EmployerQuotationRequest"
 import EmployerTalkToAdmin from "./pages/employer/EmployerTalkToAdmin";
 
 import "./styles/global.css";
+import RequireRole from "./app/router/guards/RequireRole";
 
 const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
-const roleFromQuery = new URLSearchParams(window.location.search).get("role");
-
-if (roleFromQuery === "admin" || roleFromQuery === "public") {
-  window.localStorage.setItem("skillkita-role", roleFromQuery);
-}
-
-const activeRole = window.localStorage.getItem("skillkita-role") === "admin"
-  ? "admin"
-  : "public";
 
 let Page = HomePage;
 
@@ -53,39 +45,75 @@ if (currentPath === "/courses/view") {
 }
 
 if (currentPath === "/admin") {
-  Page = activeRole === "admin" ? AdminManageCourses : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminManageCourses />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/courses/create") {
-  Page = activeRole === "admin" ? AdminCreateCourse : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminCreateCourse />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/courses/edit") {
-  Page = activeRole === "admin" ? AdminCreateCourse : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminCreateCourse />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/landing") {
-  Page = activeRole === "admin" ? AdminLandingEditor : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminLandingEditor />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/users") {
-  Page = activeRole === "admin" ? AdminUsers : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminUsers />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/quotations") {
-  Page = activeRole === "admin" ? AdminQuotations : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminQuotations />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/quotations/create") {
-  Page = activeRole === "admin" ? AdminCreateQuotation : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminCreateQuotation />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/messages") {
-  Page = activeRole === "admin" ? AdminMessages : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminMessages />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/admin/profile") {
-  Page = activeRole === "admin" ? AdminProfile : AccessDenied;
+  Page = () => (
+    <RequireRole role="admin" denied={<AccessDenied />}>
+      <AdminProfile />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/login") {
@@ -97,19 +125,35 @@ if (currentPath === "/signup") {
 }
 
 if (currentPath === "/employer") {
-  Page = EmployerDashboard;
+  Page = () => (
+    <RequireRole role="employer" requireApproved redirectTo="/login">
+      <EmployerDashboard />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/employer/quotation") {
-  Page = EmployerQuotationRequest;
+  Page = () => (
+    <RequireRole role="employer" requireApproved redirectTo="/login">
+      <EmployerQuotationRequest />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/employer/talk-to-admin") {
-  Page = EmployerTalkToAdmin;
+  Page = () => (
+    <RequireRole role="employer" requireApproved redirectTo="/login">
+      <EmployerTalkToAdmin />
+    </RequireRole>
+  );
 }
 
 if (currentPath === "/employer/profile") {
-  Page = EmployerProfile;
+  Page = () => (
+    <RequireRole role="employer" requireApproved redirectTo="/login">
+      <EmployerProfile />
+    </RequireRole>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

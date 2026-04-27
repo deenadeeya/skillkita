@@ -36,7 +36,10 @@ const DashboardLayout = ({
       {showHeader && <SiteHeader onMenuClick={() => setMobileOpen(true)} />}
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 md:hidden" onClick={() => setMobileOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/30 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
           <div className="h-full w-[320px] bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="h-full overflow-auto">
               <LeftNav
@@ -73,4 +76,5 @@ const DashboardLayout = ({
 };
 
 export default DashboardLayout;
+
 

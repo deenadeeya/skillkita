@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { employerNavItems } from "../../components/layout/navItems";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { employerNavItems } from "../../app/layout/navItems";
 import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 
 type UserProfileRow = {
   user_id: string;

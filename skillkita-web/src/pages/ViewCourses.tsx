@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import PlaceholderPoster from "../assets/placeholder.jpg";
-import { supabase } from "../lib/supabaseClient";
-import { CoursePosterMedia } from "../components/CoursePosterMedia";
-import DashboardLayout from "../components/layout/DashboardLayout";
-import { adminNavItems, employerNavItems } from "../components/layout/navItems";
-import SiteHeader from "../components/layout/SiteHeader";
+import { supabase } from "../shared/api/supabaseClient";
+import DashboardLayout from "../app/layout/DashboardLayout";
+import { adminNavItems, employerNavItems } from "../app/layout/navItems";
+import SiteHeader from "../app/layout/SiteHeader";
+import { createSignedUrlForPath } from "../lib/coursePrivateStorage";
+import { listVisibleCourses } from "../features/courses/api/coursesApi";
 import {
-  PRIVATE_DOC_LABELS,
-  columnForKind,
-  createSignedUrlForPath,
-  type PrivateDocKind,
-} from "../lib/coursePrivateStorage";
+  listCoursePrivateFilesByCourseIds,
+  listEmployerAccessRows,
+  requestCoursePrivateFilesAccess,
+  type CoursePrivatePaths,
+} from "../features/courses/api/privateFilesApi";
+import { useViewer } from "../shared/hooks/useViewer";
+import { CoursesGrid } from "../features/courses/components/CoursesGrid";
+import { CoursesSearchBar } from "../features/courses/components/CoursesSearchBar";
+import { EmployerPrivateAccessPanel } from "../features/courses/components/EmployerPrivateAccessPanel";
 
 type PublicCourse = {
   id: string;
@@ -18,23 +22,6 @@ type PublicCourse = {
   date: string;
   details: string;
   posterUrl: string | null;
-};
-
-type CourseRow = {
-  id: string;
-  name: string;
-  date: string;
-  details: string;
-  poster_url: string | null;
-  is_visible: boolean;
-  created_at: string;
-};
-
-type CoursePrivatePaths = {
-  syllabus_storage_path: string | null;
-  tentative_storage_path: string | null;
-  trainer_hrd_storage_path: string | null;
-  trainer_cv_storage_path: string | null;
 };
 
 const ViewCourses = () => {
@@ -45,6 +32,7 @@ const ViewCourses = () => {
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const [courseSearch, setCourseSearch] = useState("");
+  const viewerState = useViewer();
 
   const [accessByCourse, setAccessByCourse] = useState<
     Record<string, "pending" | "approved" | "rejected" | undefined>
@@ -55,78 +43,56 @@ const ViewCourses = () => {
   const [actionId, setActionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
+    if (viewerState.kind === "loading") return;
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user ?? null;
-
-      if (user) {
-        setViewerEmail(user.email ?? null);
-        const { data: profileRow } = await supabase
-          .from("user_profiles")
-          .select("role,status,full_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        let isEmployerApproved = false;
-        if (profileRow) {
-          const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
-          if (r.role === "admin") {
-            setViewerRole("admin");
-            setViewerName(r.full_name ?? "Admin");
-          } else if (r.role === "employer" && r.status === "approved") {
-            setViewerRole("employer");
-            setViewerName(r.full_name ?? "Employer");
-            isEmployerApproved = true;
-          } else {
-            setViewerRole(null);
-          }
-        } else {
-          setViewerRole(null);
-        }
-
-        if (isEmployerApproved) {
-          await loadEmployerPrivateAccess(user.id);
-        } else {
-          setAccessByCourse({});
-          setPrivateByCourse({});
-        }
-      } else {
-        setViewerRole(null);
-        setViewerEmail(null);
+    if (viewerState.kind === "signedIn") {
+      setViewerEmail(viewerState.viewer.email);
+      if (viewerState.viewer.role === "admin") {
+        setViewerRole("admin");
+        setViewerName(viewerState.viewer.fullName || "Admin");
         setAccessByCourse({});
         setPrivateByCourse({});
-      }
-
-      const { data, error } = await supabase
-        .from("courses")
-        .select("id,name,date,details,poster_url,is_visible,created_at")
-        .eq("is_visible", true)
-        .order("date", { ascending: true });
-
-      if (error) {
-        setErrorMessage(error.message);
-        setPublicCourses([]);
-        setIsLoading(false);
         return;
       }
+      if (viewerState.viewer.role === "employer" && viewerState.viewer.status === "approved") {
+        setViewerRole("employer");
+        setViewerName(viewerState.viewer.fullName || "Employer");
+        void loadEmployerPrivateAccess(viewerState.viewer.userId);
+        return;
+      }
+    }
 
-      setPublicCourses(
-        (data ?? []).map((row: CourseRow) => ({
-          id: row.id,
-          name: row.name,
-          date: row.date,
-          details: row.details,
-          posterUrl: row.poster_url,
-        }))
-      );
+    // anonymous, no profile, or employer not approved
+    setViewerRole(null);
+    setViewerName("User");
+    setViewerEmail(viewerState.kind === "signedInNoProfile" ? viewerState.email : null);
+    setAccessByCourse({});
+    setPrivateByCourse({});
+  }, [viewerState]);
 
-      setIsLoading(false);
+  useEffect(() => {
+    const loadCourses = async () => {
+      setIsLoading(true);
+      setErrorMessage(null);
+      try {
+        const rows = await listVisibleCourses();
+        setPublicCourses(
+          rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            date: row.date,
+            details: row.details,
+            posterUrl: row.poster_url,
+          }))
+        );
+      } catch (e) {
+        setErrorMessage(e instanceof Error ? e.message : "Failed to load courses.");
+        setPublicCourses([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
-
-    void load();
+    void loadCourses();
   }, []);
 
   const filteredCourses = useMemo(() => {
@@ -153,77 +119,52 @@ const ViewCourses = () => {
   };
 
   const requestAccess = async (courseId: string) => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const uid = sessionData.session?.user?.id;
-    if (!uid) return;
+    if (viewerState.kind !== "signedIn") return;
+    if (viewerState.viewer.role !== "employer") return;
+    if (viewerState.viewer.status !== "approved") return;
+    const uid = viewerState.viewer.userId;
 
     setActionId(courseId);
     setErrorMessage(null);
-
-    const { error } = await supabase.from("employer_course_file_access").insert({
-      employer_user_id: uid,
-      course_id: courseId,
-      status: "pending",
-    });
-
-    setActionId(null);
-
-    if (error) {
-      setErrorMessage(error.message);
-      return;
+    try {
+      await requestCoursePrivateFilesAccess({ employerUserId: uid, courseId });
+      await loadEmployerPrivateAccess(uid);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to request access.");
+    } finally {
+      setActionId(null);
     }
-
-    await loadEmployerPrivateAccess(uid);
   };
 
   const loadEmployerPrivateAccess = async (userId: string) => {
-    const { data: accessRows, error: aErr } = await supabase
-      .from("employer_course_file_access")
-      .select("course_id,status")
-      .eq("employer_user_id", userId);
-
-    if (aErr) {
-      setErrorMessage(aErr.message);
-    }
-
     const map: Record<string, "pending" | "approved" | "rejected"> = {};
-    (accessRows ?? []).forEach((r: { course_id: string; status: string }) => {
-      map[r.course_id] = r.status as "pending" | "approved" | "rejected";
-    });
-    setAccessByCourse(map);
+    try {
+      const accessRows = await listEmployerAccessRows(userId);
+      accessRows.forEach((r) => {
+        map[r.course_id] = r.status;
+      });
+      setAccessByCourse(map);
 
-    const approvedIds = Object.entries(map)
-      .filter(([, s]) => s === "approved")
-      .map(([id]) => id);
+      const approvedIds = Object.entries(map)
+        .filter(([, s]) => s === "approved")
+        .map(([id]) => id);
 
-    if (approvedIds.length === 0) {
+      if (approvedIds.length === 0) {
+        setPrivateByCourse({});
+        return;
+      }
+
+      const pfRows = await listCoursePrivateFilesByCourseIds(approvedIds);
+      const pfMap: Record<string, CoursePrivatePaths | null> = {};
+      pfRows.forEach((row) => {
+        pfMap[row.course_id] = row;
+      });
+      setPrivateByCourse(pfMap);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to load private access.");
+      setAccessByCourse({});
       setPrivateByCourse({});
-      return;
     }
-
-    const { data: pfRows, error: pErr } = await supabase
-      .from("course_private_files")
-      .select(
-        "course_id,syllabus_storage_path,tentative_storage_path,trainer_hrd_storage_path,trainer_cv_storage_path"
-      )
-      .in("course_id", approvedIds);
-
-    if (pErr) {
-      setErrorMessage(pErr.message);
-      setPrivateByCourse({});
-      return;
-    }
-
-    const pfMap: Record<string, CoursePrivatePaths | null> = {};
-    (pfRows ?? []).forEach((row: CoursePrivatePaths & { course_id: string }) => {
-      pfMap[row.course_id] = {
-        syllabus_storage_path: row.syllabus_storage_path,
-        tentative_storage_path: row.tentative_storage_path,
-        trainer_hrd_storage_path: row.trainer_hrd_storage_path,
-        trainer_cv_storage_path: row.trainer_cv_storage_path,
-      };
-    });
-    setPrivateByCourse(pfMap);
   };
 
   const body = (
@@ -241,153 +182,33 @@ const ViewCourses = () => {
       )}
 
       {viewerRole === "employer" && (
-        <section className="sk-card mt-8 p-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F]">Courses (private files access)</h2>
-          <p className="mt-2 text-sm text-black/80">
-            Request access to private course documents (tentativesyllabus, trainer files). An admin must approve
-            before you can open them.
-          </p>
-
-          {isLoading && (
-            <p className="mt-4 text-sm text-black">Loading...</p>
-          )}
-          {!isLoading && (
-            <ul className="mt-4 space-y-4">
-              {employerCourses.map((c) => {
-                const status = accessByCourse[c.id];
-                const priv = privateByCourse[c.id];
-                return (
-                  <li
-                    key={c.id}
-                    className="rounded-xl border border-[#efe1db] bg-white p-4 shadow-sm"
-                  >
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-[#0001fc]">{c.name}</h3>
-                        <p className="mt-1 text-xs text-black/70">
-                          Status:{" "}
-                          <span
-                            className={
-                              status === "approved"
-                                ? "font-bold text-green-800"
-                                : status === "rejected"
-                                  ? "font-bold text-red-800"
-                                  : "font-semibold text-black/80"
-                            }
-                          >
-                            {status === "approved"
-                              ? "Approved — you can open private files below"
-                              : status === "pending"
-                                ? "Pending admin approval"
-                                : status === "rejected"
-                                  ? "Rejected"
-                                  : "No request yet"}
-                          </span>
-                        </p>
-                      </div>
-                      {!status && (
-                        <button
-                          type="button"
-                          disabled={actionId === c.id}
-                          onClick={() => void requestAccess(c.id)}
-                          className="sk-button-primary shrink-0 self-start"
-                        >
-                          {actionId === c.id ? "Sending..." : "Request access to private files"}
-                        </button>
-                      )}
-                      {status === "pending" && (
-                        <span className="text-sm font-semibold text-amber-800">Waiting for admin</span>
-                      )}
-                    </div>
-
-                    {status === "approved" && priv && (
-                      <div className="mt-4 flex flex-wrap gap-2 border-t border-[#efe1db] pt-4">
-                        {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => {
-                          const col = columnForKind(kind) as keyof CoursePrivatePaths;
-                          const path = priv[col];
-                          return (
-                            <button
-                              key={kind}
-                              type="button"
-                              disabled={!path}
-                              onClick={() => void openPrivateDoc(path)}
-                              className="rounded-md border border-[#7A1F1F] bg-[#f9f5ed] px-3 py-1.5 text-xs font-semibold text-[#7A1F1F] disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {path ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (n/a)`}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {!isLoading && employerCourses.length === 0 && (
-            <p className="mt-4 text-sm text-black">No public courses listed yet.</p>
-          )}
-        </section>
+        <EmployerPrivateAccessPanel
+          isLoading={isLoading}
+          courses={employerCourses}
+          accessByCourse={accessByCourse}
+          privateByCourse={privateByCourse}
+          actionId={actionId}
+          onRequestAccess={(courseId) => void requestAccess(courseId)}
+          onOpenPrivateDoc={(path) => void openPrivateDoc(path)}
+        />
       )}
 
-      <div className="mt-6">
-        <input
-          value={courseSearch}
-          onChange={(e) => setCourseSearch(e.target.value)}
-          placeholder="Search courses by name, date, or details..."
-          className="w-full rounded-xl border border-[#d8c9c2] bg-white px-4 py-2 text-sm text-black outline-none focus:border-[#7A1F1F]"
-        />
-        <p className="mt-2 text-xs font-semibold text-black/60">
-          Showing {filteredCourses.length} of {publicCourses.length}
-        </p>
-      </div>
+      <CoursesSearchBar
+        value={courseSearch}
+        onChange={setCourseSearch}
+        filteredCount={filteredCourses.length}
+        totalCount={publicCourses.length}
+      />
 
-      <section className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-        {isLoading && (
-          <p className="col-span-full rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-            Loading courses...
-          </p>
-        )}
-        {filteredCourses.map((course) => (
-          <article
-            key={course.id}
-            className="sk-card overflow-hidden p-3 md:p-4 cursor-pointer transition hover:shadow-md focus-within:ring-2 focus-within:ring-[#7A1F1F]/30"
-            role="link"
-            tabIndex={0}
-            onClick={() => {
-              window.location.href = `/courses/view?id=${encodeURIComponent(course.id)}`;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                window.location.href = `/courses/view?id=${encodeURIComponent(course.id)}`;
-              }
-            }}
-          >
-            <CoursePosterMedia
-              url={course.posterUrl ?? PlaceholderPoster}
-              alt={`${course.name} poster`}
-              className="aspect-[210/297] w-full rounded-lg object-cover"
-            />
-            <h2 className="mt-3 text-sm font-semibold text-[#0001fc] md:mt-4 md:text-xl">
-              {course.name}
-            </h2>
-            <p className="mt-1 text-xs font-medium text-[#7A1F1F] md:mt-2 md:text-sm">
-              Date: {course.date}
-            </p>
-            <p className="mt-1 text-xs text-black md:mt-2 md:text-sm">
-              {course.details}
-            </p>
-          </article>
-        ))}
-        {!isLoading && filteredCourses.length === 0 && !errorMessage && (
-          <p className="col-span-full rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-            {publicCourses.length === 0
-              ? "No public courses available right now."
-              : "No courses match your search."}
-          </p>
-        )}
-      </section>
+      <CoursesGrid
+        courses={filteredCourses}
+        isLoading={isLoading}
+        errorMessage={errorMessage}
+        totalPublicCount={publicCourses.length}
+        onOpenCourse={(courseId) => {
+          window.location.href = `/courses/view?id=${encodeURIComponent(courseId)}`;
+        }}
+      />
     </main>
   );
 

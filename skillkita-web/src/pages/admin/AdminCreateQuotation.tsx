@@ -1,11 +1,14 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { adminNavItems } from "../../components/layout/navItems";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
-import { supabase } from "../../lib/supabaseClient";
+import { AdminCreateQuotationForm } from "../../features/quotation/components/AdminCreateQuotationForm";
+import { supabase } from "../../shared/api/supabaseClient";
+import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
+import { useViewer } from "../../shared/hooks/useViewer";
 
 type EmployerLabel = { full_name: string; company_name: string | null; company_address: string | null };
 type CourseLabel = { id: string; name: string };
@@ -14,10 +17,10 @@ const AdminCreateQuotation = () => {
   const [approvedEmployers, setApprovedEmployers] = useState<(EmployerLabel & { user_id: string })[]>([]);
   const [courses, setCourses] = useState<CourseLabel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const viewerState = useViewer();
 
   // Admin-created quotation (auto-approved)
   const [createEmployerUserId, setCreateEmployerUserId] = useState("");
@@ -84,48 +87,15 @@ const AdminCreateQuotation = () => {
   }, []);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      setIsAuthChecking(true);
-      setErrorMessage(null);
+    if (viewerState.kind === "signedIn") {
+      setAdminEmail(viewerState.viewer.email);
+      setAdminName(viewerState.viewer.fullName || "Admin");
+    }
+  }, [loadApprovedEmployers, loadCourses]);
 
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        setIsAuthChecking(false);
-        setErrorMessage(error.message);
-        return;
-      }
-
-      const user = data.session?.user;
-      if (!user) {
-        setIsAuthChecking(false);
-        window.location.href = "/login";
-        return;
-      }
-
-      setAdminEmail(user.email ?? null);
-
-      const { data: profileRow, error: profileError } = await supabase
-        .from("user_profiles")
-        .select("user_id,role,status,full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profileError || !profileRow || profileRow.role !== "admin") {
-        setIsAuthChecking(false);
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/login";
-        return;
-      }
-
-      window.localStorage.setItem("skillkita-role", "admin");
-      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
-      setIsAuthChecking(false);
-      await loadApprovedEmployers();
-      await loadCourses();
-    };
-
-    void checkAdmin();
+  useEffect(() => {
+    void loadApprovedEmployers();
+    void loadCourses();
   }, [loadApprovedEmployers, loadCourses]);
 
   const createEmployerOptions = useMemo(() => {
@@ -197,8 +167,7 @@ const AdminCreateQuotation = () => {
 
     setIsSaving(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const reviewer = sessionData.session?.user?.id ?? null;
+      const reviewer = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
       if (!reviewer) throw new Error("Not authenticated.");
 
       const targetEmployerUserId = isManualEmployer ? reviewer : createEmployerUserId;
@@ -305,222 +274,61 @@ const AdminCreateQuotation = () => {
         window.location.href = "/";
       }}
     >
-      {isAuthChecking ? (
-        <p className="text-black">Checking access…</p>
-      ) : (
-        <p className="text-sm font-semibold text-[#7A1F1F]">
-          <a href="/admin/quotations" className="underline">
-            ← Back to quotation requests
+      <AdminPageFrame
+        title="Create quotation"
+        subtitle="Admin-created quotations are automatically approved. Fill all details and a PDF will be generated immediately."
+        errorMessage={errorMessage}
+        isAuthChecking={false}
+        isAuthorized
+        actions={
+          <a href="/admin/quotations" className="sk-button-secondary px-3 py-2">
+            Back to quotation requests
           </a>
-        </p>
-      )}
-
-      <h1 className="mt-4 text-4xl font-bold text-[#0001fc]">Create quotation</h1>
-      <p className="mt-2 text-sm text-black">
-        Admin-created quotations are automatically approved. Fill all details and a PDF will be generated immediately.
-      </p>
-
-      {errorMessage && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {errorMessage}
-        </div>
-      )}
-
-      <section className="sk-card mt-8 p-6">
-        <form className="space-y-4" onSubmit={(ev) => void handleAdminCreate(ev)}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Employer</span>
-              <select
-                value={createEmployerUserId}
-                onChange={(e) => setCreateEmployerUserId(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                required
-              >
-                <option value="" disabled>
-                  Select an employer...
-                </option>
-                <option value="__manual__">Manual / not listed</option>
-                {createEmployerOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {isManualEmployer && (
-              <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Employer name</span>
-                <input
-                  value={createManualEmployerName}
-                  onChange={(e) => setCreateManualEmployerName(e.target.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                  placeholder="Type employer name"
-                  required
-                />
-                <p className="mt-1 text-xs text-black/60">
-                  Manual quotations are stored under the admin account; employers won’t see them unless they have an account.
-                </p>
-              </label>
-            )}
-
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Company name (PDF)</span>
-              <input
-                value={createCompanyName}
-                onChange={(e) => setCreateCompanyName(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                Company address (PDF)
-              </span>
-              <textarea
-                value={createCompanyAddress}
-                onChange={(e) => setCreateCompanyAddress(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                placeholder="Optional"
-              />
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course name</span>
-              {!isManualCourse && (
-                <p className="mt-1 mb-1 text-xs text-black/60">
-                  Pick an existing course, or choose “Manual / new course” to type a name.
-                </p>
-              )}
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <select
-                  value={createCourseId}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setCreateCourseId(next);
-                    if (next === "__manual__") return;
-                    const match = courses.find((c) => c.id === next);
-                    if (match?.name) setCreateCourseName(match.name);
-                  }}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  required
-                >
-                  <option value="" disabled>
-                    Select existing course...
-                  </option>
-                  <option value="__manual__">Manual / new course</option>
-                  {createCourseOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-
-                {isManualCourse && (
-                  <input
-                    value={createCourseName}
-                    onChange={(e) => setCreateCourseName(e.target.value)}
-                    className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                    placeholder="Type course name"
-                    required
-                  />
-                )}
-              </div>
-              
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Participants</span>
-              <input
-                type="number"
-                min={1}
-                value={createParticipants}
-                onChange={(e) => setCreateParticipants(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                Proposed booking date
-              </span>
-              <input
-                type="date"
-                value={createProposedDate}
-                onChange={(e) => setCreateProposedDate(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                Additional description <span className="font-normal text-black/50">(optional)</span>
-              </span>
-              <textarea
-                value={createAdditionalDescription}
-                onChange={(e) => setCreateAdditionalDescription(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                placeholder="Notes / venue / contacts..."
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
-              <select
-                value={createCourseMode}
-                onChange={(e) => setCreateCourseMode(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
-                <option value="Face-to-Face">Face-to-Face</option>
-                <option value="Online">Online</option>
-                <option value="Hybrid">Hybrid</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Unit price (RM)</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={createUnitPrice}
-                onChange={(e) => setCreateUnitPrice(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={createAmountRm}
-                onChange={(e) => setCreateAmountRm(e.target.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-                required
-              />
-            </label>
-          </div>
-
-          <div className="pt-2">
-            <button type="submit" disabled={isSaving} className="sk-button-primary">
-              {isSaving ? "Saving…" : "Create & generate PDF"}
-            </button>
-          </div>
-        </form>
-      </section>
+        }
+      >
+        <AdminCreateQuotationForm
+          isSaving={isSaving}
+          createEmployerUserId={createEmployerUserId}
+          createEmployerOptions={createEmployerOptions}
+          isManualEmployer={isManualEmployer}
+          createManualEmployerName={createManualEmployerName}
+          createCompanyName={createCompanyName}
+          createCompanyAddress={createCompanyAddress}
+          createCourseId={createCourseId}
+          createCourseOptions={createCourseOptions}
+          isManualCourse={isManualCourse}
+          createCourseName={createCourseName}
+          createParticipants={createParticipants}
+          createProposedDate={createProposedDate}
+          createAdditionalDescription={createAdditionalDescription}
+          createCourseMode={createCourseMode}
+          createUnitPrice={createUnitPrice}
+          createAmountRm={createAmountRm}
+          onChange={(patch) => {
+            if (patch.createEmployerUserId !== undefined) setCreateEmployerUserId(patch.createEmployerUserId);
+            if (patch.createManualEmployerName !== undefined) setCreateManualEmployerName(patch.createManualEmployerName);
+            if (patch.createCompanyName !== undefined) setCreateCompanyName(patch.createCompanyName);
+            if (patch.createCompanyAddress !== undefined) setCreateCompanyAddress(patch.createCompanyAddress);
+            if (patch.createCourseId !== undefined) {
+              const next = patch.createCourseId;
+              setCreateCourseId(next);
+              if (next !== "__manual__") {
+                const match = courses.find((c) => c.id === next);
+                if (match?.name) setCreateCourseName(match.name);
+              }
+            }
+            if (patch.createCourseName !== undefined) setCreateCourseName(patch.createCourseName);
+            if (patch.createParticipants !== undefined) setCreateParticipants(patch.createParticipants);
+            if (patch.createProposedDate !== undefined) setCreateProposedDate(patch.createProposedDate);
+            if (patch.createAdditionalDescription !== undefined)
+              setCreateAdditionalDescription(patch.createAdditionalDescription);
+            if (patch.createCourseMode !== undefined) setCreateCourseMode(patch.createCourseMode);
+            if (patch.createUnitPrice !== undefined) setCreateUnitPrice(patch.createUnitPrice);
+            if (patch.createAmountRm !== undefined) setCreateAmountRm(patch.createAmountRm);
+          }}
+          onSubmit={(ev) => void handleAdminCreate(ev)}
+        />
+      </AdminPageFrame>
     </DashboardLayout>
   );
 };

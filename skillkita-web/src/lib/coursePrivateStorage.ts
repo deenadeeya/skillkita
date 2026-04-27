@@ -1,4 +1,4 @@
-import { supabase } from "./supabaseClient";
+import { supabase } from "../shared/api/supabaseClient";
 
 export const COURSE_PRIVATE_BUCKET = "course-private-files";
 

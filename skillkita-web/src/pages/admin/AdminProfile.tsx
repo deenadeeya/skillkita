@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { adminNavItems } from "../../components/layout/navItems";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 
 const AdminProfile = () => {
   const [adminName, setAdminName] = useState("Admin");

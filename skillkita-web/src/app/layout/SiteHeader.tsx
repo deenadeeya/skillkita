@@ -1,7 +1,8 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import TRSCLogo from "../../assets/TRSCLogo.png";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
+import { useViewer } from "../../shared/hooks/useViewer";
 
 const PRIMARY_NAV = [
   { label: "Home", href: "/" },
@@ -14,72 +15,36 @@ type Props = {
 };
 
 const SiteHeader = ({ onMenuClick }: Props) => {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isEmployer, setIsEmployer] = useState(false);
-  const [hasAuthSession, setHasAuthSession] = useState(false);
-  const [employerStatus, setEmployerStatus] = useState<"pending" | "approved" | "rejected" | null>(null);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [viewerName, setViewerName] = useState<string>("User");
-  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const viewerState = useViewer();
 
-  type ProfileRow = {
-    role: "admin" | "employer";
-    status: "pending" | "approved" | "rejected";
-    full_name?: string | null;
-  };
+  const hasAuthSession =
+    viewerState.kind === "signedIn" || viewerState.kind === "signedInNoProfile";
 
-  useEffect(() => {
-    const check = async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
+  const viewerEmail =
+    viewerState.kind === "signedIn"
+      ? viewerState.viewer.email
+      : viewerState.kind === "signedInNoProfile"
+        ? viewerState.email
+        : null;
 
-      if (!user) {
-        setIsAdmin(false);
-        setIsEmployer(false);
-        setHasAuthSession(false);
-        setEmployerStatus(null);
-        setViewerName("User");
-        setViewerEmail(null);
-        return;
-      }
+  const viewerName =
+    viewerState.kind === "signedIn"
+      ? viewerState.viewer.fullName?.trim()
+        ? viewerState.viewer.fullName
+        : viewerState.viewer.role === "admin"
+          ? "Admin"
+          : "Employer"
+      : "User";
 
-      setHasAuthSession(true);
-
-      const { data: profile, error } = await supabase
-        .from("user_profiles")
-        .select("role,status,full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error || !profile) {
-        setIsAdmin(false);
-        setIsEmployer(false);
-        setEmployerStatus(null);
-        setViewerName("User");
-        setViewerEmail(user.email ?? null);
-        return;
-      }
-
-      const row = profile as ProfileRow;
-      setIsAdmin(row.role === "admin");
-      setIsEmployer(row.role === "employer" && row.status === "approved");
-      setEmployerStatus(row.role === "employer" ? row.status : null);
-      setViewerName(row.full_name?.trim() ? row.full_name : row.role === "admin" ? "Admin" : "Employer");
-      setViewerEmail(user.email ?? null);
-    };
-
-    void check();
-
-    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
-      void check();
-    });
-
-    return () => {
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
+  const isAdmin = viewerState.kind === "signedIn" && viewerState.viewer.role === "admin";
+  const employerStatus =
+    viewerState.kind === "signedIn" && viewerState.viewer.role === "employer"
+      ? viewerState.viewer.status
+      : null;
+  const isEmployer = Boolean(employerStatus === "approved");
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -371,3 +336,5 @@ const SiteHeader = ({ onMenuClick }: Props) => {
 };
 
 export default SiteHeader;
+
+

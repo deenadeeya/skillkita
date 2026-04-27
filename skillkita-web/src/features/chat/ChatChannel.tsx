@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 import { CHAT_ATTACHMENTS_BUCKET, createChatAttachmentSignedUrl, makeChatAttachmentPath } from "./chatStorage";
 import type { ChatMessageRow } from "./types";
 

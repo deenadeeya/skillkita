@@ -1,4 +1,4 @@
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 import { QUOTATION_PDF_BUCKET, quotationPdfPath } from "./types";
 
 export async function uploadQuotationPdf(
