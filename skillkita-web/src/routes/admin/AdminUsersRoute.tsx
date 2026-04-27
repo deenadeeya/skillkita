@@ -1,29 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { supabase } from "../../shared/api/supabaseClient";
-import { createClient } from "@supabase/supabase-js";
-
-type ProfileRow = {
-  user_id: string;
-  full_name: string;
-  company_name: string | null;
-  phone: string | null;
-  role: "admin" | "employer";
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-  approved_at: string | null;
-  approved_by: string | null;
-};
+import { useViewer } from "../../shared/hooks/useViewer";
+import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
+import {
+  createAdminAuthUser,
+  listUserProfiles,
+  promoteProfileToAdmin,
+  setEmployerApproval,
+  type ProfileRow,
+} from "../../features/users/api/adminUsersApi";
 
 const AdminUsers = () => {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const viewerState = useViewer();
 
   const pendingEmployers = useMemo(
     () => profiles.filter((p) => p.role === "employer" && p.status === "pending"),
@@ -31,124 +27,57 @@ const AdminUsers = () => {
   );
 
   const existingEmployers = useMemo(
-    () =>
-      profiles.filter((p) => p.role === "employer" && p.status === "approved"),
+    () => profiles.filter((p) => p.role === "employer" && p.status === "approved"),
     [profiles]
   );
 
-  const admins = useMemo(
-    () => profiles.filter((p) => p.role === "admin"),
-    [profiles]
-  );
+  const admins = useMemo(() => profiles.filter((p) => p.role === "admin"), [profiles]);
 
   const [newAdminFullName, setNewAdminFullName] = useState("");
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminSuccess, setNewAdminSuccess] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session?.user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select(
-        "user_id,full_name,company_name,phone,role,status,created_at,approved_at,approved_by"
-      )
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const rows = await listUserProfiles();
+      setProfiles(rows);
+      setIsLoading(false);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to load users.");
       setProfiles([]);
       setIsLoading(false);
-      return;
     }
-
-    setProfiles((data ?? []) as ProfileRow[]);
-    setIsLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      setIsAuthChecking(true);
-      setErrorMessage(null);
+    if (viewerState.kind === "signedIn") {
+      setAdminEmail(viewerState.viewer.email);
+      setAdminName(viewerState.viewer.fullName || "Admin");
+    }
+  }, [viewerState]);
 
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        setIsAuthChecking(false);
-        setErrorMessage(error.message);
-        return;
-      }
-
-      const user = data.session?.user;
-      if (!user) {
-        setIsAuthChecking(false);
-        window.location.href = "/login";
-        return;
-      }
-
-      setAdminEmail(user.email ?? null);
-
-      const { data: profileRow, error: profileError } = await supabase
-        .from("user_profiles")
-        .select("user_id,role,status,full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        setIsAuthChecking(false);
-        setErrorMessage(profileError.message);
-        return;
-      }
-
-      if (!profileRow || profileRow.role !== "admin") {
-        setIsAuthChecking(false);
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/login";
-        return;
-      }
-
-      window.localStorage.setItem("skillkita-role", "admin");
-      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
-      setIsAuthChecking(false);
-      await load();
-    };
-
-    void checkAdmin();
-  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const setEmployerStatus = async (userId: string, status: "approved" | "rejected") => {
     setIsSaving(true);
     setErrorMessage(null);
     setNewAdminSuccess(null);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const adminId = sessionData.session?.user?.id ?? null;
-
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({
-        status,
-        approved_at: status === "approved" ? new Date().toISOString() : null,
-        approved_by: status === "approved" ? adminId : null,
-      })
-      .eq("user_id", userId);
-
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const adminId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
+      await setEmployerApproval({ userId, status, approvedBy: adminId });
+      await load();
       setIsSaving(false);
-      return;
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to update employer status.");
+      setIsSaving(false);
     }
-
-    await load();
-    setIsSaving(false);
   };
 
   const createAdmin = async () => {
@@ -166,73 +95,24 @@ const AdminUsers = () => {
       return;
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+    try {
+      const newUserId = await createAdminAuthUser({ fullName, email, password });
+      const adminId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
+      await promoteProfileToAdmin({ userId: newUserId, approvedBy: adminId });
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setErrorMessage("Missing Supabase env vars. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
-      setIsSaving(false);
-      return;
-    }
-
-    const isolatedClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    });
-
-    const { data: signUpData, error: signUpError } = await isolatedClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    if (signUpError) {
-      setErrorMessage(signUpError.message);
-      setIsSaving(false);
-      return;
-    }
-
-    const newUserId = signUpData.user?.id ?? null;
-    if (!newUserId) {
-      setErrorMessage("Admin user created, but could not read new user id. Please refresh and verify in users list.");
-      setIsSaving(false);
-      await load();
-      return;
-    }
-
-    const { data: sessionData } = await supabase.auth.getSession();
-    const adminId = sessionData.session?.user?.id ?? null;
-
-    const { error: promoteError } = await supabase
-      .from("user_profiles")
-      .update({
-        role: "admin",
-        status: "approved",
-        approved_at: new Date().toISOString(),
-        approved_by: adminId,
-      })
-      .eq("user_id", newUserId);
-
-    if (promoteError) {
-      setErrorMessage(
-        `Created auth user, but failed to promote to admin: ${promoteError.message}`
+      setNewAdminSuccess(
+        "Admin created successfully. If email confirmations are enabled, they may need to confirm before logging in."
       );
+      setNewAdminFullName("");
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      await load();
+      setIsSaving(false);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to create admin.");
       setIsSaving(false);
       await load();
-      return;
     }
-
-    setNewAdminSuccess(
-      "Admin created successfully. If email confirmations are enabled, they may need to confirm before logging in."
-    );
-    setNewAdminFullName("");
-    setNewAdminEmail("");
-    setNewAdminPassword("");
-    await load();
-    setIsSaving(false);
   };
 
   return (
@@ -246,39 +126,25 @@ const AdminUsers = () => {
         window.location.href = "/";
       }}
     >
-        <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Manage Users</h1>
-        <p className="mt-3 text-lg text-black md:text-xl">
-          Approve employers or create new admin.
-        </p>
-
-        {errorMessage && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
-
+      <AdminPageFrame
+        title="Manage Users"
+        subtitle="Approve employers or create new admin."
+        errorMessage={errorMessage}
+        isAuthChecking={viewerState.kind === "loading"}
+        isAuthorized={viewerState.kind === "signedIn"}
+      >
         {newAdminSuccess && (
           <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             {newAdminSuccess}
           </div>
         )}
 
-        {isAuthChecking && (
-          <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-            Checking admin access...
-          </div>
-        )}
-
         <section className="sk-card mt-10 p-6">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-2xl font-bold text-[#7A1F1F]">Pending Employer</h2>
-            <p className="text-sm font-semibold text-[#7A1F1F]">
-              {pendingEmployers.length} pending
-            </p>
+            <p className="text-sm font-semibold text-[#7A1F1F]">{pendingEmployers.length} pending</p>
           </div>
-          <p className="mt-2 text-sm text-black">
-            Admin can reject or approve the new users.
-          </p>
+          <p className="mt-2 text-sm text-black">Admin can reject or approve the new users.</p>
 
           <div className="mt-5 space-y-3">
             {isLoading && (
@@ -337,9 +203,7 @@ const AdminUsers = () => {
               {existingEmployers.length} employers
             </p>
           </div>
-          <p className="mt-2 text-sm text-black">
-            Display the company name they are associated with.
-          </p>
+          <p className="mt-2 text-sm text-black">Display the company name they are associated with.</p>
 
           <div className="mt-5 space-y-3">
             {isLoading && (
@@ -362,9 +226,7 @@ const AdminUsers = () => {
                       <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
                       <p className="mt-1 text-sm text-black/80">
                         Company:{" "}
-                        <span className="font-semibold text-[#7A1F1F]">
-                          {p.company_name ?? "—"}
-                        </span>
+                        <span className="font-semibold text-[#7A1F1F]">{p.company_name ?? "—"}</span>
                       </p>
                       <p className="mt-1 text-xs font-semibold text-black/70">
                         Approved: {p.approved_at ? new Date(p.approved_at).toLocaleString() : "—"}
@@ -383,9 +245,7 @@ const AdminUsers = () => {
           </div>
 
           <div className="mt-3 rounded-xl border border-[#efe1db] bg-white/60 p-5">
-            <h3 className="text-lg font-bold text-[#7A1F1F]">
-              Create New Admin
-            </h3>
+            <h3 className="text-lg font-bold text-[#7A1F1F]">Create New Admin</h3>
             <p className="mt-2 text-sm text-black">
               Create a new admin by submitting Full Name, Email and Password.
             </p>
@@ -433,11 +293,7 @@ const AdminUsers = () => {
               </label>
 
               <div className="md:col-span-3 flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="sk-button-primary px-4 py-2"
-                >
+                <button type="submit" disabled={isSaving} className="sk-button-primary px-4 py-2">
                   {isSaving ? "Saving..." : "Create admin"}
                 </button>
               </div>
@@ -461,9 +317,8 @@ const AdminUsers = () => {
                 </article>
               ))}
           </div>
-
-          
         </section>
+      </AdminPageFrame>
     </DashboardLayout>
   );
 };

@@ -9,12 +9,17 @@ import { AdminCreateQuotationForm } from "../../features/quotation/components/Ad
 import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
-
-type EmployerLabel = { full_name: string; company_name: string | null; company_address: string | null };
-type CourseLabel = { id: string; name: string };
+import {
+  adminCreateApprovedQuotationRequest,
+  listApprovedEmployers,
+  listCourseLabels,
+  setQuotationPdfPath,
+  type ApprovedEmployerOption,
+  type CourseLabel,
+} from "../../features/quotation/api/quotationRequestsApi";
 
 const AdminCreateQuotation = () => {
-  const [approvedEmployers, setApprovedEmployers] = useState<(EmployerLabel & { user_id: string })[]>([]);
+  const [approvedEmployers, setApprovedEmployers] = useState<ApprovedEmployerOption[]>([]);
   const [courses, setCourses] = useState<CourseLabel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("Admin");
@@ -37,53 +42,23 @@ const AdminCreateQuotation = () => {
   const [createAmountRm, setCreateAmountRm] = useState("");
 
   const loadApprovedEmployers = useCallback(async () => {
-    // Prefer reading company_address, but gracefully fall back if the DB
-    // hasn't been migrated yet (otherwise the employer dropdown looks empty).
-    const primary = await supabase
-      .from("user_profiles")
-      .select("user_id,full_name,company_name,company_address,role,status")
-      .eq("role", "employer")
-      .eq("status", "approved")
-      .order("full_name", { ascending: true });
-
-    const shouldFallback =
-      !!primary.error &&
-      primary.error.message.toLowerCase().includes("company_address") &&
-      primary.error.message.toLowerCase().includes("does not exist");
-
-    const res = shouldFallback
-      ? await supabase
-          .from("user_profiles")
-          .select("user_id,full_name,company_name,role,status")
-          .eq("role", "employer")
-          .eq("status", "approved")
-          .order("full_name", { ascending: true })
-      : primary;
-
-    if (res.error) {
+    try {
+      const rows = await listApprovedEmployers();
+      setApprovedEmployers(rows);
+    } catch (e) {
       setApprovedEmployers([]);
-      setErrorMessage(res.error.message);
-      return;
+      setErrorMessage(e instanceof Error ? e.message : "Failed to load employers.");
     }
-
-    setApprovedEmployers(
-      (res.data ?? []).map((r) => ({
-        user_id: (r as { user_id: string }).user_id,
-        full_name: (r as { full_name: string }).full_name,
-        company_name: (r as { company_name: string | null }).company_name,
-        company_address: (r as { company_address?: string | null }).company_address ?? null,
-      }))
-    );
   }, []);
 
   const loadCourses = useCallback(async () => {
-    const res = await supabase.from("courses").select("id,name").order("name", { ascending: true });
-    if (res.error) {
+    try {
+      const rows = await listCourseLabels();
+      setCourses(rows);
+    } catch (e) {
       setCourses([]);
-      setErrorMessage(res.error.message);
-      return;
+      setErrorMessage(e instanceof Error ? e.message : "Failed to load courses.");
     }
-    setCourses(((res.data ?? []) as CourseLabel[]).filter((c) => Boolean(c?.id) && Boolean(c?.name)));
   }, []);
 
   useEffect(() => {
@@ -91,7 +66,7 @@ const AdminCreateQuotation = () => {
       setAdminEmail(viewerState.viewer.email);
       setAdminName(viewerState.viewer.fullName || "Admin");
     }
-  }, [loadApprovedEmployers, loadCourses]);
+  }, [viewerState]);
 
   useEffect(() => {
     void loadApprovedEmployers();
@@ -124,7 +99,13 @@ const AdminCreateQuotation = () => {
     if (!createCompanyAddress.trim() && match.company_address?.trim()) {
       setCreateCompanyAddress(match.company_address);
     }
-  }, [approvedEmployers, createCompanyAddress, createCompanyName, createEmployerUserId, isManualEmployer]);
+  }, [
+    approvedEmployers,
+    createCompanyAddress,
+    createCompanyName,
+    createEmployerUserId,
+    isManualEmployer,
+  ]);
 
   useEffect(() => {
     if (isManualCourse) return;
@@ -144,7 +125,8 @@ const AdminCreateQuotation = () => {
     const amount = parseFloat(createAmountRm);
 
     const manualEmployerName = createManualEmployerName.trim();
-    const hasEmployer = (!!createEmployerUserId && !isManualEmployer) || (isManualEmployer && !!manualEmployerName);
+    const hasEmployer =
+      (!!createEmployerUserId && !isManualEmployer) || (isManualEmployer && !!manualEmployerName);
 
     if (
       !hasEmployer ||
@@ -198,21 +180,7 @@ const AdminCreateQuotation = () => {
         updated_at: new Date().toISOString(),
       };
 
-      const { data: inserted, error: insErr } = await supabase
-        .from("quotation_requests")
-        .insert(payload)
-        .select("*")
-        .maybeSingle();
-
-      if (insErr) {
-        const hint = insErr.message.toLowerCase().includes("row-level security")
-          ? " (RLS) Run skillkita-web/supabase/quotations.sql in Supabase SQL editor to add the admin insert policy."
-          : "";
-        throw new Error(insErr.message + hint);
-      }
-      if (!inserted) throw new Error("Failed to create quotation.");
-
-      const created = inserted as QuotationRequestRow;
+      const created = (await adminCreateApprovedQuotationRequest(payload)) as QuotationRequestRow;
 
       const pdfInput = {
         company_name: createCompanyName.trim(),
@@ -232,15 +200,7 @@ const AdminCreateQuotation = () => {
       });
       const path = await uploadQuotationPdf(targetEmployerUserId, created.id, blob);
 
-      const { error: updErr } = await supabase
-        .from("quotation_requests")
-        .update({
-          pdf_storage_path: path,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", created.id);
-
-      if (updErr) throw new Error(updErr.message);
+      await setQuotationPdfPath(created.id, path);
 
       setCreateEmployerUserId("");
       setCreateManualEmployerName("");
@@ -320,8 +280,7 @@ const AdminCreateQuotation = () => {
             if (patch.createCourseName !== undefined) setCreateCourseName(patch.createCourseName);
             if (patch.createParticipants !== undefined) setCreateParticipants(patch.createParticipants);
             if (patch.createProposedDate !== undefined) setCreateProposedDate(patch.createProposedDate);
-            if (patch.createAdditionalDescription !== undefined)
-              setCreateAdditionalDescription(patch.createAdditionalDescription);
+            if (patch.createAdditionalDescription !== undefined) setCreateAdditionalDescription(patch.createAdditionalDescription);
             if (patch.createCourseMode !== undefined) setCreateCourseMode(patch.createCourseMode);
             if (patch.createUnitPrice !== undefined) setCreateUnitPrice(patch.createUnitPrice);
             if (patch.createAmountRm !== undefined) setCreateAmountRm(patch.createAmountRm);

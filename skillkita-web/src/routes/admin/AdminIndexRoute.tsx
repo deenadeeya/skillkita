@@ -4,9 +4,7 @@ import { adminNavItems } from "../../app/layout/navItems";
 import { AdminCoursesPanel } from "../../features/courses/components/AdminCoursesPanel";
 import { AdminEmployerAccessRequestsPanel } from "../../features/courses/components/AdminEmployerAccessRequestsPanel";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
-import {
-    createSignedUrlForPath,
-} from "../../lib/coursePrivateStorage";
+import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
 import { supabase } from "../../shared/api/supabaseClient";
 
 type CoursePrivatePaths = {
@@ -52,10 +50,7 @@ type CourseRow = {
   poster_url: string | null;
   is_visible: boolean;
   created_at: string;
-  course_private_files:
-    | CoursePrivatePaths
-    | CoursePrivatePaths[]
-    | null;
+  course_private_files: CoursePrivatePaths | CoursePrivatePaths[] | null;
 };
 
 type EmployerAccessRow = {
@@ -67,9 +62,7 @@ type EmployerAccessRow = {
   courses: { name: string } | { name: string }[] | null;
 };
 
-function normalizePrivateFiles(
-  raw: CourseRow["course_private_files"]
-): CoursePrivatePaths | null {
+function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePrivatePaths | null {
   if (!raw) return null;
   const row = Array.isArray(raw) ? raw[0] : raw;
   if (!row) return null;
@@ -114,10 +107,7 @@ const AdminManageCourses = () => {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [courseSearch, setCourseSearch] = useState("");
 
-  const publicCourses = useMemo(
-    () => courses.filter((course) => course.isVisible),
-    [courses]
-  );
+  const publicCourses = useMemo(() => courses.filter((course) => course.isVisible), [courses]);
 
   const filteredCourses = useMemo(() => {
     const q = courseSearch.trim().toLowerCase();
@@ -241,9 +231,7 @@ const AdminManageCourses = () => {
 
     const map: Record<string, string> = {};
     (profiles ?? []).forEach((p: { user_id: string; full_name: string; company_name: string | null }) => {
-      map[p.user_id] = p.company_name
-        ? `${p.full_name} (${p.company_name})`
-        : p.full_name;
+      map[p.user_id] = p.company_name ? `${p.full_name} (${p.company_name})` : p.full_name;
     });
     setEmployerNames(map);
   }, []);
@@ -386,3 +374,4 @@ const AdminManageCourses = () => {
 };
 
 export default AdminManageCourses;
+

@@ -9,7 +9,7 @@ import {
   createSignedUrlForPath,
   uploadCoursePrivateFile,
   type PrivateDocKind,
-} from "../../lib/coursePrivateStorage";
+} from "../../features/courses/storage/coursePrivateStorage";
 import { supabase } from "../../shared/api/supabaseClient";
 import {
   createOcrWorker,
@@ -49,10 +49,7 @@ type CourseRow = {
   poster_url: string | null;
   is_visible: boolean;
   created_at: string;
-  course_private_files:
-    | CoursePrivatePaths
-    | CoursePrivatePaths[]
-    | null;
+  course_private_files: CoursePrivatePaths | CoursePrivatePaths[] | null;
 };
 
 type CourseFormState = {
@@ -92,9 +89,7 @@ const emptyPrivateSelections: Record<PrivateDocKind, File | null> = {
   trainer_cv: null,
 };
 
-function normalizePrivateFiles(
-  raw: CourseRow["course_private_files"]
-): CoursePrivatePaths | null {
+function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePrivatePaths | null {
   if (!raw) return null;
   const row = Array.isArray(raw) ? raw[0] : raw;
   if (!row) return null;
@@ -261,9 +256,7 @@ export default function AdminCreateCourse() {
     void loadCourseForEdit();
   }, [isAuthorized, editingId, loadCourseForEdit]);
 
-  const handleInputChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = event.currentTarget;
     if (target instanceof HTMLInputElement && target.type === "checkbox") {
       setForm((prev) => ({ ...prev, [target.name]: target.checked }));
@@ -278,10 +271,7 @@ export default function AdminCreateCourse() {
     setOcrState({ status: "idle" });
   };
 
-  const handlePrivateFileChange = (
-    kind: PrivateDocKind,
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handlePrivateFileChange = (kind: PrivateDocKind, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setPrivateSelections((prev) => ({ ...prev, [kind]: file }));
   };
@@ -321,12 +311,7 @@ export default function AdminCreateCourse() {
     courseId: string,
     existing: CoursePrivatePaths | null
   ): Promise<CoursePrivatePaths> => {
-    const kinds: PrivateDocKind[] = [
-      "syllabus",
-      "tentative",
-      "trainer_hrd",
-      "trainer_cv",
-    ];
+    const kinds: PrivateDocKind[] = ["syllabus", "tentative", "trainer_hrd", "trainer_cv"];
 
     const merged: CoursePrivatePaths = {
       syllabus_storage_path: null,
@@ -396,9 +381,7 @@ export default function AdminCreateCourse() {
         contactPhone: prev.contactPhone.trim()
           ? prev.contactPhone
           : extracted.contactPhone ?? prev.contactPhone,
-        syllabus: prev.syllabus.trim()
-          ? prev.syllabus
-          : extracted.syllabus ?? prev.syllabus,
+        syllabus: prev.syllabus.trim() ? prev.syllabus : extracted.syllabus ?? prev.syllabus,
         details: prev.details.trim()
           ? `${prev.details.trim()}\n\n${extracted.detailsTemplate}\n\n${extracted.summary}`
           : `${extracted.detailsTemplate}\n\n${extracted.summary}`,

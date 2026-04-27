@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../app/layout/DashboardLayout";
-import { adminNavItems, employerNavItems } from "../app/layout/navItems";
-import SiteHeader from "../app/layout/SiteHeader";
-import { createSignedUrlForPath } from "../lib/coursePrivateStorage";
-import { supabase } from "../shared/api/supabaseClient";
-import { getCourseById, type CourseDetailRow } from "../features/courses/api/coursesApi";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
+import SiteHeader from "../../app/layout/SiteHeader";
+import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
+import { supabase } from "../../shared/api/supabaseClient";
+import { getCourseById, type CourseDetailRow } from "../../features/courses/api/coursesApi";
 import {
   getCoursePrivateFilesByCourseId,
   getEmployerAccessStatus,
   requestCoursePrivateFilesAccess,
   type CoursePrivatePaths,
-} from "../features/courses/api/privateFilesApi";
-import { useViewer } from "../shared/hooks/useViewer";
-import { CourseDetailHeader } from "../features/courses/components/CourseDetailHeader";
-import { CourseDetailContent } from "../features/courses/components/CourseDetailContent";
-import { CoursePrivateDocumentsPanel } from "../features/courses/components/CoursePrivateDocumentsPanel";
+} from "../../features/courses/api/privateFilesApi";
+import { useViewer } from "../../shared/hooks/useViewer";
+import { CourseDetailHeader } from "../../features/courses/components/CourseDetailHeader";
+import { CourseDetailContent } from "../../features/courses/components/CourseDetailContent";
+import { CoursePrivateDocumentsPanel } from "../../features/courses/components/CoursePrivateDocumentsPanel";
 
 type ViewerRole = "admin" | "employer" | null;
 
@@ -250,3 +250,4 @@ export default function CoursePage() {
     </div>
   );
 }
+

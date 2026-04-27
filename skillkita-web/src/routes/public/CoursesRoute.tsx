@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../shared/api/supabaseClient";
-import DashboardLayout from "../app/layout/DashboardLayout";
-import { adminNavItems, employerNavItems } from "../app/layout/navItems";
-import SiteHeader from "../app/layout/SiteHeader";
-import { createSignedUrlForPath } from "../lib/coursePrivateStorage";
-import { listVisibleCourses } from "../features/courses/api/coursesApi";
+import { supabase } from "../../shared/api/supabaseClient";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
+import SiteHeader from "../../app/layout/SiteHeader";
+import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
+import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import {
   listCoursePrivateFilesByCourseIds,
   listEmployerAccessRows,
   requestCoursePrivateFilesAccess,
   type CoursePrivatePaths,
-} from "../features/courses/api/privateFilesApi";
-import { useViewer } from "../shared/hooks/useViewer";
-import { CoursesGrid } from "../features/courses/components/CoursesGrid";
-import { CoursesSearchBar } from "../features/courses/components/CoursesSearchBar";
-import { EmployerPrivateAccessPanel } from "../features/courses/components/EmployerPrivateAccessPanel";
+} from "../../features/courses/api/privateFilesApi";
+import { useViewer } from "../../shared/hooks/useViewer";
+import { CoursesGrid } from "../../features/courses/components/CoursesGrid";
+import { CoursesSearchBar } from "../../features/courses/components/CoursesSearchBar";
+import { EmployerPrivateAccessPanel } from "../../features/courses/components/EmployerPrivateAccessPanel";
 
 type PublicCourse = {
   id: string;
@@ -239,3 +239,4 @@ const ViewCourses = () => {
 };
 
 export default ViewCourses;
+

@@ -14,7 +14,10 @@ export function normalizeWhitespace(text: string) {
 
 export function extractLabeledValue(text: string, labels: string[]) {
   const clean = normalizeWhitespace(text);
-  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = clean
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const labelGroup = labels
     .map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("|");
@@ -36,7 +39,10 @@ export function extractLabeledValue(text: string, labels: string[]) {
 
 export function extractAfterKeyword(text: string, keywords: string[]) {
   const clean = normalizeWhitespace(text);
-  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = clean
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const keyGroup = keywords
     .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("|");
@@ -53,7 +59,10 @@ export function extractAfterKeyword(text: string, keywords: string[]) {
 
 export function extractContactPerson(text: string, knownPhone?: string | null) {
   const clean = normalizeWhitespace(text);
-  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = clean
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   for (const line of lines) {
     if (
       !/(person to contact|contact person|contact|hubungi|untuk pertanyaan|pertanyaan|call)/i.test(
@@ -298,17 +307,13 @@ export function buildDetailsTemplate(fields: {
   email?: string | null;
 }) {
   const parts: string[] = [];
-  parts.push(
-    `Trainer name(s) / Nama jurulatih: ${fields.trainerNames ?? ""}`.trimEnd()
-  );
+  parts.push(`Trainer name(s) / Nama jurulatih: ${fields.trainerNames ?? ""}`.trimEnd());
   parts.push(`Time / Pukul: ${fields.time ?? ""}`.trimEnd());
   parts.push(`Venue / Lokasi: ${fields.venue ?? ""}`.trimEnd());
   parts.push(`MyCOID: ${fields.mycoid ?? ""}`.trimEnd());
   parts.push(`Price / Harga: ${fields.price ?? ""}`.trimEnd());
   const contactLine = [
-    fields.contactPerson
-      ? `Person to contact: ${fields.contactPerson}`
-      : "Person to contact:",
+    fields.contactPerson ? `Person to contact: ${fields.contactPerson}` : "Person to contact:",
     fields.contactPhone ? `Phone: ${fields.contactPhone}` : "Phone:",
     fields.email ? `Email: ${fields.email}` : null,
   ]
@@ -348,8 +353,7 @@ export async function createOcrWorker(
       if (!m?.status) return;
       setOcrState((prev) => {
         if (prev.status !== "running") return prev;
-        const pct =
-          typeof m.progress === "number" ? Math.round(m.progress * 100) : undefined;
+        const pct = typeof m.progress === "number" ? Math.round(m.progress * 100) : undefined;
         return {
           status: "running",
           progressLabel: `OCR: ${m.status}`,

@@ -1,10 +1,10 @@
 import PlaceholderPoster from "../../../assets/placeholder.jpg";
-import { CoursePosterMedia } from "../../../components/CoursePosterMedia";
+import { CoursePosterMedia } from "./CoursePosterMedia";
 import {
   PRIVATE_DOC_LABELS,
   columnForKind,
   type PrivateDocKind,
-} from "../../../lib/coursePrivateStorage";
+} from "../storage/coursePrivateStorage";
 
 type CoursePrivatePaths = {
   syllabus_storage_path: string | null;

@@ -47,9 +47,7 @@ const AdminLandingEditor = () => {
   const [experienceForm, setExperienceForm] =
     useState<ExperienceFormState>(initialExperienceForm);
   const [experienceFiles, setExperienceFiles] = useState<File[]>([]);
-  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(
-    null
-  );
+  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -96,9 +94,7 @@ const AdminLandingEditor = () => {
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to load content."
-      );
+      setErrorMessage(err instanceof Error ? err.message : "Failed to load content.");
     }
   }, [loadExperiences, loadLandingContent]);
 
@@ -144,15 +140,11 @@ const AdminLandingEditor = () => {
       setIsSaving(false);
     } catch (err) {
       setIsSaving(false);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to save landing content."
-      );
+      setErrorMessage(err instanceof Error ? err.message : "Failed to save landing content.");
     }
   };
 
-  const onExperienceFieldChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const onExperienceFieldChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.currentTarget;
     setExperienceForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -217,11 +209,7 @@ const AdminLandingEditor = () => {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (
-      !experienceForm.name.trim() ||
-      !experienceForm.date.trim() ||
-      !experienceForm.details.trim()
-    ) {
+    if (!experienceForm.name.trim() || !experienceForm.date.trim() || !experienceForm.details.trim()) {
       return;
     }
 
@@ -253,9 +241,7 @@ const AdminLandingEditor = () => {
       setIsSaving(false);
     } catch (err) {
       setIsSaving(false);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to save experience."
-      );
+      setErrorMessage(err instanceof Error ? err.message : "Failed to save experience.");
     }
   };
 

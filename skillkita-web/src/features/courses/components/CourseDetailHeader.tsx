@@ -1,5 +1,5 @@
 import PlaceholderPoster from "../../../assets/placeholder.jpg";
-import { CoursePosterMedia } from "../../../components/CoursePosterMedia";
+import { CoursePosterMedia } from "./CoursePosterMedia";
 import type { CourseDetailRow } from "../api/coursesApi";
 
 type Props = {
