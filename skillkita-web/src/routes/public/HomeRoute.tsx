@@ -1,6 +1,6 @@
-﻿import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useEffect, useState } from "react";
-import { CoursePosterMedia } from "../../components/CoursePosterMedia";
+import { CoursePosterMedia } from "../../features/courses/components/CoursePosterMedia";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
@@ -61,7 +61,11 @@ const HomePage = () => {
             .maybeSingle();
 
           if (profileRow) {
-            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            const r = profileRow as {
+              role: "admin" | "employer";
+              status: string;
+              full_name?: string;
+            };
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
@@ -366,3 +370,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

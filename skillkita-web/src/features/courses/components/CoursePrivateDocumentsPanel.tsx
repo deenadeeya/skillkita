@@ -2,7 +2,7 @@ import {
   PRIVATE_DOC_LABELS,
   columnForKind,
   type PrivateDocKind,
-} from "../../../lib/coursePrivateStorage";
+} from "../storage/coursePrivateStorage";
 import type { CoursePrivatePaths } from "../api/privateFilesApi";
 
 type Props = {

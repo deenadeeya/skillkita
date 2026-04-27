@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import PlaceholderPoster from "../../../../assets/placeholder.jpg";
-import { CoursePosterMedia } from "../../../../components/CoursePosterMedia";
+import { CoursePosterMedia } from "../CoursePosterMedia";
 
 type OcrState =
   | { status: "idle" }

@@ -3,21 +3,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
 import { supabase } from "../../shared/api/supabaseClient";
+import { useViewer } from "../../shared/hooks/useViewer";
+import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
+import { createEmployerQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
 
-type ProfileRow = {
-  user_id: string;
-  role: "admin" | "employer";
-  status: "pending" | "approved" | "rejected";
-  full_name: string;
-  company_name: string | null;
-  company_address: string | null;
-};
-
-type CourseLabel = { id: string; name: string; date: string; created_at: string };
+type CourseLabel = Pick<PublicCourseRow, "id" | "name" | "date" | "created_at">;
 
 const EmployerQuotationRequest = () => {
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
+  const viewerState = useViewer();
   const [courseName, setCourseName] = useState("");
   const [courseOptions, setCourseOptions] = useState<CourseLabel[]>([]);
   const [numberOfEmployers, setNumberOfEmployers] = useState("");
@@ -28,64 +21,26 @@ const EmployerQuotationRequest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadCourseOptions = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("courses")
-      .select("id,name,date,created_at,is_visible")
-      .eq("is_visible", true)
-      .order("date", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) {
+    try {
+      const rows = await listVisibleCourses();
+      setCourseOptions(
+        rows.map((c) => ({
+          id: c.id,
+          name: c.name,
+          date: c.date,
+          created_at: c.created_at,
+        }))
+      );
+    } catch (e) {
       setCourseOptions([]);
-      setErrorMessage(error.message);
-      return;
+      setErrorMessage(e instanceof Error ? e.message : "Failed to load courses.");
     }
-
-    setCourseOptions(
-      (data ?? []).map((r) => ({
-        id: (r as { id: string }).id,
-        name: (r as { name: string }).name,
-        date: (r as { date: string }).date,
-        created_at: (r as { created_at: string }).created_at,
-      }))
-    );
   }, []);
 
   useEffect(() => {
-    const run = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-      const { data: sessionData, error: sErr } = await supabase.auth.getSession();
-      if (sErr || !sessionData.session?.user) {
-        window.location.href = "/login";
-        return;
-      }
-      const user = sessionData.session.user;
-      setEmail(user.email ?? null);
-
-      const { data: profileRow, error: pErr } = await supabase
-        .from("user_profiles")
-        .select("user_id,role,status,full_name,company_name,company_address")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (pErr || !profileRow) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const pr = profileRow as ProfileRow;
-      if (pr.role !== "employer" || pr.status !== "approved") {
-        window.location.href = "/login";
-        return;
-      }
-
-      setProfile(pr);
-      await loadCourseOptions();
-      setIsLoading(false);
-    };
-    void run();
+    setIsLoading(true);
+    setErrorMessage(null);
+    void loadCourseOptions().finally(() => setIsLoading(false));
   }, [loadCourseOptions]);
 
   const courseNameSuggestions = useMemo(() => {
@@ -118,33 +73,32 @@ const EmployerQuotationRequest = () => {
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const uid = sessionData.session?.user?.id;
-    if (!uid || !profile) return;
+    if (viewerState.kind !== "signedIn") {
+      setErrorMessage("Not authenticated.");
+      return;
+    }
+    const viewer = viewerState.viewer;
+    if (viewer.role !== "employer" || viewer.status !== "approved") {
+      setErrorMessage("Employer account not approved.");
+      return;
+    }
 
-    const snapshot =
-      profile.company_name?.trim() || `${profile.full_name} (no company name on profile)`;
+    const snapshot = viewer.companyName?.trim() || `${viewer.fullName} (no company name on profile)`;
 
     setIsSubmitting(true);
-    const { error } = await supabase.from("quotation_requests").insert({
-      employer_user_id: uid,
-      company_name_snapshot: snapshot,
-      course_name: courseName.trim(),
-      number_of_employers: n,
-      proposed_date: proposedDate,
-      additional_description: additionalDescription.trim() || null,
-      status: "pending",
-    });
-
-    setIsSubmitting(false);
-
-    if (error) {
-      setErrorMessage(
-        error.message +
-          (error.message.toLowerCase().includes("row-level security")
-            ? " Run supabase/quotations.sql in the SQL editor if this table is new."
-            : "")
-      );
+    try {
+      await createEmployerQuotationRequest({
+        employer_user_id: viewer.userId,
+        company_name_snapshot: snapshot,
+        course_name: courseName.trim(),
+        number_of_employers: n,
+        proposed_date: proposedDate,
+        additional_description: additionalDescription.trim() || null,
+      });
+      setIsSubmitting(false);
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorMessage(err instanceof Error ? err.message : "Failed to submit request.");
       return;
     }
 
@@ -154,8 +108,8 @@ const EmployerQuotationRequest = () => {
   return (
     <DashboardLayout
       items={employerNavItems}
-      userName={profile?.full_name ?? "Employer"}
-      userEmail={email}
+      userName={viewerState.kind === "signedIn" ? viewerState.viewer.fullName : "Employer"}
+      userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
       onLogout={async () => {
         await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
@@ -196,7 +150,9 @@ const EmployerQuotationRequest = () => {
               Company on file
             </p>
             <p className="mt-1 text-sm font-semibold text-[#0001fc]">
-              {profile?.company_name?.trim() || "— (add company in profile if missing)"}
+              {viewerState.kind === "signedIn" && viewerState.viewer.companyName?.trim()
+                ? viewerState.viewer.companyName
+                : "— (add company in profile if missing)"}
             </p>
           </div>
 
@@ -276,3 +232,4 @@ const EmployerQuotationRequest = () => {
 };
 
 export default EmployerQuotationRequest;
+

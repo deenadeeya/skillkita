@@ -2,16 +2,29 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
-import { createQuotationPdfSignedUrl, deleteQuotationPdf, uploadQuotationPdf } from "../../features/quotation/storage";
+import {
+  createQuotationPdfSignedUrl,
+  deleteQuotationPdf,
+  uploadQuotationPdf,
+} from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { AdminQuotationReviewPanel } from "../../features/quotation/components/AdminQuotationReviewPanel";
 import { AdminQuotationRequestsTable } from "../../features/quotation/components/AdminQuotationRequestsTable";
-import { listEmployerLabels, listQuotationRequests, updateQuotationRequest, deleteQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
+import {
+  deleteQuotationRequest,
+  listEmployerLabels,
+  listQuotationRequests,
+  updateQuotationRequest,
+} from "../../features/quotation/api/quotationRequestsApi";
 import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 
-type EmployerLabel = { full_name: string; company_name: string | null; company_address: string | null };
+type EmployerLabel = {
+  full_name: string;
+  company_name: string | null;
+  company_address: string | null;
+};
 
 const AdminQuotations = () => {
   const [rows, setRows] = useState<QuotationRequestRow[]>([]);
@@ -65,18 +78,14 @@ const AdminQuotations = () => {
 
   useEffect(() => {
     if (activeReview) {
-      setCompanyName(
-        activeReview.company_name?.trim() || activeReview.company_name_snapshot || ""
-      );
+      setCompanyName(activeReview.company_name?.trim() || activeReview.company_name_snapshot || "");
       setCompanyAddress(
         activeReview.company_address?.trim() ||
           employerLabels[activeReview.employer_user_id]?.company_address?.trim() ||
           ""
       );
       setCourseMode(activeReview.course_mode ?? "");
-      setUnitPrice(
-        activeReview.unit_price != null ? String(activeReview.unit_price) : ""
-      );
+      setUnitPrice(activeReview.unit_price != null ? String(activeReview.unit_price) : "");
       setAmountRm(activeReview.amount_rm != null ? String(activeReview.amount_rm) : "");
     }
   }, [activeReview, employerLabels]);
@@ -124,9 +133,7 @@ const AdminQuotations = () => {
       !Number.isFinite(amount) ||
       amount < 0
     ) {
-      setErrorMessage(
-        "Fill company name, course mode, unit price (RM), and amount (RM) with valid numbers."
-      );
+      setErrorMessage("Fill company name, course mode, unit price (RM), and amount (RM) with valid numbers.");
       return;
     }
 
@@ -146,28 +153,25 @@ const AdminQuotations = () => {
       };
 
       const blob = buildQuotationPdfBlob(pdfInput, {
-        quotation_id: activeReview.quotation_no != null ? String(activeReview.quotation_no) : activeReview.id,
+        quotation_id:
+          activeReview.quotation_no != null ? String(activeReview.quotation_no) : activeReview.id,
         approved_date: new Date().toISOString(),
         employer_company_address: companyAddress.trim() || undefined,
       });
-      const path = await uploadQuotationPdf(
-        activeReview.employer_user_id,
-        activeReview.id,
-        blob
-      );
+      const path = await uploadQuotationPdf(activeReview.employer_user_id, activeReview.id, blob);
 
       const reviewer = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
       await updateQuotationRequest(activeReview.id, {
-          status: "approved",
-          company_name: companyName.trim(),
-          company_address: companyAddress.trim() ? companyAddress.trim() : null,
-          course_mode: courseMode.trim(),
-          unit_price: unit,
-          amount_rm: amount,
-          pdf_storage_path: path,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: reviewer,
-          updated_at: new Date().toISOString(),
+        status: "approved",
+        company_name: companyName.trim(),
+        company_address: companyAddress.trim() ? companyAddress.trim() : null,
+        course_mode: courseMode.trim(),
+        unit_price: unit,
+        amount_rm: amount,
+        pdf_storage_path: path,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: reviewer,
+        updated_at: new Date().toISOString(),
       });
 
       closeReview();
@@ -288,3 +292,4 @@ const AdminQuotations = () => {
 };
 
 export default AdminQuotations;
+

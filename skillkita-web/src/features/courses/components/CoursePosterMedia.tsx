@@ -55,3 +55,4 @@ export function CoursePosterMedia({
 
   return <img src={url} alt={alt} className={className} />;
 }
+

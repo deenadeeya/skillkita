@@ -1,4 +1,4 @@
-import { supabase } from "../shared/api/supabaseClient";
+import { supabase } from "../../../shared/api/supabaseClient";
 
 export const COURSE_PRIVATE_BUCKET = "course-private-files";
 
@@ -77,3 +77,4 @@ export async function createSignedUrlForPath(
   }
   return data.signedUrl;
 }
+
