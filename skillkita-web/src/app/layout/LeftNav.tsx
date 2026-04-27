@@ -1,6 +1,4 @@
-import {
-  ChevronDownIcon,
-} from "@heroicons/react/24/solid";
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
 
 export type NavItem = {
@@ -23,13 +21,7 @@ function isItemActive(item: NavItem, currentPath: string): boolean {
   return (item.children ?? []).some((c) => isItemActive(c, currentPath));
 }
 
-const LeftNav = ({
-  items,
-  currentPath,
-  userName,
-  userEmail,
-  onLogout,
-}: Props) => {
+const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) => {
   const initialOpen = useMemo(() => {
     const open: Record<string, boolean> = {};
     items.forEach((cat) => {
@@ -63,7 +55,9 @@ const LeftNav = ({
                   {CatIcon && <CatIcon className="h-5 w-5 text-[#7A1F1F]" />}
                   {cat.label}
                 </span>
-                <ChevronDownIcon className={["h-4 w-4 transition", open ? "rotate-180" : ""].join(" ")} />
+                <ChevronDownIcon
+                  className={["h-4 w-4 transition", open ? "rotate-180" : ""].join(" ")}
+                />
               </button>
 
               {open && (cat.children?.length ?? 0) > 0 && (
@@ -82,7 +76,9 @@ const LeftNav = ({
                           <>
                             <button
                               type="button"
-                              onClick={() => setOpenChildByKey((p) => ({ ...p, [childKey]: !childOpen }))}
+                              onClick={() =>
+                                setOpenChildByKey((p) => ({ ...p, [childKey]: !childOpen }))
+                              }
                               className={[
                                 "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
                                 childActive
@@ -101,7 +97,12 @@ const LeftNav = ({
                                 )}
                                 {child.label}
                               </span>
-                              <ChevronDownIcon className={["h-4 w-4 transition", childOpen ? "rotate-180" : ""].join(" ")} />
+                              <ChevronDownIcon
+                                className={[
+                                  "h-4 w-4 transition",
+                                  childOpen ? "rotate-180" : "",
+                                ].join(" ")}
+                              />
                             </button>
                             {childOpen && (
                               <div className="mt-1 space-y-1 pl-4">
@@ -193,4 +194,5 @@ const LeftNav = ({
 };
 
 export default LeftNav;
+
 

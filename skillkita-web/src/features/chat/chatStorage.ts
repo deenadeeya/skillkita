@@ -1,4 +1,4 @@
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 
 export const CHAT_ATTACHMENTS_BUCKET = "chat-attachments" as const;
 

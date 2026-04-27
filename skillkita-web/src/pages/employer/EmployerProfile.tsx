@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { employerNavItems } from "../../components/layout/navItems";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { employerNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 
 const EmployerProfile = () => {
   const [name, setName] = useState("Employer");

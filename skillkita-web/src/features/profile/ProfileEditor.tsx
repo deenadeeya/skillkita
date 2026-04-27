@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../shared/api/supabaseClient";
 import { uploadProfilePic } from "./profilePicStorage";
 import type { UserProfileRow } from "./types";
 

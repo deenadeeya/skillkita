@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { adminNavItems, employerNavItems } from "../../components/layout/navItems";
-import SiteHeader from "../../components/layout/SiteHeader";
-import { supabase } from "../../lib/supabaseClient";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
+import SiteHeader from "../../app/layout/SiteHeader";
+import { supabase } from "../../shared/api/supabaseClient";
 
 type ExperienceRow = {
   id: string;

@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import SiteHeader from "../../components/layout/SiteHeader";
-import { supabase } from "../../lib/supabaseClient";
+import SiteHeader from "../../app/layout/SiteHeader";
+import { supabase } from "../../shared/api/supabaseClient";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");

@@ -1,10 +1,10 @@
 ﻿import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useEffect, useState } from "react";
 import { CoursePosterMedia } from "../../components/CoursePosterMedia";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { adminNavItems, employerNavItems } from "../../components/layout/navItems";
-import SiteHeader from "../../components/layout/SiteHeader";
-import { supabase } from "../../lib/supabaseClient";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
+import SiteHeader from "../../app/layout/SiteHeader";
+import { supabase } from "../../shared/api/supabaseClient";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
 

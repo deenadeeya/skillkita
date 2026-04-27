@@ -1,8 +1,8 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { employerNavItems } from "../../components/layout/navItems";
-import { supabase } from "../../lib/supabaseClient";
+import DashboardLayout from "../../app/layout/DashboardLayout";
+import { employerNavItems } from "../../app/layout/navItems";
+import { supabase } from "../../shared/api/supabaseClient";
 
 type ProfileRow = {
   user_id: string;
