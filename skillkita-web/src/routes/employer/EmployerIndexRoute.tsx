@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
-import { createQuotationPdfSignedUrl } from "../../features/quotation/storage";
+import {
+  buildQuotationPdfDownloadFileName,
+  downloadQuotationPdfWithFileName,
+} from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../shared/api/supabaseClient";
 
@@ -92,12 +95,15 @@ const EmployerDashboard = () => {
     void load();
   }, [loadQuotations]);
 
-  const downloadQuotationPdf = async (path: string, quotationId: string) => {
-    setDownloadQuotationId(quotationId);
+  const downloadQuotationPdf = async (row: QuotationRequestRow) => {
+    if (!row.pdf_storage_path) return;
+    setDownloadQuotationId(row.id);
     setQuotationError(null);
     try {
-      const url = await createQuotationPdfSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
+      await downloadQuotationPdfWithFileName(
+        row.pdf_storage_path,
+        buildQuotationPdfDownloadFileName(row)
+      );
     } catch (err) {
       setQuotationError(err instanceof Error ? err.message : "Download failed.");
     } finally {
@@ -160,13 +166,10 @@ const EmployerDashboard = () => {
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
-                      <p className="mt-1 text-black/80">
-                        Proposed: {r.proposed_date} · Participants: {r.number_of_employers}
-                      </p>
-                      <p className="mt-1 text-xs text-black/60">
+                      <p className="mt-1 text-sm text-black/80">
                         Submitted: {new Date(r.created_at).toLocaleString()}
                       </p>
-                      <p className="mt-1">
+                      <p className="mt-1 text-sm text-black/80">
                         Status:{" "}
                         <span className="font-semibold capitalize">
                           {r.status === "pending" && "Pending admin review"}
@@ -179,18 +182,13 @@ const EmployerDashboard = () => {
                       <button
                         type="button"
                         disabled={downloadQuotationId === r.id}
-                        onClick={() => void downloadQuotationPdf(r.pdf_storage_path!, r.id)}
+                        onClick={() => void downloadQuotationPdf(r)}
                         className="sk-button-primary shrink-0 px-4 py-2 text-sm"
                       >
                         {downloadQuotationId === r.id ? "Opening…" : "Download PDF"}
                       </button>
                     )}
                   </div>
-                  {r.additional_description && (
-                    <p className="mt-2 border-t border-[#efe1db] pt-2 text-xs text-black/75">
-                      {r.additional_description}
-                    </p>
-                  )}
                 </li>
               ))}
             </ul>

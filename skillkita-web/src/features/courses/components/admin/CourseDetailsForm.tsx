@@ -1,4 +1,5 @@
 import type { ChangeEvent, ReactNode } from "react";
+import { RequiredMark } from "../../../../shared/ui/RequiredMark";
 
 type CourseFormState = {
   name: string;
@@ -19,17 +20,28 @@ type Props = {
   form: CourseFormState;
   isSaving: boolean;
   onInputChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  leading?: ReactNode;
   children?: ReactNode;
   submitLabel: string;
 };
 
-export function CourseDetailsForm({ form, isSaving, onInputChange, children, submitLabel }: Props) {
+export function CourseDetailsForm({
+  form,
+  isSaving,
+  onInputChange,
+  leading,
+  children,
+  submitLabel,
+}: Props) {
   return (
     <>
+      {leading}
+
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <label className="block md:col-span-2">
           <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
             Course Name / Nama Kursus
+            <RequiredMark />
           </span>
           <input
             name="name"
@@ -41,7 +53,10 @@ export function CourseDetailsForm({ form, isSaving, onInputChange, children, sub
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Date / Tarikh</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Date / Tarikh
+            <RequiredMark />
+          </span>
           <input
             type="date"
             name="date"
@@ -99,7 +114,7 @@ export function CourseDetailsForm({ form, isSaving, onInputChange, children, sub
 
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-            Price / Harga (RM)
+            Price / Harga
           </span>
           <input
             name="price"
@@ -145,14 +160,16 @@ export function CourseDetailsForm({ form, isSaving, onInputChange, children, sub
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Other Information</span>
+        <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          Other Information
+          
+        </span>
         <textarea
           name="details"
           value={form.details}
           onChange={onInputChange}
           rows={4}
           className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-          required
         />
       </label>
 

@@ -5,6 +5,18 @@ export type LandingContentRow = {
   cover_description: string;
   who_image_url: string | null;
   who_description: string;
+  /** Home page collage: top-left, top-right, wide bottom (public URLs in site-assets). */
+  home_featured_1_url: string | null;
+  home_featured_2_url: string | null;
+  home_featured_3_url: string | null;
+  /** Facebook Page URL for the home page Page Plugin (e.g. https://www.facebook.com/yourpage). */
+  social_facebook_page_url: string | null;
+  /** One public Facebook post URL per line (embedded posts). */
+  social_facebook_post_urls: string | null;
+  /** Link to the public Instagram profile (used for “follow” when no post embed). */
+  social_instagram_profile_url: string | null;
+  /** One public Instagram post/reel URL per line (official embeds). */
+  social_instagram_post_url: string | null;
   updated_at: string;
 };
 
@@ -17,15 +29,74 @@ export type ExperienceRow = {
   created_at: string;
 };
 
-export async function getLandingContent(id: number) {
-  const { data, error } = await supabase
-    .from("landing_content")
-    .select("id,cover_description,who_image_url,who_description,updated_at")
-    .eq("id", id)
-    .maybeSingle();
+const LANDING_SELECT_FULL =
+  "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,social_facebook_page_url,social_facebook_post_urls,social_instagram_profile_url,social_instagram_post_url,updated_at";
 
-  if (error) throw new Error(error.message);
-  return (data ?? null) as LandingContentRow | null;
+const LANDING_SELECT_FEATURED =
+  "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,updated_at";
+
+const LANDING_SELECT_LEGACY = "id,cover_description,who_image_url,who_description,updated_at";
+
+function applyNullSocial(data: unknown): LandingContentRow {
+  const r = data as Omit<
+    LandingContentRow,
+    | "social_facebook_page_url"
+    | "social_facebook_post_urls"
+    | "social_instagram_profile_url"
+    | "social_instagram_post_url"
+  >;
+  return {
+    ...r,
+    social_facebook_page_url: null,
+    social_facebook_post_urls: null,
+    social_instagram_profile_url: null,
+    social_instagram_post_url: null,
+  };
+}
+
+function applyNullFeaturedAndSocial(data: unknown): LandingContentRow {
+  const r = data as Omit<
+    LandingContentRow,
+    | "home_featured_1_url"
+    | "home_featured_2_url"
+    | "home_featured_3_url"
+    | "social_facebook_page_url"
+    | "social_facebook_post_urls"
+    | "social_instagram_profile_url"
+    | "social_instagram_post_url"
+  >;
+  return {
+    ...r,
+    home_featured_1_url: null,
+    home_featured_2_url: null,
+    home_featured_3_url: null,
+    social_facebook_page_url: null,
+    social_facebook_post_urls: null,
+    social_instagram_profile_url: null,
+    social_instagram_post_url: null,
+  };
+}
+
+export async function getLandingContent(id: number) {
+  const fetchRow = async (columns: string) =>
+    await supabase.from("landing_content").select(columns).eq("id", id).maybeSingle();
+
+  const full = await fetchRow(LANDING_SELECT_FULL);
+  if (!full.error) {
+    return (full.data ?? null) as LandingContentRow | null;
+  }
+
+  const featured = await fetchRow(LANDING_SELECT_FEATURED);
+  if (!featured.error) {
+    return featured.data ? applyNullSocial(featured.data) : null;
+  }
+
+  const legacy = await fetchRow(LANDING_SELECT_LEGACY);
+  if (!legacy.error) {
+    return legacy.data ? applyNullFeaturedAndSocial(legacy.data) : null;
+  }
+
+  throw new Error(legacy.error?.message ?? full.error.message);
 }
 
 export async function upsertLandingContent(payload: LandingContentRow) {
@@ -66,4 +137,3 @@ export async function deleteExperience(id: string) {
   const { error } = await supabase.from("experiences").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
-

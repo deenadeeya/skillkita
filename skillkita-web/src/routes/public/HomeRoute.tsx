@@ -7,16 +7,10 @@ import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
+import { getLandingContent } from "../../features/landing/api/landingApi";
+import { HomeSocialFeedsSection } from "../../features/landing/components/HomeSocialFeedsSection";
 
 const HomePage = () => {
-  type LandingContentRow = {
-    id: number;
-    cover_description: string;
-    who_image_url: string | null;
-    who_description: string;
-    updated_at: string;
-  };
-
   type CourseRow = {
     id: string;
     name: string;
@@ -33,6 +27,15 @@ const HomePage = () => {
   const [whoDescription, setWhoDescription] = useState(
     "TAWAU RESOURCES & SKILLS CENTRE is a Bumiputera Company. This company has been registered under the Trade License Ordinance 1948 in 2023 in the field of services and learning activities.\n\nThis company has also been registered with the Ministry of Finance (MoF) in 2023 as a Welding Competency Assessment (Accreditation) Centre for CIDB"
   );
+
+  const [homeFeatured1Url, setHomeFeatured1Url] = useState<string | null>(null);
+  const [homeFeatured2Url, setHomeFeatured2Url] = useState<string | null>(null);
+  const [homeFeatured3Url, setHomeFeatured3Url] = useState<string | null>(null);
+
+  const [socialFacebookPageUrl, setSocialFacebookPageUrl] = useState<string | null>(null);
+  const [socialFacebookPostUrls, setSocialFacebookPostUrls] = useState<string | null>(null);
+  const [socialInstagramProfileUrl, setSocialInstagramProfileUrl] = useState<string | null>(null);
+  const [socialInstagramPostUrls, setSocialInstagramPostUrls] = useState<string | null>(null);
 
   const [upcomingCourses, setUpcomingCourses] = useState<CourseRow[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -90,12 +93,8 @@ const HomePage = () => {
           setViewerEmail(null);
         }
 
-        const [landingRes, coursesRes] = await Promise.all([
-          supabase
-            .from("landing_content")
-            .select("id,cover_description,who_image_url,who_description,updated_at")
-            .eq("id", 1)
-            .maybeSingle(),
+        const [landing, coursesRes] = await Promise.all([
+          getLandingContent(1),
           supabase
             .from("courses")
             .select("id,name,date,details,poster_url,is_visible,created_at")
@@ -103,13 +102,26 @@ const HomePage = () => {
             .order("created_at", { ascending: false }),
         ]);
 
-        if (landingRes.error) throw new Error(landingRes.error.message);
         if (coursesRes.error) throw new Error(coursesRes.error.message);
 
-        const landing = landingRes.data as LandingContentRow | null;
         if (landing) {
           setCoverDescription(landing.cover_description ?? coverDescription);
           setWhoDescription(landing.who_description ?? whoDescription);
+          setHomeFeatured1Url(landing.home_featured_1_url);
+          setHomeFeatured2Url(landing.home_featured_2_url);
+          setHomeFeatured3Url(landing.home_featured_3_url);
+          setSocialFacebookPageUrl(landing.social_facebook_page_url);
+          setSocialFacebookPostUrls(landing.social_facebook_post_urls);
+          setSocialInstagramProfileUrl(landing.social_instagram_profile_url);
+          setSocialInstagramPostUrls(landing.social_instagram_post_url);
+        } else {
+          setHomeFeatured1Url(null);
+          setHomeFeatured2Url(null);
+          setHomeFeatured3Url(null);
+          setSocialFacebookPageUrl(null);
+          setSocialFacebookPostUrls(null);
+          setSocialInstagramProfileUrl(null);
+          setSocialInstagramPostUrls(null);
         }
 
         setUpcomingCourses((coursesRes.data ?? []) as CourseRow[]);
@@ -157,8 +169,6 @@ const HomePage = () => {
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#7A1F1F]/10 px-3 py-1 text-sm font-bold text-[#7A1F1F]">
                   <span>
                     Welcome, {viewerName || "User"} {" "}
-                    
-                    {viewerEmail ? ` • ${viewerEmail}` : ""}
                   </span>
                 </div>
               )}
@@ -230,21 +240,21 @@ const HomePage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
                 <CoursePosterMedia
-                  url={PlaceholderPoster}
+                  url={homeFeatured1Url ?? PlaceholderPoster}
                   alt="Learning"
                   className="aspect-[4/3] w-full object-cover"
                 />
               </div>
               <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
                 <CoursePosterMedia
-                  url={PlaceholderPoster}
+                  url={homeFeatured2Url ?? PlaceholderPoster}
                   alt="Classroom"
                   className="aspect-[4/3] w-full object-cover"
                 />
               </div>
               <div className="col-span-2 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
                 <CoursePosterMedia
-                  url={PlaceholderPoster}
+                  url={homeFeatured3Url ?? PlaceholderPoster}
                   alt="Graduation"
                   className="aspect-[16/7] w-full object-cover"
                 />
@@ -339,6 +349,13 @@ const HomePage = () => {
       <a href="/courses" className="sk-button-primary mt-8 rounded-xl px-6 py-3">
         Show All Courses
       </a>
+
+      <HomeSocialFeedsSection
+        facebookPageUrl={socialFacebookPageUrl}
+        facebookPostUrls={socialFacebookPostUrls}
+        instagramProfileUrl={socialInstagramProfileUrl}
+        instagramPostUrls={socialInstagramPostUrls}
+      />
 
     </div>
   );

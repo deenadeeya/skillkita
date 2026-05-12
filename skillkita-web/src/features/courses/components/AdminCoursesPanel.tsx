@@ -66,7 +66,7 @@ export function AdminCoursesPanel({
           <div>
             <h2 className="text-2xl font-bold text-[#7A1F1F]">Course creation</h2>
             <p className="mt-2 text-sm text-black">
-              Create new courses on a dedicated page (with OCR and private documents).
+              Create new courses and upload posters along with course documents
             </p>
           </div>
           <button

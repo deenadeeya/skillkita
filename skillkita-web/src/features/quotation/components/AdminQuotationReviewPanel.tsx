@@ -1,4 +1,5 @@
 import type { QuotationRequestRow } from "../types";
+import { RequiredMark } from "../../../shared/ui/RequiredMark";
 
 type EmployerLabel = {
   full_name: string;
@@ -74,9 +75,13 @@ export function AdminQuotationReviewPanel({
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <p className="text-sm text-black/70 md:col-span-2">
+          Required fields are marked with <RequiredMark />.
+        </p>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
             Company name (on quotation PDF)
+            <RequiredMark />
           </span>
           <input
             value={companyName}
@@ -104,7 +109,10 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Course mode
+            <RequiredMark />
+          </span>
           <select
             value={courseMode}
             onChange={(e) => onChangeCourseMode(e.target.value)}
@@ -121,7 +129,10 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Unit price (RM)</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Unit price (RM)
+            <RequiredMark />
+          </span>
           <input
             type="number"
             min={0}
@@ -133,7 +144,10 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Amount (RM)
+            <RequiredMark />
+          </span>
           <input
             type="number"
             min={0}

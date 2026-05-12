@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { RequiredMark } from "../../../shared/ui/RequiredMark";
 
 type EmployerOption = { value: string; label: string; company_name: string | null; company_address: string | null };
 type CourseOption = { value: string; label: string };
@@ -49,9 +50,15 @@ export function AdminCreateQuotationForm({
   return (
     <section className="sk-card mt-8 p-6">
       <form className="space-y-4" onSubmit={onSubmit}>
+        <p className="text-sm text-black/70">
+          Required fields are marked with <RequiredMark />.
+        </p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Employer</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Employer
+              <RequiredMark />
+            </span>
             <select
               value={createEmployerUserId}
               onChange={(e) => onChange({ createEmployerUserId: e.target.value })}
@@ -72,7 +79,10 @@ export function AdminCreateQuotationForm({
 
           {isManualEmployer && (
             <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Employer name</span>
+              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                Employer name
+                <RequiredMark />
+              </span>
               <input
                 value={createManualEmployerName}
                 onChange={(e) => onChange({ createManualEmployerName: e.target.value })}
@@ -87,7 +97,10 @@ export function AdminCreateQuotationForm({
           )}
 
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Company name (PDF)</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Company name (PDF)
+              <RequiredMark />
+            </span>
             <input
               value={createCompanyName}
               onChange={(e) => onChange({ createCompanyName: e.target.value })}
@@ -108,7 +121,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course name</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Course name
+              <RequiredMark />
+            </span>
             {!isManualCourse && (
               <p className="mt-1 mb-1 text-xs text-black/60">
                 Pick an existing course, or choose “Manual / new course” to type a name.
@@ -145,7 +161,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Participants</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Participants
+              <RequiredMark />
+            </span>
             <input
               type="number"
               min={1}
@@ -157,7 +176,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Proposed booking date</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Proposed booking date
+              <RequiredMark />
+            </span>
             <input
               type="date"
               value={createProposedDate}
@@ -181,7 +203,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Course mode
+              <RequiredMark />
+            </span>
             <select
               value={createCourseMode}
               onChange={(e) => onChange({ createCourseMode: e.target.value })}
@@ -198,7 +223,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Unit price (RM)</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Unit price (RM)
+              <RequiredMark />
+            </span>
             <input
               type="number"
               min={0}
@@ -211,7 +239,10 @@ export function AdminCreateQuotationForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+              Amount (RM)
+              <RequiredMark />
+            </span>
             <input
               type="number"
               min={0}

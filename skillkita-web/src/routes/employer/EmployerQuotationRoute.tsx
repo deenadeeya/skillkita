@@ -6,6 +6,7 @@ import { supabase } from "../../shared/api/supabaseClient";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
 import { createEmployerQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
+import { RequiredMark } from "../../shared/ui/RequiredMark";
 
 type CourseLabel = Pick<PublicCourseRow, "id" | "name" | "date" | "created_at">;
 
@@ -126,7 +127,8 @@ const EmployerQuotationRequest = () => {
           <h1 className="mt-6 text-4xl font-bold text-[#0001fc] md:text-5xl">Request a Quotation</h1>
           <p className="mt-3 max-w-2xl text-lg leading-relaxed text-black">
             Submit your course details below. An administrator will review your request, set pricing, and
-            approve it. When approved, you can download your quotation as a PDF from this page.
+            approve it. When approved, you can download your quotation as a PDF from the employer
+            dashboard.
           </p>
         </div>
 
@@ -140,8 +142,7 @@ const EmployerQuotationRequest = () => {
           <div className="border-b border-black/5 pb-5">
             <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">New Quotation Application</h2>
             <p className="mt-2 text-sm leading-relaxed text-black/70">
-              Fill in the details below. Fields marked with your profile company are shown for your
-              reference.
+              Fill in the details below. Contact the admin through Chat Support for any questions.
             </p>
           </div>
 
@@ -159,7 +160,10 @@ const EmployerQuotationRequest = () => {
           <form className="mt-6 space-y-5" onSubmit={(ev) => void handleSubmit(ev)}>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block md:col-span-2">
-                <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">Course name</span>
+                <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+                  Course name
+                  <RequiredMark />
+                </span>
                 <input
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
@@ -180,6 +184,7 @@ const EmployerQuotationRequest = () => {
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
                   Number of participants
+                  <RequiredMark />
                 </span>
                 <input
                   type="number"
@@ -191,7 +196,10 @@ const EmployerQuotationRequest = () => {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">Proposed date</span>
+                <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+                  Proposed date
+                  <RequiredMark />
+                </span>
                 <input
                   type="date"
                   value={proposedDate}

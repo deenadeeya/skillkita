@@ -3,8 +3,9 @@ import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import {
-  createQuotationPdfSignedUrl,
+  buildQuotationPdfDownloadFileName,
   deleteQuotationPdf,
+  downloadQuotationPdfWithFileName,
   uploadQuotationPdf,
 } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
@@ -183,12 +184,15 @@ const AdminQuotations = () => {
     }
   };
 
-  const downloadPdf = async (path: string, quotationId: string) => {
-    setDownloadId(quotationId);
+  const downloadPdf = async (row: QuotationRequestRow) => {
+    if (!row.pdf_storage_path) return;
+    setDownloadId(row.id);
     setErrorMessage(null);
     try {
-      const url = await createQuotationPdfSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
+      await downloadQuotationPdfWithFileName(
+        row.pdf_storage_path,
+        buildQuotationPdfDownloadFileName(row)
+      );
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Download failed.");
     } finally {
@@ -283,7 +287,7 @@ const AdminQuotations = () => {
           deleteId={deleteId}
           isSaving={isSaving}
           onReview={openReview}
-          onDownload={(path, id) => void downloadPdf(path, id)}
+          onDownload={(row) => void downloadPdf(row)}
           onDeleteRequest={(row) => void handleDelete(row)}
         />
       </AdminPageFrame>
