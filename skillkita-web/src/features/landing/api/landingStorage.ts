@@ -14,6 +14,21 @@ export async function uploadSiteAssetWhoImage(file: File) {
   return data.publicUrl ?? null;
 }
 
+/** Home page collage slot 1 (top-left), 2 (top-right), 3 (wide bottom). */
+export async function uploadSiteAssetHomeFeatured(file: File, slot: 1 | 2 | 3) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filePath = `home-featured/${slot}/${crypto.randomUUID()}.${ext || "jpg"}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("site-assets")
+    .upload(filePath, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data } = supabase.storage.from("site-assets").getPublicUrl(filePath);
+  return data.publicUrl ?? null;
+}
+
 export async function uploadExperiencePhotos(files: File[]) {
   if (files.length === 0) return [] as string[];
 

@@ -17,6 +17,8 @@ type EmployerSummary = {
   user_id: string;
   full_name: string;
   company_name: string | null;
+  /** From user_profiles.email when migrated; may be null. */
+  email: string | null;
 };
 
 const AdminMessages = () => {
@@ -41,16 +43,39 @@ const AdminMessages = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    const primary = await supabase
       .from("user_profiles")
-      .select("user_id,full_name,company_name")
+      .select("user_id,full_name,company_name,email")
       .in("user_id", employerIds);
 
-    if (error) throw error;
+    const missingEmailColumn =
+      !!primary.error &&
+      primary.error.message.toLowerCase().includes("email") &&
+      primary.error.message.toLowerCase().includes("does not exist");
+
+    const res = missingEmailColumn
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id,full_name,company_name")
+          .in("user_id", employerIds)
+      : primary;
+
+    if (res.error) throw res.error;
 
     const map: Record<string, EmployerSummary> = {};
-    (data ?? []).forEach((r: EmployerSummary) => {
-      map[r.user_id] = r;
+    (res.data ?? []).forEach((raw) => {
+      const row = raw as {
+        user_id: string;
+        full_name: string;
+        company_name: string | null;
+        email?: string | null;
+      };
+      map[row.user_id] = {
+        user_id: row.user_id,
+        full_name: row.full_name,
+        company_name: row.company_name ?? null,
+        email: row.email != null && String(row.email).trim() ? String(row.email).trim() : null,
+      };
     });
     setEmployerById(map);
   }, []);
@@ -129,6 +154,16 @@ const AdminMessages = () => {
     window.location.href = `/admin/messages?role=admin&conversation=${encodeURIComponent(id)}`;
   };
 
+  const backToInbox = () => {
+    window.location.href = "/admin/messages?role=admin";
+  };
+
+  const inChatView = Boolean(selectedConversationId && selectedConversation && adminProfile);
+
+  const activeEmployer = selectedConversation
+    ? employerById[selectedConversation.employer_user_id]
+    : undefined;
+
   return (
     <DashboardLayout
       items={adminNavItems}
@@ -140,88 +175,120 @@ const AdminMessages = () => {
         window.location.href = "/";
       }}
     >
-        <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Messages</h1>
-        <p className="mt-3 text-lg text-black md:text-xl">
-          {adminProfile ? `Welcome, ${adminProfile.full_name}.` : "Welcome."} Chat with employers here.
-        </p>
-
-        {errorMessage && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
-
-        {isAuthChecking && (
-          <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-            Checking admin access…
-          </div>
-        )}
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-          <section className="sk-card p-6">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold text-[#7A1F1F]">Inbox</h2>
-              <span className="text-sm font-semibold text-[#7A1F1F]">{conversations.length}</span>
-            </div>
-
-            {isLoading && <p className="mt-4 text-sm text-black/70">Loading…</p>}
-
-            {!isLoading && conversations.length === 0 && (
-              <p className="mt-4 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-                No employer conversations yet.
-              </p>
-            )}
-
-            <div className="mt-4 space-y-2">
-              {conversations.map((c) => {
-                const emp = employerById[c.employer_user_id];
-                const active = selectedConversation?.id === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => openConversation(c.id)}
-                    className={[
-                      "w-full rounded-xl border p-4 text-left shadow-sm",
-                      active
-                        ? "border-[#0001fc]/30 bg-[#0001fc]/5"
-                        : "border-[#efe1db] bg-white hover:bg-[#faf7f2]",
-                    ].join(" ")}
-                  >
-                    <p className="text-sm font-semibold text-[#0001fc]">{emp?.full_name ?? "Employer"}</p>
-                    <p className="mt-1 text-xs text-black/60">
-                      {emp?.company_name ? `Company: ${emp.company_name} · ` : ""}
-                      Started: {new Date(c.created_at).toLocaleDateString()}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <div>
-            {!selectedConversation && (
-              <div className="sk-card p-6">
-                <p className="text-sm text-black/70">Select a conversation to start chatting.</p>
-              </div>
-            )}
-
-            {selectedConversation && adminProfile && (
-              <ChatChannel
-                conversationId={selectedConversation.id}
-                currentUserId={adminProfile.user_id}
-                header={
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-semibold text-[#7A1F1F]">Chatting with</p>
-                    <p className="text-xl font-bold text-[#0001fc]">
-                      {employerById[selectedConversation.employer_user_id]?.full_name ?? "Employer"}
-                    </p>
-                  </div>
-                }
-              />
-            )}
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Messages</h1>
+          <p className="mt-3 text-lg text-black md:text-xl">
+            {adminProfile ? `Welcome, ${adminProfile.full_name}.` : "Welcome."}{" "}
+            {inChatView
+              ? "You’re in a chat with an employer."
+              : "Pick a conversation from your inbox to reply."}
+          </p>
         </div>
+        {inChatView && (
+          <button type="button" onClick={backToInbox} className="sk-button-secondary px-4 py-2">
+            Back to inbox
+          </button>
+        )}
+      </div>
+
+      {errorMessage && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
+      {isAuthChecking && (
+        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+          Checking admin access…
+        </div>
+      )}
+
+      {!isAuthChecking && isLoading && (
+        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+          Loading…
+        </div>
+      )}
+
+      {!isAuthChecking && !isLoading && !selectedConversationId && (
+        <section className="sk-card mt-10 p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-2xl font-bold text-[#7A1F1F]">Inbox</h2>
+            <span className="text-sm font-semibold text-[#7A1F1F]">{conversations.length}</span>
+          </div>
+          <p className="mt-2 text-sm text-black/80">
+            Choose a conversation to read and send messages.
+          </p>
+
+          {conversations.length === 0 && (
+            <p className="mt-5 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+              No employer conversations yet.
+            </p>
+          )}
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {conversations.map((c) => {
+              const emp = employerById[c.employer_user_id];
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => openConversation(c.id)}
+                  className="rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
+                >
+                  <p className="text-sm font-semibold text-[#0001fc]">
+                    {emp?.full_name ?? "Employer"}
+                    {emp?.email ? (
+                      <span className="mt-0.5 block break-all text-xs font-normal text-black/70">
+                        {emp.email}
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="mt-1 text-xs text-black/60">
+                    {emp?.company_name ? `Company: ${emp.company_name} · ` : ""}
+                    Started: {new Date(c.created_at).toLocaleDateString()}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-[#7A1F1F]">Click to open chat</p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {!isAuthChecking &&
+        !isLoading &&
+        selectedConversationId &&
+        !selectedConversation && (
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            That conversation could not be found.{" "}
+            <button type="button" className="font-semibold underline" onClick={backToInbox}>
+              Return to inbox
+            </button>
+          </div>
+        )}
+
+      {!isAuthChecking && !isLoading && inChatView && selectedConversation && adminProfile && (
+        <div className="mt-8">
+          <ChatChannel
+            conversationId={selectedConversation.id}
+            currentUserId={adminProfile.user_id}
+            header={
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold text-[#7A1F1F]">Chatting with</p>
+                <p className="text-xl font-bold text-[#0001fc]">
+                  <span className="inline">{activeEmployer?.full_name ?? "Employer"}</span>
+                  {activeEmployer?.email ? (
+                    <span className="mt-1 block break-all text-sm font-normal text-black/75 md:mt-0 md:inline md:before:mx-2 md:before:text-black/40 md:before:content-['·']">
+                      {activeEmployer.email}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            }
+          />
+        </div>
+      )}
     </DashboardLayout>
   );
 };

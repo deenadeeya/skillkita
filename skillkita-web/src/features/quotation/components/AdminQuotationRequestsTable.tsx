@@ -13,7 +13,7 @@ type Props = {
   downloadId: string | null;
   deleteId: string | null;
   onReview: (row: QuotationRequestRow) => void;
-  onDownload: (storagePath: string, requestId: string) => void;
+  onDownload: (row: QuotationRequestRow) => void;
   onDeleteRequest: (row: QuotationRequestRow) => void;
   isSaving?: boolean;
 };
@@ -82,7 +82,7 @@ export function AdminQuotationRequestsTable({
                           <>
                             <button
                               type="button"
-                              onClick={() => onDownload(r.pdf_storage_path!, r.id)}
+                              onClick={() => onDownload(r)}
                               className="font-semibold text-[#0001fc] underline"
                               disabled={downloadId === r.id}
                             >

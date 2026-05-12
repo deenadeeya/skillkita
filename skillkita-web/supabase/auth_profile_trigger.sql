@@ -11,14 +11,15 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.user_profiles (user_id, full_name, company_name, phone, role, status)
+  insert into public.user_profiles (user_id, full_name, company_name, phone, role, status, email)
   values (
     new.id,
     coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), '—'),
     nullif(trim(coalesce(new.raw_user_meta_data->>'company_name', '')), ''),
     nullif(trim(coalesce(new.raw_user_meta_data->>'phone', '')), ''),
     'employer',
-    'pending'
+    'pending',
+    nullif(trim(coalesce(new.email::text, '')), '')
   )
   on conflict (user_id) do nothing;
   return new;

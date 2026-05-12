@@ -4,8 +4,13 @@ import { supabase } from "../../../shared/api/supabaseClient";
 export type ProfileRow = {
   user_id: string;
   full_name: string;
+  short_name: string | null;
   company_name: string | null;
+  company_address: string | null;
   phone: string | null;
+  /** Mirrored from auth.users; see supabase/user_profiles_email.sql */
+  email: string | null;
+  profile_pic_url: string | null;
   role: "admin" | "employer";
   status: "pending" | "approved" | "rejected";
   created_at: string;
@@ -13,14 +18,76 @@ export type ProfileRow = {
   approved_by: string | null;
 };
 
+const PROFILE_LIST_SELECT_WITH_EMAIL =
+  "user_id,full_name,short_name,company_name,company_address,phone,profile_pic_url,role,status,created_at,approved_at,approved_by,email";
+
+const PROFILE_LIST_SELECT_NO_EMAIL =
+  "user_id,full_name,short_name,company_name,company_address,phone,profile_pic_url,role,status,created_at,approved_at,approved_by";
+
 export async function listUserProfiles() {
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("user_profiles")
-    .select("user_id,full_name,company_name,phone,role,status,created_at,approved_at,approved_by")
+    .select(PROFILE_LIST_SELECT_WITH_EMAIL)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return (data ?? []) as ProfileRow[];
+  const missingEmailColumn =
+    !!primary.error &&
+    primary.error.message.toLowerCase().includes("email") &&
+    primary.error.message.toLowerCase().includes("does not exist");
+
+  const res = missingEmailColumn
+    ? await supabase
+        .from("user_profiles")
+        .select(PROFILE_LIST_SELECT_NO_EMAIL)
+        .order("created_at", { ascending: false })
+    : primary;
+
+  if (res.error) throw new Error(res.error.message);
+  const rows = (res.data ?? []) as ProfileRow[];
+  if (missingEmailColumn) {
+    return rows.map((r) => ({ ...r, email: null as string | null }));
+  }
+  return rows;
+}
+
+export type EmployerProfileUpdate = {
+  userId: string;
+  fullName: string;
+  shortName: string | null;
+  companyName: string | null;
+  companyAddress: string | null;
+  phone: string | null;
+  profilePicUrl: string | null;
+};
+
+export async function updateEmployerProfile(params: EmployerProfileUpdate) {
+  const update = {
+    full_name: params.fullName.trim() || "—",
+    short_name: params.shortName?.trim() ? params.shortName.trim() : null,
+    company_name: params.companyName?.trim() ? params.companyName.trim() : null,
+    company_address: params.companyAddress?.trim() ? params.companyAddress.trim() : null,
+    phone: params.phone?.trim() ? params.phone.trim() : null,
+    profile_pic_url: params.profilePicUrl,
+  };
+
+  const primary = await supabase.from("user_profiles").update(update).eq("user_id", params.userId);
+
+  const shouldFallback =
+    !!primary.error &&
+    primary.error.message.toLowerCase().includes("company_address") &&
+    primary.error.message.toLowerCase().includes("does not exist");
+
+  const res = shouldFallback
+    ? await supabase
+        .from("user_profiles")
+        .update({
+          ...update,
+          company_address: undefined,
+        })
+        .eq("user_id", params.userId)
+    : primary;
+
+  if (res.error) throw new Error(res.error.message);
 }
 
 export async function setEmployerApproval(params: {

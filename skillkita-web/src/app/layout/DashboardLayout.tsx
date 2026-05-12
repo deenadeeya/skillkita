@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import LeftNav, { type NavItem } from "./LeftNav";
 import SiteHeader from "./SiteHeader";
+import { DASHBOARD_SIDEBAR_WIDTH_PX, useDashboardMainInset } from "./DashboardMainInsetContext";
 
 type Props = {
   items: NavItem[];
@@ -22,6 +23,20 @@ const DashboardLayout = ({
 }: Props) => {
   const currentPath = useMemo(() => window.location.pathname.replace(/\/+$/, "") || "/", []);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { setDesktopInsetPx } = useDashboardMainInset();
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => {
+      setDesktopInsetPx(mq.matches ? DASHBOARD_SIDEBAR_WIDTH_PX : 0);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => {
+      mq.removeEventListener("change", sync);
+      setDesktopInsetPx(0);
+    };
+  }, [setDesktopInsetPx]);
 
   useEffect(() => {
     const onResize = () => {
