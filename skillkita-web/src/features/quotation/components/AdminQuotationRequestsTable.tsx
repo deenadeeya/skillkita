@@ -66,54 +66,46 @@ export function AdminQuotationRequestsTable({
                   <td className="py-3 pr-3 align-top">{r.proposed_date}</td>
                   <td className="py-3 pr-3 align-top capitalize">{r.status}</td>
                   <td className="py-3 align-top">
-                    {r.status === "pending" && (
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      {r.status === "pending" && (
+                        <button
+                          type="button"
+                          onClick={() => onReview(r)}
+                          className="shrink-0 rounded-sm font-semibold text-[#0001fc] underline decoration-[#0001fc]/40 underline-offset-2 transition hover:text-[#0001cc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0001fc] focus-visible:ring-offset-2"
+                        >
+                          Review
+                        </button>
+                      )}
+
+                      {r.status === "approved" &&
+                        (r.pdf_storage_path ? (
+                          <button
+                            type="button"
+                            onClick={() => onDownload(r)}
+                            className="shrink-0 rounded-sm font-semibold text-[#0001fc] underline decoration-[#0001fc]/40 underline-offset-2 transition hover:text-[#0001cc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0001fc] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={downloadId === r.id}
+                          >
+                            {downloadId === r.id ? "Preparing..." : "Download"}
+                          </button>
+                        ) : (
+                          <span className="shrink-0 text-sm font-medium text-red-700">Missing PDF</span>
+                        ))}
+
+                      {r.status === "rejected" && (
+                        <span className="shrink-0 text-sm text-black/50" aria-hidden>
+                          —
+                        </span>
+                      )}
+
                       <button
                         type="button"
-                        onClick={() => onReview(r)}
-                        className="font-semibold text-[#0001fc] underline"
+                        onClick={() => onDeleteRequest(r)}
+                        className="shrink-0 rounded-sm font-semibold text-red-700 underline decoration-red-700/40 underline-offset-2 transition hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-red-300"
+                        disabled={deleteId === r.id || isSaving}
                       >
-                        Review
+                        {deleteId === r.id ? "Deleting..." : "Delete"}
                       </button>
-                    )}
-
-                    {r.status === "approved" && (
-                      <>
-                        {r.pdf_storage_path ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => onDownload(r)}
-                              className="font-semibold text-[#0001fc] underline"
-                              disabled={downloadId === r.id}
-                            >
-                              {downloadId === r.id ? "Preparing..." : "Download"}
-                            </button>
-                            <span className="px-2 text-black/30">·</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-red-700">Missing PDF</span>
-                            <span className="px-2 text-black/30">·</span>
-                          </>
-                        )}
-                      </>
-                    )}
-
-                    {r.status === "rejected" && (
-                      <>
-                        <span className="text-black/50">—</span>
-                        <span className="px-2 text-black/30">·</span>
-                      </>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => onDeleteRequest(r)}
-                      className="font-semibold text-red-700 underline disabled:text-red-300"
-                      disabled={deleteId === r.id || isSaving}
-                    >
-                      {deleteId === r.id ? "Deleting..." : "Delete"}
-                    </button>
+                    </div>
                   </td>
                 </tr>
               ))}

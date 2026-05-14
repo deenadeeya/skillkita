@@ -31,6 +31,8 @@ const HomePage = () => {
   const [homeFeatured1Url, setHomeFeatured1Url] = useState<string | null>(null);
   const [homeFeatured2Url, setHomeFeatured2Url] = useState<string | null>(null);
   const [homeFeatured3Url, setHomeFeatured3Url] = useState<string | null>(null);
+  /** Hero image (right column): same URL as Manage Home → Who are we → Picture (`who_image_url`). */
+  const [heroWhoImageUrl, setHeroWhoImageUrl] = useState<string>(TRSCGroupPhoto);
 
   const [socialFacebookPageUrl, setSocialFacebookPageUrl] = useState<string | null>(null);
   const [socialFacebookPostUrls, setSocialFacebookPostUrls] = useState<string | null>(null);
@@ -107,6 +109,8 @@ const HomePage = () => {
         if (landing) {
           setCoverDescription(landing.cover_description ?? coverDescription);
           setWhoDescription(landing.who_description ?? whoDescription);
+          const whoUrl = landing.who_image_url?.trim();
+          setHeroWhoImageUrl(whoUrl || TRSCGroupPhoto);
           setHomeFeatured1Url(landing.home_featured_1_url);
           setHomeFeatured2Url(landing.home_featured_2_url);
           setHomeFeatured3Url(landing.home_featured_3_url);
@@ -115,6 +119,7 @@ const HomePage = () => {
           setSocialInstagramProfileUrl(landing.social_instagram_profile_url);
           setSocialInstagramPostUrls(landing.social_instagram_post_url);
         } else {
+          setHeroWhoImageUrl(TRSCGroupPhoto);
           setHomeFeatured1Url(null);
           setHomeFeatured2Url(null);
           setHomeFeatured3Url(null);
@@ -216,8 +221,8 @@ const HomePage = () => {
               <div className="absolute -inset-4 rounded-3xl bg-[#7A1F1F]/10 blur-2xl" />
               <div className="relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5">
                 <CoursePosterMedia
-                  url={TRSCGroupPhoto}
-                  alt="Training"
+                  url={heroWhoImageUrl}
+                  alt="Who we are"
                   className="aspect-[4/3] w-full object-cover"
                 />
               </div>
