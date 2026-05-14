@@ -82,7 +82,7 @@ export function LandingCoverEditor({
             <img
               src={featuredPreview1}
               alt="Featured 1 preview"
-              className="mt-2 aspect-[4/3] w-full rounded-xl object-cover"
+              className="mx-auto mt-2 block aspect-[4/3] w-full max-w-[200px] rounded-xl object-cover"
             />
           </label>
           <label className="block">
@@ -97,7 +97,7 @@ export function LandingCoverEditor({
             <img
               src={featuredPreview2}
               alt="Featured 2 preview"
-              className="mt-2 aspect-[4/3] w-full rounded-xl object-cover"
+              className="mx-auto mt-2 block aspect-[4/3] w-full max-w-[200px] rounded-xl object-cover"
             />
           </label>
         </div>
@@ -111,11 +111,13 @@ export function LandingCoverEditor({
             className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
             disabled={isSaving}
           />
-          <img
-            src={featuredPreview3}
-            alt="Featured 3 preview"
-            className="mt-2 aspect-[16/7] w-full rounded-xl object-cover"
-          />
+          <div className="mt-2 flex w-full justify-center">
+            <img
+              src={featuredPreview3}
+              alt="Featured 3 preview"
+              className="aspect-[16/7] w-[min(100%,36rem)] shrink-0 rounded-xl object-cover"
+            />
+          </div>
         </label>
 
         <h3 className="pt-2 text-xl font-bold text-[#7A1F1F]">Who are we</h3>
@@ -129,7 +131,11 @@ export function LandingCoverEditor({
             className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
             disabled={isSaving}
           />
-          <img src={whoPreviewUrl} alt="Who are we preview" className="mt-3 w-full rounded-xl object-cover" />
+          <img
+            src={whoPreviewUrl}
+            alt="Who are we preview"
+            className="mx-auto mt-3 block max-h-48 w-full max-w-sm rounded-xl object-cover"
+          />
         </label>
 
         <label className="block">

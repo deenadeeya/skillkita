@@ -552,6 +552,12 @@ const AdminUsers = () => {
               admins.map((p) => (
                 <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
                   <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                  <p className="mt-1 text-sm text-black/80">
+                    Email:{" "}
+                    <span className="break-all font-medium text-black/90">
+                      {p.email?.trim() ? p.email : "—"}
+                    </span>
+                  </p>
                   <p className="mt-1 text-xs font-semibold text-black/70">
                     Created: {new Date(p.created_at).toLocaleString()}
                   </p>
