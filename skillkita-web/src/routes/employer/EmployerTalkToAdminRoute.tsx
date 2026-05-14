@@ -4,6 +4,7 @@ import { employerNavItems } from "../../app/layout/navItems";
 import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
 import { supabase } from "../../shared/api/supabaseClient";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 
 type UserProfileRow = {
   user_id: string;
@@ -158,10 +159,8 @@ const EmployerTalkToAdmin = () => {
       items={employerNavItems}
       userName={profile?.full_name ?? "Employer"}
       userEmail={email}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
+      onLogout={() => {
+        void signOutAndRedirectHome();
       }}
     >
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -1,7 +1,8 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
 import TRSCLogo from "../../assets/TRSCLogo.png";
-import { supabase } from "../../shared/api/supabaseClient";
+import NotificationBell from "../../features/notifications/NotificationBell";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
 
 const PRIMARY_NAV = [
@@ -46,10 +47,8 @@ const SiteHeader = ({ onMenuClick }: Props) => {
       : null;
   const isEmployer = Boolean(employerStatus === "approved");
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    window.localStorage.removeItem("skillkita-role");
-    window.location.href = "/";
+  const signOut = () => {
+    void signOutAndRedirectHome();
   };
 
   const profileHref = useMemo(() => {
@@ -88,14 +87,19 @@ const SiteHeader = ({ onMenuClick }: Props) => {
             <span className="truncate text-sm font-semibold">TRSC SkillKita</span>
           </a>
 
-          <a
-            href={profileHref}
-            aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
-            title={viewerEmail ?? viewerName}
-          >
-            <UserCircleIcon className="h-7 w-7 text-white" />
-          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
+              <NotificationBell viewer={viewerState.viewer} />
+            )}
+            <a
+              href={profileHref}
+              aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+              title={viewerEmail ?? viewerName}
+            >
+              <UserCircleIcon className="h-7 w-7 text-white" />
+            </a>
+          </div>
         </div>
 
         {/* Desktop: logo + center nav + auth/profile menus */}
@@ -138,7 +142,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {isAdmin && (
-            <div className="relative">
+            <div className={["relative", isAdminMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsAdminMenuOpen((p) => !p)}
@@ -148,7 +152,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Admin
               </button>
               {isAdminMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <a
                     href="/#about-us"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
@@ -216,7 +220,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {isEmployer && (
-            <div className="relative">
+            <div className={["relative", isEmployerMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsEmployerMenuOpen((p) => !p)}
@@ -226,7 +230,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Employer
               </button>
               {isEmployerMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <a
                     href="/employer/quotation"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
@@ -264,7 +268,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {hasAuthSession && !isAdmin && !isEmployer && (
-            <div className="relative">
+            <div className={["relative", isAccountMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsAccountMenuOpen((p) => !p)}
@@ -278,7 +282,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                     : "Account"}
               </button>
               {isAccountMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <div className="px-3 py-2 text-xs text-black/70">
                     <div className="font-semibold text-[#7A1F1F]">{viewerName}</div>
                     {viewerEmail && <div className="mt-1 break-all">{viewerEmail}</div>}
@@ -327,6 +331,20 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
+            <div className="relative z-10 flex items-center gap-2">
+              <NotificationBell viewer={viewerState.viewer} />
+              <a
+                href={profileHref}
+                aria-label="Open profile"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+                title={viewerEmail ?? viewerName}
+              >
+                <UserCircleIcon className="h-8 w-8 text-white" />
+              </a>
             </div>
           )}
         </div>
