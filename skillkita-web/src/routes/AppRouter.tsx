@@ -17,6 +17,8 @@ import AdminProfile from "./admin/AdminProfileRoute";
 import AdminCreateQuotation from "./admin/AdminQuotationsCreateRoute";
 import AdminQuotations from "./admin/AdminQuotationsRoute";
 import AdminUsers from "./admin/AdminUsersRoute";
+import AdminJd14Route from "./admin/AdminJd14Route";
+import AdminPaymentReceiptsRoute from "./admin/AdminPaymentReceiptsRoute";
 
 import Login from "./auth/LoginRoute";
 import SignUp from "./auth/SignUpRoute";
@@ -25,6 +27,8 @@ import EmployerDashboard from "./employer/EmployerIndexRoute";
 import EmployerProfile from "./employer/EmployerProfileRoute";
 import EmployerQuotationRequest from "./employer/EmployerQuotationRoute";
 import EmployerTalkToAdmin from "./employer/EmployerTalkToAdminRoute";
+import EmployerJd14Route from "./employer/EmployerJd14Route";
+import EmployerPaymentReceiptRoute from "./employer/EmployerPaymentReceiptRoute";
 
 import AppShell from "../app/layout/AppShell";
 
@@ -116,6 +120,22 @@ export default function AppRouter() {
               </RequireRole>
             }
           />
+          <Route
+            path="/admin/jd14"
+            element={
+              <RequireRole role="admin" denied={<AccessDenied />}>
+                <AdminJd14Route />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/admin/payment-receipts"
+            element={
+              <RequireRole role="admin" denied={<AccessDenied />}>
+                <AdminPaymentReceiptsRoute />
+              </RequireRole>
+            }
+          />
 
           <Route
             path="/employer"
@@ -146,6 +166,22 @@ export default function AppRouter() {
             element={
               <RequireRole role="employer" requireApproved redirectTo="/login">
                 <EmployerProfile />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/employer/jd14"
+            element={
+              <RequireRole role="employer" requireApproved redirectTo="/login">
+                <EmployerJd14Route />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/employer/payment-receipt"
+            element={
+              <RequireRole role="employer" requireApproved redirectTo="/login">
+                <EmployerPaymentReceiptRoute />
               </RequireRole>
             }
           />

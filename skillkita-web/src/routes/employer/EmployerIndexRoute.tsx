@@ -7,6 +7,7 @@ import {
 } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../shared/api/supabaseClient";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 
 type UserProfileRow = {
   user_id: string;
@@ -116,10 +117,8 @@ const EmployerDashboard = () => {
       items={employerNavItems}
       userName={profile?.full_name ?? "Employer"}
       userEmail={email}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
+      onLogout={() => {
+        void signOutAndRedirectHome();
       }}
     >
         

@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
-import { supabase } from "../../shared/api/supabaseClient";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
 import { createEmployerQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
@@ -111,10 +111,8 @@ const EmployerQuotationRequest = () => {
       items={employerNavItems}
       userName={viewerState.kind === "signedIn" ? viewerState.viewer.fullName : "Employer"}
       userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
+      onLogout={() => {
+        void signOutAndRedirectHome();
       }}
     >
         <div className="flex flex-col items-center text-center">

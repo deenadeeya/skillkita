@@ -1,4 +1,5 @@
 import {
+  BanknotesIcon,
   ChatBubbleLeftRightIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
@@ -45,6 +46,7 @@ export const adminNavItems: NavItem[] = [
         ],
       },
       { label: "JD14", href: "/admin/jd14", icon: DocumentTextIcon },
+      { label: "Payment receipt", href: "/admin/payment-receipts", icon: BanknotesIcon },
     ],
   },
   {
@@ -98,6 +100,7 @@ export const employerNavItems: NavItem[] = [
         ],
       },
       { label: "JD14", href: "/employer/jd14", icon: DocumentTextIcon },
+      { label: "Payment receipt", href: "/employer/payment-receipt", icon: BanknotesIcon },
     ],
   },
   {
