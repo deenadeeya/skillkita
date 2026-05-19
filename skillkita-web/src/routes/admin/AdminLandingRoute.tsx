@@ -8,9 +8,11 @@ import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { getLandingContent, upsertLandingContent, type LandingContentRow } from "../../features/landing/api/landingApi";
 import {
+  uploadSiteAssetBankQr,
   uploadSiteAssetHomeFeatured,
   uploadSiteAssetWhoImage,
 } from "../../features/landing/api/landingStorage";
+import { AboutUsContentEditor } from "../../features/landing/components/AboutUsContentEditor";
 import { LandingCoverEditor } from "../../features/landing/components/LandingCoverEditor";
 
 const AdminLandingEditor = () => {
@@ -35,6 +37,16 @@ const AdminLandingEditor = () => {
   const [socialFacebookPostUrls, setSocialFacebookPostUrls] = useState("");
   const [socialInstagramProfileUrl, setSocialInstagramProfileUrl] = useState("");
   const [socialInstagramPostUrls, setSocialInstagramPostUrls] = useState("");
+
+  const [locationDescription, setLocationDescription] = useState("");
+  const [locationMapEmbedUrl, setLocationMapEmbedUrl] = useState("");
+  const [bankAccountDetails, setBankAccountDetails] = useState("");
+  const [bankQrPreviewUrl, setBankQrPreviewUrl] = useState<string>(PlaceholderPoster);
+  const [bankQrFile, setBankQrFile] = useState<File | null>(null);
+  const [contact1Name, setContact1Name] = useState("");
+  const [contact1Phone, setContact1Phone] = useState("");
+  const [contact2Name, setContact2Name] = useState("");
+  const [contact2Phone, setContact2Phone] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -63,6 +75,15 @@ const AdminLandingEditor = () => {
       setSocialFacebookPostUrls("");
       setSocialInstagramProfileUrl("");
       setSocialInstagramPostUrls("");
+      setLocationDescription("");
+      setLocationMapEmbedUrl("");
+      setBankAccountDetails("");
+      setBankQrPreviewUrl(PlaceholderPoster);
+      setBankQrFile(null);
+      setContact1Name("");
+      setContact1Phone("");
+      setContact2Name("");
+      setContact2Phone("");
       return;
     }
 
@@ -80,6 +101,15 @@ const AdminLandingEditor = () => {
     setSocialFacebookPostUrls(row.social_facebook_post_urls ?? "");
     setSocialInstagramProfileUrl(row.social_instagram_profile_url ?? "");
     setSocialInstagramPostUrls(row.social_instagram_post_url ?? "");
+    setLocationDescription(row.location_description ?? "");
+    setLocationMapEmbedUrl(row.location_map_embed_url ?? "");
+    setBankAccountDetails(row.bank_account_details ?? "");
+    setBankQrPreviewUrl(row.bank_qr_image_url ?? PlaceholderPoster);
+    setBankQrFile(null);
+    setContact1Name(row.contact_1_name ?? "");
+    setContact1Phone(row.contact_1_phone ?? "");
+    setContact2Name(row.contact_2_name ?? "");
+    setContact2Phone(row.contact_2_phone ?? "");
   }, []);
 
   const loadAll = useCallback(async () => {
@@ -151,6 +181,22 @@ const AdminLandingEditor = () => {
     return await uploadSiteAssetWhoImage(whoFile);
   };
 
+  const onBankQrImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0] ?? null;
+    if (!file) {
+      setBankQrFile(null);
+      setBankQrPreviewUrl(landing?.bank_qr_image_url ?? PlaceholderPoster);
+      return;
+    }
+    setBankQrFile(file);
+    setBankQrPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const uploadBankQrIfNeeded = async (): Promise<string | null> => {
+    if (!bankQrFile) return null;
+    return await uploadSiteAssetBankQr(bankQrFile);
+  };
+
   const saveLanding = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -158,6 +204,7 @@ const AdminLandingEditor = () => {
 
     try {
       const whoUrl = await uploadWhoImageIfNeeded();
+      const bankQrUrl = await uploadBankQrIfNeeded();
       const { u1, u2, u3 } = await uploadFeaturedIfNeeded();
 
       const payload = {
@@ -172,12 +219,21 @@ const AdminLandingEditor = () => {
         social_facebook_post_urls: socialFacebookPostUrls.trim() || null,
         social_instagram_profile_url: socialInstagramProfileUrl.trim() || null,
         social_instagram_post_url: socialInstagramPostUrls.trim() || null,
+        location_description: locationDescription.trim() || null,
+        location_map_embed_url: locationMapEmbedUrl.trim() || null,
+        bank_account_details: bankAccountDetails.trim() || null,
+        bank_qr_image_url: bankQrUrl ?? landing?.bank_qr_image_url ?? null,
+        contact_1_name: contact1Name.trim() || null,
+        contact_1_phone: contact1Phone.trim() || null,
+        contact_2_name: contact2Name.trim() || null,
+        contact_2_phone: contact2Phone.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
       await upsertLandingContent(payload);
 
       setWhoFile(null);
+      setBankQrFile(null);
       setFeatured1File(null);
       setFeatured2File(null);
       setFeatured3File(null);
@@ -202,7 +258,7 @@ const AdminLandingEditor = () => {
     >
       <AdminPageFrame
         title="Manage Landing Page"
-        subtitle="Update cover text, who we are, home photos, and optional Facebook / Instagram links for the bottom of the home page. Company experiences are edited on the Company Experience page."
+        subtitle="Update the home page, About Us sections (profile, location, bank, contacts), and social feeds. Company experiences are edited on the Company Experience page."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn"}
@@ -212,7 +268,7 @@ const AdminLandingEditor = () => {
           </a>
         }
       >
-        <div className="max-w-3xl">
+        <form className="max-w-3xl" onSubmit={saveLanding}>
           <LandingCoverEditor
             coverDescription={coverDescription}
             whoDescription={whoDescription}
@@ -233,9 +289,36 @@ const AdminLandingEditor = () => {
             onChangeSocialFacebookPostUrls={setSocialFacebookPostUrls}
             onChangeSocialInstagramProfileUrl={setSocialInstagramProfileUrl}
             onChangeSocialInstagramPostUrls={setSocialInstagramPostUrls}
-            onSubmit={saveLanding}
           />
-        </div>
+          <AboutUsContentEditor
+            whoPreviewUrl={whoPreviewUrl}
+            whoDescription={whoDescription}
+            locationDescription={locationDescription}
+            locationMapEmbedUrl={locationMapEmbedUrl}
+            bankAccountDetails={bankAccountDetails}
+            bankQrPreviewUrl={bankQrPreviewUrl}
+            contact1Name={contact1Name}
+            contact1Phone={contact1Phone}
+            contact2Name={contact2Name}
+            contact2Phone={contact2Phone}
+            isSaving={isSaving}
+            onWhoImageChange={onWhoImageChange}
+            onWhoDescriptionChange={setWhoDescription}
+            onLocationDescriptionChange={setLocationDescription}
+            onLocationMapEmbedUrlChange={setLocationMapEmbedUrl}
+            onBankAccountDetailsChange={setBankAccountDetails}
+            onBankQrImageChange={onBankQrImageChange}
+            onContact1NameChange={setContact1Name}
+            onContact1PhoneChange={setContact1Phone}
+            onContact2NameChange={setContact2Name}
+            onContact2PhoneChange={setContact2Phone}
+          />
+          <div className="mt-6">
+            <button type="submit" disabled={isSaving} className="sk-button-primary">
+              {isSaving ? "Saving..." : "Save home & About Us"}
+            </button>
+          </div>
+        </form>
       </AdminPageFrame>
     </DashboardLayout>
   );

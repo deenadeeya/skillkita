@@ -102,7 +102,7 @@ const EmployerTalkToAdmin = () => {
         window.location.href = "/";
         return;
       }
-      if (row.status !== "approved") {
+      if (row.status === "rejected") {
         window.location.href = "/login";
         return;
       }

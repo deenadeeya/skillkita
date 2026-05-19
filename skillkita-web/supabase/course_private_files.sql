@@ -1,4 +1,4 @@
--- Private course documents + employer access requests
+-- Course documents (syllabus, tentative, trainer files) stored in private bucket; public read for visible courses
 -- Run in Supabase SQL Editor after courses + user_profiles exist.
 -- Create Storage bucket in Dashboard: course-private-files (private)
 
@@ -16,7 +16,7 @@ create table if not exists public.course_private_files (
 
 alter table public.course_private_files enable row level security;
 
--- Employers request access per course; admin approves
+-- Legacy: employer access requests (retired; app no longer uses this table)
 create table if not exists public.employer_course_file_access (
   id uuid primary key default gen_random_uuid(),
   employer_user_id uuid not null references auth.users(id) on delete cascade,
@@ -30,21 +30,27 @@ create table if not exists public.employer_course_file_access (
 
 alter table public.employer_course_file_access enable row level security;
 
--- 2) RLS: course_private_files — only admin writes; read for admin OR approved employer for that course
+-- 2) RLS: course_private_files — admin writes; public read for visible courses
 drop policy if exists "course_private_files_select" on public.course_private_files;
-create policy "course_private_files_select"
+drop policy if exists "course_private_files_select_visible" on public.course_private_files;
+drop policy if exists "course_private_files_select_admin" on public.course_private_files;
+
+create policy "course_private_files_select_visible"
 on public.course_private_files for select
-to authenticated
+to anon, authenticated
 using (
-  public.is_admin()
-  or exists (
+  exists (
     select 1
-    from public.employer_course_file_access e
-    where e.course_id = course_private_files.course_id
-      and e.employer_user_id = auth.uid()
-      and e.status = 'approved'
+    from public.courses c
+    where c.id = course_private_files.course_id
+      and c.is_visible = true
   )
 );
+
+create policy "course_private_files_select_admin"
+on public.course_private_files for select
+to authenticated
+using (public.is_admin());
 
 drop policy if exists "course_private_files_all_admin" on public.course_private_files;
 create policy "course_private_files_all_admin"
@@ -61,20 +67,6 @@ to authenticated
 using (employer_user_id = auth.uid() or public.is_admin());
 
 drop policy if exists "eca_insert_employer" on public.employer_course_file_access;
-create policy "eca_insert_employer"
-on public.employer_course_file_access for insert
-to authenticated
-with check (
-  employer_user_id = auth.uid()
-  and status = 'pending'
-  and exists (
-    select 1
-    from public.user_profiles up
-    where up.user_id = auth.uid()
-      and up.role = 'employer'
-      and up.status = 'approved'
-  )
-);
 
 drop policy if exists "eca_update_admin" on public.employer_course_file_access;
 create policy "eca_update_admin"
@@ -94,19 +86,27 @@ using (bucket_id = 'course-private-files' and public.is_admin())
 with check (bucket_id = 'course-private-files' and public.is_admin());
 
 drop policy if exists "course_private_storage_employer_read" on storage.objects;
-create policy "course_private_storage_employer_read"
+drop policy if exists "course_private_storage_public_read" on storage.objects;
+drop policy if exists "course_private_storage_visible_read" on storage.objects;
+drop policy if exists "course_private_storage_admin_read" on storage.objects;
+
+create policy "course_private_storage_visible_read"
+on storage.objects for select
+to anon, authenticated
+using (
+  bucket_id = 'course-private-files'
+  and exists (
+    select 1
+    from public.courses c
+    where c.is_visible = true
+      and storage.objects.name like c.id::text || '/%'
+  )
+);
+
+create policy "course_private_storage_admin_read"
 on storage.objects for select
 to authenticated
 using (
   bucket_id = 'course-private-files'
-  and (
-    public.is_admin()
-    or exists (
-      select 1
-      from public.employer_course_file_access e
-      where e.employer_user_id = auth.uid()
-        and e.status = 'approved'
-        and name like e.course_id::text || '/%'
-    )
-  )
+  and public.is_admin()
 );

@@ -74,7 +74,7 @@ const CompanyExperience = () => {
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
-            } else if (r.role === "employer" && r.status === "approved") {
+            } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
               setViewerName(r.full_name ?? "Employer");
             } else {

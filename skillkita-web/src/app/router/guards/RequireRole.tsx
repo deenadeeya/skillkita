@@ -70,6 +70,11 @@ export default function RequireRole({
           return;
         }
 
+        if (profile.role === "employer" && profile.status === "rejected") {
+          window.location.href = redirectTo;
+          return;
+        }
+
         const approved = profile.status === "approved";
         if (requireApproved && !approved) {
           window.location.href = redirectTo;

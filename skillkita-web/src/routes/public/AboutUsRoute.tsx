@@ -1,22 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
-
-type LandingContentRow = {
-  id: number;
-  who_image_url: string | null;
-  who_description: string;
-};
+import { getLandingContent, type LandingContentRow } from "../../features/landing/api/landingApi";
+import { AboutUsPublicSections } from "../../features/landing/components/AboutUsPublicSections";
 
 const AboutUs = () => {
   const [viewerRole, setViewerRole] = useState<"admin" | "employer" | null>(null);
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
-  const [whoImageUrl, setWhoImageUrl] = useState<string | null>(null);
-  const [whoDescription, setWhoDescription] = useState<string>("");
+  const [landing, setLanding] = useState<LandingContentRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -42,7 +37,7 @@ const AboutUs = () => {
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
-            } else if (r.role === "employer" && r.status === "approved") {
+            } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
               setViewerName(r.full_name ?? "Employer");
             } else {
@@ -56,17 +51,8 @@ const AboutUs = () => {
           setViewerEmail(null);
         }
 
-        const landingRes = await supabase
-          .from("landing_content")
-          .select("id,who_image_url,who_description")
-          .eq("id", 1)
-          .maybeSingle();
-
-        if (landingRes.error) throw new Error(landingRes.error.message);
-
-        const landing = landingRes.data as LandingContentRow | null;
-        setWhoImageUrl(landing?.who_image_url ?? null);
-        setWhoDescription(landing?.who_description ?? "");
+        const row = await getLandingContent(1);
+        setLanding(row);
         setIsLoading(false);
       } catch (err) {
         setIsLoading(false);
@@ -77,22 +63,13 @@ const AboutUs = () => {
     void load();
   }, []);
 
-  const paragraphs = useMemo(
-    () =>
-      whoDescription
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean),
-    [whoDescription]
-  );
-
   const body = (
     <div className="w-full">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-[#0001fc] md:text-5xl">About Us</h1>
           <p className="mt-2 text-sm font-semibold text-black/70 md:text-base">
-            Company info and description.
+            Company profile, location, payment details, and contacts.
           </p>
         </div>
       </div>
@@ -103,33 +80,7 @@ const AboutUs = () => {
         </div>
       )}
 
-      <section className="mt-8 w-full max-w-3xl">
-        <div className="mt-6 sk-card overflow-hidden">
-          {whoImageUrl && (
-            <img
-              src={whoImageUrl}
-              alt="Company photo"
-              className="h-48 w-full object-cover md:h-64"
-              loading="lazy"
-            />
-          )}
-          <div className="px-4 py-5 md:px-6 md:py-6">
-            {isLoading && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-                Loading content...
-              </p>
-            )}
-            {!isLoading && paragraphs.length === 0 && (
-              <p className="text-sm text-black/70">No description yet. Update it in “Manage Home”.</p>
-            )}
-            {paragraphs.map((p) => (
-              <p key={p.slice(0, 32)} className="mt-3 text-base text-black md:text-lg">
-                {p}
-              </p>
-            ))}
-          </div>
-        </div>
-      </section>
+      <AboutUsPublicSections landing={landing} isLoading={isLoading} />
     </div>
   );
 
@@ -160,4 +111,3 @@ const AboutUs = () => {
 };
 
 export default AboutUs;
-

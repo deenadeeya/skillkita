@@ -16,10 +16,12 @@ export type HomeSocialFeedsProps = {
 };
 
 const MAX_EMBEDS = 6;
-const FB_PAGE_PLUGIN_HEIGHT = 600;
-const FB_PAGE_PLUGIN_WIDTH = 500;
+/** Compact page timeline; post embeds use larger height so full posts are not clipped. */
+const FB_PAGE_PLUGIN_HEIGHT = 400;
+const FB_PAGE_PLUGIN_WIDTH = 360;
+/** Embedded Post iframes need generous height — Facebook does not auto-resize the parent iframe. */
 const FB_POST_EMBED_WIDTH = 500;
-const FB_POST_EMBED_HEIGHT = 680;
+const FB_POST_EMBED_HEIGHT = 1100;
 
 function trimUrl(url: string | null | undefined): string | null {
   const t = url?.trim();
@@ -171,21 +173,20 @@ export function HomeSocialFeedsSection({
 
   return (
     <section
-      className="mt-14 w-full max-w-6xl text-left md:mt-20"
+      className="mt-10 w-full max-w-4xl text-left md:mt-14"
       aria-labelledby={`${embedId}-social-heading`}
     >
-      <h2 id={`${embedId}-social-heading`} className="text-center text-2xl font-bold text-[#0001fc] md:text-3xl">
+      <h2 id={`${embedId}-social-heading`} className="text-center text-xl font-bold text-[#0001fc] md:text-2xl">
         Follow us online
       </h2>
-      <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-black/75">
-        Embedded posts from Facebook and Instagram (configure URLs in Manage Home). Your Facebook Page plugin can
-        also show a scrollable timeline of recent posts.
+      <p className="mx-auto mt-2 max-w-lg text-center text-xs text-black/75 md:text-sm">
+        We are on Instagram and Facebook. Follow us to stay updated with our latest news and events.
       </p>
 
-      <div className="mx-auto mt-8 flex w-full max-w-xl flex-col gap-8 md:max-w-2xl">
+      <div className="mx-auto mt-6 flex w-full max-w-lg flex-col gap-5 md:max-w-2xl">
         {(fbPageIframeSrc || fbPostHrefs.length > 0) && (
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-5">
-            <h3 className="text-lg font-bold text-[#7A1F1F]">Facebook</h3>
+          <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:p-4">
+            <h3 className="text-base font-bold text-[#7A1F1F] md:text-lg">Facebook</h3>
 
             {fbPageIframeSrc && (
               <div className="mt-3">
@@ -217,9 +218,9 @@ export function HomeSocialFeedsSection({
             )}
 
             {fbPostHrefs.length > 0 && (
-              <div className={fbPageIframeSrc ? "mt-8 border-t border-[#efe1db] pt-8" : "mt-3"}>
-                <p className="mb-3 text-xs font-semibold text-black/60">Selected posts</p>
-                <div className="flex flex-col items-center gap-6">
+              <div className={fbPageIframeSrc ? "mt-5 border-t border-[#efe1db] pt-5" : "mt-3"}>
+                <p className="mb-2 text-xs font-semibold text-black/60">Selected posts</p>
+                <div className="-mx-1 flex flex-col items-center gap-4 overflow-x-auto px-1 sm:mx-0 sm:px-0">
                   {fbPostHrefs.map((href, i) => (
                     <iframe
                       key={href}
@@ -241,11 +242,11 @@ export function HomeSocialFeedsSection({
         )}
 
         {(igPostHrefs.length > 0 || igProfile) && (
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-5">
-            <h3 className="text-lg font-bold text-[#7A1F1F]">Instagram</h3>
+          <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:p-4">
+            <h3 className="text-base font-bold text-[#7A1F1F] md:text-lg">Instagram</h3>
 
             {igPostHrefs.length > 0 ? (
-              <div ref={igContainerRef} className="mt-3 flex flex-col items-center gap-8">
+              <div ref={igContainerRef} className="mt-3 flex flex-col items-center gap-5">
                 {igPostHrefs.map((permalink) => (
                   <blockquote
                     key={permalink}
@@ -257,7 +258,7 @@ export function HomeSocialFeedsSection({
                       border: 0,
                       borderRadius: "12px",
                       margin: "1px",
-                      maxWidth: "540px",
+                      maxWidth: "min(100%, 400px)",
                       minWidth: "240px",
                       padding: 0,
                       width: "calc(100% - 2px)",
@@ -266,8 +267,8 @@ export function HomeSocialFeedsSection({
                 ))}
               </div>
             ) : (
-              <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#515bd4] p-[2px]">
-                <div className="rounded-[14px] bg-white px-6 py-10 text-center">
+              <div className="mt-3 rounded-xl bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#515bd4] p-[2px]">
+                <div className="rounded-[12px] bg-white px-4 py-6 text-center md:px-5 md:py-8">
                   <p className="text-sm font-semibold text-black/80">See photos and reels on our profile.</p>
                   <a
                     href={igProfile!}

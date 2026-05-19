@@ -4,7 +4,7 @@ import { CoursePosterMedia } from "./CoursePosterMedia";
 export type PublicCourseCard = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   posterUrl: string | null;
 };
@@ -53,9 +53,11 @@ export function CoursesGrid({
           <h2 className="mt-3 text-sm font-semibold text-[#0001fc] md:mt-4 md:text-xl">
             {course.name}
           </h2>
-          <p className="mt-1 text-xs font-medium text-[#7A1F1F] md:mt-2 md:text-sm">
-            Date: {course.date}
-          </p>
+          {course.date && (
+            <p className="mt-1 text-xs font-medium text-[#7A1F1F] md:mt-2 md:text-sm">
+              Date: {course.date}
+            </p>
+          )}
           <p className="mt-1 text-xs text-black md:mt-2 md:text-sm">{course.details}</p>
         </article>
       ))}

@@ -53,18 +53,15 @@ export function CourseDetailsForm({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-            Date / Tarikh
-            <RequiredMark />
-          </span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Date / Tarikh</span>
           <input
             type="date"
             name="date"
             value={form.date}
             onChange={onInputChange}
             className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
-            required
           />
+          <span className="mt-1 block text-xs text-black/60">Optional. Leave blank if the date is not confirmed yet.</span>
         </label>
 
         <label className="block">

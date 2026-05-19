@@ -172,6 +172,7 @@ alter table public.experiences enable row level security;
 drop policy if exists "experiences_select_all" on public.experiences;
 create policy "experiences_select_all"
 on public.experiences for select
+to anon, authenticated
 using (true);
 
 drop policy if exists "experiences_insert_admin" on public.experiences;
@@ -201,14 +202,15 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.user_profiles (user_id, full_name, company_name, phone, role, status)
+  insert into public.user_profiles (user_id, full_name, company_name, phone, role, status, approved_at)
   values (
     new.id,
     coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), '—'),
     nullif(trim(coalesce(new.raw_user_meta_data->>'company_name', '')), ''),
     nullif(trim(coalesce(new.raw_user_meta_data->>'phone', '')), ''),
     'employer',
-    'pending'
+    'approved',
+    now()
   )
   on conflict (user_id) do nothing;
   return new;

@@ -2,13 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
+import { openCourseDocumentUrl } from "../../features/courses/storage/coursePrivateStorage";
 import { supabase } from "../../shared/api/supabaseClient";
 import { getCourseById, type CourseDetailRow } from "../../features/courses/api/coursesApi";
 import {
   getCoursePrivateFilesByCourseId,
-  getEmployerAccessStatus,
-  requestCoursePrivateFilesAccess,
   type CoursePrivatePaths,
 } from "../../features/courses/api/privateFilesApi";
 import { useViewer } from "../../shared/hooks/useViewer";
@@ -26,29 +24,25 @@ export default function CoursePage() {
   const [viewerRole, setViewerRole] = useState<ViewerRole>(null);
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
-  const [viewerId, setViewerId] = useState<string | null>(null);
   const viewerState = useViewer();
 
   const [course, setCourse] = useState<CourseDetailRow | null>(null);
   const [privateFiles, setPrivateFiles] = useState<CoursePrivatePaths | null>(null);
-  const [accessStatus, setAccessStatus] = useState<"pending" | "approved" | "rejected" | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionBusy, setActionBusy] = useState(false);
 
   useEffect(() => {
     if (viewerState.kind === "loading") return;
 
     if (viewerState.kind === "signedIn") {
       setViewerEmail(viewerState.viewer.email);
-      setViewerId(viewerState.viewer.userId);
       if (viewerState.viewer.role === "admin") {
         setViewerRole("admin");
         setViewerName(viewerState.viewer.fullName || "Admin");
         return;
       }
-      if (viewerState.viewer.role === "employer" && viewerState.viewer.status === "approved") {
+      if (viewerState.viewer.role === "employer" && viewerState.viewer.status !== "rejected") {
         setViewerRole("employer");
         setViewerName(viewerState.viewer.fullName || "Employer");
         return;
@@ -57,7 +51,6 @@ export default function CoursePage() {
 
     setViewerRole(null);
     setViewerName("User");
-    setViewerId(null);
     setViewerEmail(viewerState.kind === "signedInNoProfile" ? viewerState.email : null);
   }, [viewerState]);
 
@@ -65,32 +58,10 @@ export default function CoursePage() {
     if (!path) return;
     setErrorMessage(null);
     try {
-      const url = await createSignedUrlForPath(path);
+      const url = await openCourseDocumentUrl(path);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "Could not open file.");
-    }
-  };
-
-  const loadEmployerAccess = async (employerUserId: string, id: string) => {
-    try {
-      const status = await getEmployerAccessStatus({ employerUserId, courseId: id });
-      if (status === "pending" || status === "approved" || status === "rejected") {
-        setAccessStatus(status);
-      } else {
-        setAccessStatus(null);
-      }
-    } catch {
-      setAccessStatus(null);
-    }
-  };
-
-  const loadPrivateFiles = async (id: string) => {
-    try {
-      const data = await getCoursePrivateFilesByCourseId(id);
-      setPrivateFiles(data);
-    } catch {
-      setPrivateFiles(null);
     }
   };
 
@@ -124,60 +95,26 @@ export default function CoursePage() {
     void loadCourse();
   }, [courseId]);
 
-  useEffect(() => {
-    const loadAccessAndPrivate = async () => {
-      if (!courseId) return;
-      if (!viewerRole) {
-        setAccessStatus(null);
-        setPrivateFiles(null);
-        return;
-      }
-
-      if (viewerRole === "admin") {
-        setAccessStatus("approved");
-        await loadPrivateFiles(courseId);
-        return;
-      }
-
-      if (viewerRole === "employer" && viewerId) {
-        await loadEmployerAccess(viewerId, courseId);
-      }
-    };
-
-    void loadAccessAndPrivate();
-  }, [courseId, viewerId, viewerRole]);
-
-  useEffect(() => {
-    const loadForApprovedEmployer = async () => {
-      if (!courseId) return;
-      if (viewerRole !== "employer") return;
-      if (accessStatus !== "approved") {
-        setPrivateFiles(null);
-        return;
-      }
-      await loadPrivateFiles(courseId);
-    };
-    void loadForApprovedEmployer();
-  }, [accessStatus, courseId, viewerRole]);
-
-  const requestAccess = async () => {
-    if (!courseId) return;
-    if (viewerRole !== "employer" || !viewerId) return;
-
-    setActionBusy(true);
-    setErrorMessage(null);
-    try {
-      await requestCoursePrivateFilesAccess({ employerUserId: viewerId, courseId });
-      await loadEmployerAccess(viewerId, courseId);
-    } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Failed to request access.");
-    } finally {
-      setActionBusy(false);
-    }
-  };
-
   const canViewHidden = viewerRole === "admin";
   const isHidden = course ? !course.is_visible : false;
+  const canViewCourse = Boolean(course && (!isHidden || canViewHidden));
+
+  useEffect(() => {
+    const loadDocuments = async () => {
+      if (!courseId || !canViewCourse) {
+        setPrivateFiles(null);
+        return;
+      }
+      try {
+        const data = await getCoursePrivateFilesByCourseId(courseId);
+        setPrivateFiles(data);
+      } catch {
+        setPrivateFiles(null);
+      }
+    };
+
+    void loadDocuments();
+  }, [canViewCourse, courseId]);
 
   const body = (
     <main className="sk-container py-12">
@@ -205,21 +142,14 @@ export default function CoursePage() {
         </p>
       )}
 
-      {!isLoading && course && (!isHidden || canViewHidden) && (
+      {!isLoading && canViewCourse && course && (
         <>
           <CourseDetailHeader course={course} />
           <CourseDetailContent course={course} />
-
-          {(viewerRole === "admin" || viewerRole === "employer") && (
-            <CoursePrivateDocumentsPanel
-              viewerRole={viewerRole}
-              accessStatus={accessStatus}
-              privateFiles={privateFiles}
-              actionBusy={actionBusy}
-              onRequestAccess={() => void requestAccess()}
-              onOpenPrivateDoc={(path) => void openPrivateDoc(path)}
-            />
-          )}
+          <CoursePrivateDocumentsPanel
+            privateFiles={privateFiles}
+            onOpenPrivateDoc={(path) => void openPrivateDoc(path)}
+          />
         </>
       )}
     </main>
@@ -250,4 +180,3 @@ export default function CoursePage() {
     </div>
   );
 }
-

@@ -2,6 +2,15 @@ export type DocumentSubmissionType = "jd14" | "payment_receipt";
 
 export type DocumentSubmissionStatus = "pending" | "approved" | "rejected";
 
+export type Jd14SubmissionTemplateRow = {
+  id: string;
+  title: string;
+  file_storage_path: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type DocumentSubmissionRow = {
   id: string;
   employer_user_id: string;

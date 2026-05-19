@@ -8,6 +8,7 @@ import { RequiredMark } from "../../../shared/ui/RequiredMark";
 import { insertDocumentSubmission, listMyDocumentSubmissions } from "../submissionsApi";
 import { getSubmissionFileSignedUrl, uploadEmployerSubmissionFile } from "../submissionsStorage";
 import type { DocumentSubmissionRow, DocumentSubmissionType } from "../types";
+import { Jd14TemplatesEmployerSection } from "./Jd14TemplatesEmployerSection";
 
 type Props = {
   submissionType: DocumentSubmissionType;
@@ -79,8 +80,8 @@ export function DocumentSubmissionEmployerPage({
       return;
     }
     const viewer = viewerState.viewer;
-    if (viewer.role !== "employer" || viewer.status !== "approved") {
-      setErrorMessage("Employer account not approved.");
+    if (viewer.role !== "employer" || viewer.status === "rejected") {
+      setErrorMessage("Employer account not available.");
       return;
     }
 
@@ -136,6 +137,8 @@ export function DocumentSubmissionEmployerPage({
         {errorMessage && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</div>
         )}
+
+        {submissionType === "jd14" && <Jd14TemplatesEmployerSection />}
 
         <form className="sk-card mt-6 space-y-4 p-6" onSubmit={(ev) => void onSubmit(ev)}>
           <label className="block">

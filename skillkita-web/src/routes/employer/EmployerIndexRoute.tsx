@@ -85,7 +85,7 @@ const EmployerDashboard = () => {
         return;
       }
 
-      if (row.status !== "approved") {
+      if (row.status === "rejected") {
         window.location.href = "/login";
         return;
       }
@@ -126,8 +126,8 @@ const EmployerDashboard = () => {
           {profile ? `Welcome, ${profile.full_name}.` : "Welcome."}
         </p>
         <p className="mt-2 text-sm text-black/80">
-          Request access to private course documents (syllabus, trainer files). An admin must approve
-          before you can open them.
+          Browse courses to view syllabi, tentative schedules, and trainer documents. No access request
+          is required.
         </p>
 
         <div className="mt-6 rounded-xl border border-[#0001fc]/20 bg-white p-4 shadow-sm">

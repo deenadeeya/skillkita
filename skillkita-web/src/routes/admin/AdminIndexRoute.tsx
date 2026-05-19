@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { AdminCoursesPanel } from "../../features/courses/components/AdminCoursesPanel";
-import { AdminEmployerAccessRequestsPanel } from "../../features/courses/components/AdminEmployerAccessRequestsPanel";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
 import { supabase } from "../../shared/api/supabaseClient";
@@ -17,7 +16,7 @@ type CoursePrivatePaths = {
 type Course = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   trainerNames: string;
   time: string;
   venue: string;
@@ -37,7 +36,7 @@ type Course = {
 type CourseRow = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   trainer_names: string | null;
   course_time: string | null;
@@ -51,15 +50,6 @@ type CourseRow = {
   is_visible: boolean;
   created_at: string;
   course_private_files: CoursePrivatePaths | CoursePrivatePaths[] | null;
-};
-
-type EmployerAccessRow = {
-  id: string;
-  employer_user_id: string;
-  course_id: string;
-  status: string;
-  created_at: string;
-  courses: { name: string } | { name: string }[] | null;
 };
 
 function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePrivatePaths | null {
@@ -96,8 +86,6 @@ function mapRowToCourse(row: CourseRow): Course {
 
 const AdminManageCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [pendingAccess, setPendingAccess] = useState<EmployerAccessRow[]>([]);
-  const [employerNames, setEmployerNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -203,46 +191,12 @@ const AdminManageCourses = () => {
     setIsLoading(false);
   }, []);
 
-  const loadPendingAccess = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("employer_course_file_access")
-      .select("id,employer_user_id,course_id,status,created_at,courses(name)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setPendingAccess([]);
-      return;
-    }
-
-    const rows = (data ?? []) as EmployerAccessRow[];
-    setPendingAccess(rows);
-
-    const ids = [...new Set(rows.map((r) => r.employer_user_id))];
-    if (ids.length === 0) {
-      setEmployerNames({});
-      return;
-    }
-
-    const { data: profiles } = await supabase
-      .from("user_profiles")
-      .select("user_id,full_name,company_name")
-      .in("user_id", ids);
-
-    const map: Record<string, string> = {};
-    (profiles ?? []).forEach((p: { user_id: string; full_name: string; company_name: string | null }) => {
-      map[p.user_id] = p.company_name ? `${p.full_name} (${p.company_name})` : p.full_name;
-    });
-    setEmployerNames(map);
-  }, []);
-
   useEffect(() => {
     if (!isAuthorized) {
       return;
     }
     void loadCourses();
-    void loadPendingAccess();
-  }, [isAuthorized, loadCourses, loadPendingAccess]);
+  }, [isAuthorized, loadCourses]);
 
   const openPrivateDoc = async (path: string | null | undefined) => {
     if (!path) return;
@@ -252,31 +206,6 @@ const AdminManageCourses = () => {
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "Could not open file.");
     }
-  };
-
-  const approveEmployerAccess = async (id: string, approve: boolean) => {
-    setIsSaving(true);
-    setErrorMessage(null);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const reviewer = sessionData.session?.user?.id ?? null;
-
-    const { error } = await supabase
-      .from("employer_course_file_access")
-      .update({
-        status: approve ? "approved" : "rejected",
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: reviewer,
-      })
-      .eq("id", id);
-
-    if (error) {
-      setErrorMessage(error.message);
-      setIsSaving(false);
-      return;
-    }
-
-    await loadPendingAccess();
-    setIsSaving(false);
   };
 
   const goToCreateCourse = () => {
@@ -345,14 +274,6 @@ const AdminManageCourses = () => {
         isAuthorized={isAuthorized}
       >
         <div className="space-y-8">
-          <AdminEmployerAccessRequestsPanel
-            pendingAccess={pendingAccess}
-            employerNames={employerNames}
-            isSaving={isSaving}
-            onApprove={(id) => void approveEmployerAccess(id, true)}
-            onReject={(id) => void approveEmployerAccess(id, false)}
-          />
-
           <AdminCoursesPanel
             courses={courses}
             filteredCourses={filteredCourses}

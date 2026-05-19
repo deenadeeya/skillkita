@@ -28,10 +28,10 @@ export function CoursePrivateDocumentsPicker({
 }: Props) {
   return (
     <div className="rounded-xl border border-[#efe1db] bg-[#f9f5ed] p-3">
-      <p className="text-sm font-semibold text-[#7A1F1F]">Private Documents (Restricted Access)</p>
+      <p className="text-sm font-semibold text-[#7A1F1F]">Course documents</p>
       <p className="mt-1 text-xs text-black/75">
-        Upload syllabus, trainer documents, etc. Employers can open these only after you approve their
-        access request.
+        Upload syllabus, tentative schedule, trainer HRD accreditation, and trainer CV. These are visible
+        on the public course page for visible courses.
       </p>
 
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">

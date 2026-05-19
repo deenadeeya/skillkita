@@ -1,4 +1,4 @@
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent } from "react";
 
 type FeaturedSlot = 1 | 2 | 3;
 
@@ -22,7 +22,6 @@ type Props = {
   onChangeSocialFacebookPostUrls: (next: string) => void;
   onChangeSocialInstagramProfileUrl: (next: string) => void;
   onChangeSocialInstagramPostUrls: (next: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
 export function LandingCoverEditor({
@@ -45,12 +44,11 @@ export function LandingCoverEditor({
   onChangeSocialFacebookPostUrls,
   onChangeSocialInstagramProfileUrl,
   onChangeSocialInstagramPostUrls,
-  onSubmit,
 }: Props) {
   return (
     <section className="sk-card p-6">
       <h2 className="text-2xl font-bold text-[#7A1F1F]">Cover</h2>
-      <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+      <div className="mt-5 space-y-4">
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Cover description</span>
           <textarea
@@ -209,13 +207,7 @@ export function LandingCoverEditor({
             placeholder="https://www.instagram.com/p/… (one URL per line)"
           />
         </label>
-
-        <div className="pt-2">
-          <button type="submit" disabled={isSaving} className="sk-button-primary">
-            {isSaving ? "Saving..." : "Save cover"}
-          </button>
-        </div>
-      </form>
+      </div>
     </section>
   );
 }
