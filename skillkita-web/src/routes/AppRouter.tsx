@@ -140,7 +140,7 @@ export default function AppRouter() {
           <Route
             path="/employer"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerDashboard />
               </RequireRole>
             }
@@ -148,7 +148,7 @@ export default function AppRouter() {
           <Route
             path="/employer/quotation"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerQuotationRequest />
               </RequireRole>
             }
@@ -156,7 +156,7 @@ export default function AppRouter() {
           <Route
             path="/employer/talk-to-admin"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerTalkToAdmin />
               </RequireRole>
             }
@@ -164,7 +164,7 @@ export default function AppRouter() {
           <Route
             path="/employer/profile"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerProfile />
               </RequireRole>
             }
@@ -172,7 +172,7 @@ export default function AppRouter() {
           <Route
             path="/employer/jd14"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerJd14Route />
               </RequireRole>
             }
@@ -180,7 +180,7 @@ export default function AppRouter() {
           <Route
             path="/employer/payment-receipt"
             element={
-              <RequireRole role="employer" requireApproved redirectTo="/login">
+              <RequireRole role="employer" redirectTo="/login">
                 <EmployerPaymentReceiptRoute />
               </RequireRole>
             }

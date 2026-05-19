@@ -62,15 +62,46 @@ export function columnForKind(kind: PrivateDocKind): string {
   return KIND_TO_COLUMN[kind];
 }
 
+function normalizeStoragePath(path: string): string {
+  return path.trim().replace(/^\/+/, "");
+}
+
+/**
+ * Opens a course document for the current user (including anonymous visitors).
+ * Uses direct download + blob URL so public users are not blocked by signed-URL limits.
+ */
+export async function openCourseDocumentUrl(path: string): Promise<string> {
+  const normalized = normalizeStoragePath(path);
+  if (!normalized) {
+    throw new Error("Invalid file path.");
+  }
+
+  const { data: blob, error } = await supabase.storage
+    .from(COURSE_PRIVATE_BUCKET)
+    .download(normalized);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!blob) {
+    throw new Error("Could not open file.");
+  }
+
+  return URL.createObjectURL(blob);
+}
+
+/** @deprecated Prefer openCourseDocumentUrl for visitor-safe access. */
 export async function createSignedUrlForPath(
   path: string,
   expiresInSeconds = 3600
 ): Promise<string> {
+  const normalized = normalizeStoragePath(path);
+
   const { data, error } = await supabase.storage
     .from(COURSE_PRIVATE_BUCKET)
-    .createSignedUrl(path, expiresInSeconds);
+    .createSignedUrl(normalized, expiresInSeconds);
   if (error) {
-    throw new Error(error.message);
+    return openCourseDocumentUrl(normalized);
   }
   if (!data?.signedUrl) {
     throw new Error("Could not create download link.");

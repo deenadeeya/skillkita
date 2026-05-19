@@ -74,7 +74,7 @@ const SignUp = () => {
           company_name: trimmedCompany,
           phone: trimmedPhone,
           role: "employer",
-          status: "pending",
+          status: "approved",
         });
 
         if (
@@ -89,9 +89,14 @@ const SignUp = () => {
       }
 
       setIsLoading(false);
-      setSuccessMessage(
-        "Account created. You can log in now, but access will be unlocked after admin approval."
-      );
+
+      if (data.session) {
+        window.localStorage.setItem("skillkita-role", "employer");
+        window.location.href = "/employer";
+        return;
+      }
+
+      setSuccessMessage("Account created. Log in to access your employer dashboard.");
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(err instanceof Error ? err.message : "Sign up failed.");
@@ -107,7 +112,7 @@ const SignUp = () => {
           <div className="sk-card p-6">
             <h1 className="text-3xl font-bold text-[#0001fc]">Create Account</h1>
             <p className="mt-2 text-sm text-black">
-              Sign up as an employer. An admin will approve your account before you can access the app.
+              Sign up as an employer. You can access the employer dashboard right after creating your account.
             </p>
 
             {errorMessage && (

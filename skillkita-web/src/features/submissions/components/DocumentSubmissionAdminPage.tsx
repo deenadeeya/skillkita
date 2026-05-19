@@ -8,6 +8,7 @@ import { listEmployerLabels } from "../../quotation/api/quotationRequestsApi";
 import { adminReviewDocumentSubmission, listAllDocumentSubmissions } from "../submissionsApi";
 import { getSubmissionFileSignedUrl } from "../submissionsStorage";
 import type { DocumentSubmissionRow, DocumentSubmissionType } from "../types";
+import { Jd14TemplatesAdminSection } from "./Jd14TemplatesAdminSection";
 
 type EmployerLabel = {
   full_name: string;
@@ -121,6 +122,11 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn"}
       >
+        {submissionType === "jd14" && (
+          <div className="mb-8">
+            <Jd14TemplatesAdminSection />
+          </div>
+        )}
         {isLoading ? (
           <p className="text-sm text-black/70">Loading…</p>
         ) : (

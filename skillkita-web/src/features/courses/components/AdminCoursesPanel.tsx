@@ -16,7 +16,7 @@ type CoursePrivatePaths = {
 type CourseCard = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   trainerNames: string;
   time: string;
   venue: string;
@@ -135,7 +135,7 @@ export function AdminCoursesPanel({
 
                     <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-black/80 md:grid-cols-2">
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">Date:</span> {course.date}
+                        <span className="font-semibold text-[#7A1F1F]">Date:</span> {course.date || "—"}
                       </p>
                       <p>
                         <span className="font-semibold text-[#7A1F1F]">Time:</span> {course.time || "—"}

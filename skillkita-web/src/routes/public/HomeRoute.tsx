@@ -8,13 +8,15 @@ import { supabase } from "../../shared/api/supabaseClient";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
 import { getLandingContent } from "../../features/landing/api/landingApi";
+import { formatCourseDisplayDate, isUpcomingCourseDate } from "../../features/courses/courseDate";
+import { UpcomingCourseRibbon } from "../../features/courses/components/UpcomingCourseRibbon";
 import { HomeSocialFeedsSection } from "../../features/landing/components/HomeSocialFeedsSection";
 
 const HomePage = () => {
   type CourseRow = {
     id: string;
     name: string;
-    date: string;
+    date: string | null;
     details: string;
     poster_url: string | null;
     is_visible: boolean;
@@ -74,7 +76,7 @@ const HomePage = () => {
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
-            } else if (r.role === "employer" && r.status === "approved") {
+            } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
               setViewerName(r.full_name ?? "Employer");
             } else {
@@ -261,7 +263,7 @@ const HomePage = () => {
                 <CoursePosterMedia
                   url={homeFeatured3Url ?? PlaceholderPoster}
                   alt="Graduation"
-                  className="aspect-[16/7] w-full object-cover"
+                  className="aspect-[16/7] w-full object-contain object-center"
                 />
               </div>
             </div>
@@ -318,7 +320,13 @@ const HomePage = () => {
               </article>
             )}
 
-            {visibleCourses.map((course, idx) => (
+            {visibleCourses.map((course, idx) => {
+              const upcomingDateLabel =
+                course && isUpcomingCourseDate(course.date)
+                  ? formatCourseDisplayDate(course.date)
+                  : null;
+
+              return (
               <article
                 key={`${course?.id ?? "empty"}-${idx}`}
                 className="w-full rounded-2xl bg-white p-3 text-left shadow-sm ring-1 ring-black/5 md:p-5"
@@ -326,17 +334,26 @@ const HomePage = () => {
                 <h3 className="text-sm font-bold text-[#0001fc] md:text-xl">
                   {course?.name ?? "Check back soon"}
                 </h3>
+                {upcomingDateLabel && (
+                  <p className="mt-1 text-xs font-semibold text-[#7A1F1F] md:text-sm">
+                    {upcomingDateLabel}
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-black md:text-base">
                   {course?.details ??
                     "New courses will appear here once published in the admin dashboard."}
                 </p>
-                <CoursePosterMedia
-                  url={course?.poster_url ?? PlaceholderPoster}
-                  alt={`${course?.name ?? "Course"} poster`}
-                  className="mt-3 aspect-[210/297] w-full rounded-xl object-cover md:mt-4"
-                />
+                <div className="relative mt-3 overflow-hidden rounded-xl md:mt-4">
+                  {course && isUpcomingCourseDate(course.date) && <UpcomingCourseRibbon />}
+                  <CoursePosterMedia
+                    url={course?.poster_url ?? PlaceholderPoster}
+                    alt={`${course?.name ?? "Course"} poster`}
+                    className="aspect-[210/297] w-full object-cover"
+                  />
+                </div>
               </article>
-            ))}
+              );
+            })}
           </div>
 
           <button

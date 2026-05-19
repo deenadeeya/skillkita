@@ -17,6 +17,15 @@ export type LandingContentRow = {
   social_instagram_profile_url: string | null;
   /** One public Instagram post/reel URL per line (official embeds). */
   social_instagram_post_url: string | null;
+  /** About Us — location, bank, contacts */
+  location_description: string | null;
+  location_map_embed_url: string | null;
+  bank_account_details: string | null;
+  bank_qr_image_url: string | null;
+  contact_1_name: string | null;
+  contact_1_phone: string | null;
+  contact_2_name: string | null;
+  contact_2_phone: string | null;
   updated_at: string;
 };
 
@@ -29,13 +38,40 @@ export type ExperienceRow = {
   created_at: string;
 };
 
-const LANDING_SELECT_FULL =
+const LANDING_SELECT_SOCIAL =
   "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,social_facebook_page_url,social_facebook_post_urls,social_instagram_profile_url,social_instagram_post_url,updated_at";
+
+const LANDING_SELECT_FULL = `${LANDING_SELECT_SOCIAL},location_description,location_map_embed_url,bank_account_details,bank_qr_image_url,contact_1_name,contact_1_phone,contact_2_name,contact_2_phone`;
 
 const LANDING_SELECT_FEATURED =
   "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,updated_at";
 
 const LANDING_SELECT_LEGACY = "id,cover_description,who_image_url,who_description,updated_at";
+
+type AboutUsFields =
+  | "location_description"
+  | "location_map_embed_url"
+  | "bank_account_details"
+  | "bank_qr_image_url"
+  | "contact_1_name"
+  | "contact_1_phone"
+  | "contact_2_name"
+  | "contact_2_phone";
+
+function applyNullAbout(data: unknown): LandingContentRow {
+  const r = data as Omit<LandingContentRow, AboutUsFields>;
+  return {
+    ...r,
+    location_description: null,
+    location_map_embed_url: null,
+    bank_account_details: null,
+    bank_qr_image_url: null,
+    contact_1_name: null,
+    contact_1_phone: null,
+    contact_2_name: null,
+    contact_2_phone: null,
+  };
+}
 
 function applyNullSocial(data: unknown): LandingContentRow {
   const r = data as Omit<
@@ -86,14 +122,19 @@ export async function getLandingContent(id: number) {
     return (full.data ?? null) as LandingContentRow | null;
   }
 
+  const social = await fetchRow(LANDING_SELECT_SOCIAL);
+  if (!social.error) {
+    return social.data ? applyNullAbout(social.data) : null;
+  }
+
   const featured = await fetchRow(LANDING_SELECT_FEATURED);
   if (!featured.error) {
-    return featured.data ? applyNullSocial(featured.data) : null;
+    return featured.data ? applyNullAbout(applyNullSocial(featured.data)) : null;
   }
 
   const legacy = await fetchRow(LANDING_SELECT_LEGACY);
   if (!legacy.error) {
-    return legacy.data ? applyNullFeaturedAndSocial(legacy.data) : null;
+    return legacy.data ? applyNullAbout(applyNullFeaturedAndSocial(legacy.data)) : null;
   }
 
   throw new Error(legacy.error?.message ?? full.error.message);

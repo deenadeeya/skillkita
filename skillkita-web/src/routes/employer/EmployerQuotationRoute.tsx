@@ -79,8 +79,8 @@ const EmployerQuotationRequest = () => {
       return;
     }
     const viewer = viewerState.viewer;
-    if (viewer.role !== "employer" || viewer.status !== "approved") {
-      setErrorMessage("Employer account not approved.");
+    if (viewer.role !== "employer" || viewer.status === "rejected") {
+      setErrorMessage("Employer account not available.");
       return;
     }
 

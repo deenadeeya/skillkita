@@ -36,7 +36,7 @@ type CoursePrivatePaths = {
 type CourseRow = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   trainer_names: string | null;
   course_time: string | null;
@@ -101,14 +101,10 @@ function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePr
   };
 }
 
-function defaultCourseDateISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function buildCoursePayload(draft: CourseFormState): Partial<CourseRow> {
   return {
     name: draft.name.trim(),
-    date: draft.date,
+    date: draft.date.trim() || null,
     details: draft.details.trim(),
     trainer_names: draft.trainerNames.trim() || null,
     course_time: draft.time.trim() || null,
@@ -402,8 +398,8 @@ export default function AdminCreateCourse() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
-    if (!form.name.trim() || !form.date.trim()) {
-      setErrorMessage("Please enter course name and date.");
+    if (!form.name.trim()) {
+      setErrorMessage("Please enter course name.");
       return;
     }
 
@@ -436,7 +432,7 @@ export default function AdminCreateCourse() {
       const { data: inserted, error } = await supabase
         .from("courses")
         .insert({
-          ...buildCoursePayload({ ...form, date: form.date || defaultCourseDateISO() }),
+          ...buildCoursePayload(form),
           poster_url: posterUrl,
         })
         .select("id")
