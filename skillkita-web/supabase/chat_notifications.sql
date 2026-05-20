@@ -1,5 +1,7 @@
--- In-app notifications (start with chat messages).
+-- In-app notifications (chat messages; extended for quotations & document submissions).
 -- Run after chat_employer_admin.sql.
+-- For quotation/JD14/payment-receipt alerts, also run:
+--   migrations/20260521120000_quotation_document_notifications.sql
 --
 -- Supabase Realtime: enable for this table (Dashboard → Database → Replication,
 -- or run below if your project allows altering the publication).

@@ -10,6 +10,7 @@ export type QuotationRequestRow = {
   number_of_employers: number;
   proposed_date: string;
   additional_description: string | null;
+  course_location_address: string | null;
   status: QuotationStatus;
   company_name: string | null;
   course_mode: string | null;

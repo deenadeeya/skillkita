@@ -11,18 +11,22 @@ export type QuotationPdfInput = Pick<
   | "number_of_employers"
   | "proposed_date"
   | "additional_description"
-> & { company_name: string };
+> & { company_name: string; course_location_address?: string | null };
+
+export type QuotationPdfDocumentKind = "quotation" | "invoice";
 
 export type QuotationPdfMeta = {
   quotation_id?: string;
   approved_date?: string;
   employer_company_address?: string;
   account_code?: string;
+  /** Header title on the PDF (default: quotation). */
+  documentKind?: QuotationPdfDocumentKind;
 };
 
 const BRAND = {
   name: "Tawau Resources & Skills Centre",
-  reg: "(R72087/22)",
+  reg: " (R72087/22)",
   addressLines: [
     "TB 15095, LOT 3715,",
     "BANDAR SRI INDAH",
@@ -126,8 +130,65 @@ function textValue(doc: jsPDF, text: string, x: number, y: number, opts?: Parame
   doc.text(text, x, y, opts as any);
 }
 
+/** Vertical layout for footer (amount in words, total, signatures). */
+const FOOTER_LAYOUT = {
+  wordsY: 215,
+  ruleY: 225,
+  totalY: 233,
+  sigTitleY: 242,
+  stampY: 247,
+} as const;
+
+/** Right-column block for issuer name, stamp, and authorised signature. */
+const ISSUER_SIG_BLOCK = { widthMm: 82, rightMarginMm: 12 } as const;
+
+const STAMP_MM = { width: 25, height: 25 };
+
+const stampAssetLoaders = import.meta.glob<string>("../../assets/TRSCCompanyStamp.png", {
+  query: "?url",
+  import: "default",
+});
+
+let cachedStampDataUrl: string | null | undefined;
+
+async function loadCompanyStampDataUrl(): Promise<string | null> {
+  if (cachedStampDataUrl !== undefined) return cachedStampDataUrl;
+  const load = Object.values(stampAssetLoaders)[0];
+  if (!load) {
+    cachedStampDataUrl = null;
+    return null;
+  }
+  try {
+    const url = await load();
+    const res = await fetch(url);
+    if (!res.ok) {
+      cachedStampDataUrl = null;
+      return null;
+    }
+    const blob = await res.blob();
+    cachedStampDataUrl = await new Promise<string | null>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    return cachedStampDataUrl;
+  } catch {
+    cachedStampDataUrl = null;
+    return null;
+  }
+}
+
+function stampImageFormat(dataUrl: string): "PNG" | "JPEG" {
+  return dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+}
+
 /** Builds an A4 quotation PDF closely matching the provided template image. */
-export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPdfMeta = {}): Blob {
+export async function buildQuotationPdfBlob(
+  data: QuotationPdfInput,
+  meta: QuotationPdfMeta = {}
+): Promise<Blob> {
+  const stampDataUrl = await loadCompanyStampDataUrl();
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
   doc.setFont("times", "normal");
@@ -158,8 +219,10 @@ export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPd
 
   // Header (right)
   doc.setFont("times", "bold");
-  doc.setFontSize(12);
-  doc.text("QUOTATION", rightX - 55, 28.5);
+  doc.setFontSize(15);
+  const documentTitle =
+    meta.documentKind === "invoice" ? "INVOICE" : "QUOTATION";
+  doc.text(documentTitle, rightX - 55, 28.5);
   doc.setFont("times", "normal");
   doc.setFontSize(10);
   doc.text("No.", rightX - 55, 34.5);
@@ -195,8 +258,7 @@ export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPd
   const tableW = tableRight - tableLeft;
   const col = {
     item: tableLeft + tableW * 0.0,
-    stock: tableLeft + tableW * 0.10,
-    desc: tableLeft + tableW * 0.26,
+    desc: tableLeft + tableW * 0.10,
     qtyUnit: tableLeft + tableW * 0.74,
     uprice: tableLeft + tableW * 0.88,
     amount: tableRight,
@@ -209,7 +271,6 @@ export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPd
   doc.setFont("times", "bold");
   doc.setFontSize(9);
   doc.text("ITEM", col.item, tableTop + 4.8);
-  doc.text("STOCK CODE", col.stock, tableTop + 4.8);
   doc.text("DESCRIPTION", col.desc, tableTop + 4.8);
   doc.text("QTY Unit", col.qtyUnit, tableTop + 4.8, { align: "right" });
   doc.text("U*PRICE", col.uprice, tableTop + 4.8, { align: "right" });
@@ -229,8 +290,16 @@ export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPd
   textValue(doc, courseLines.join("\n"), col.desc, rowY);
   doc.setFont("times", "normal");
   const afterCourseY = rowY + Math.max(5, courseLines.length * 4.2);
-  textValue(doc, `TARIKH: ${proposed || data.proposed_date}`, col.desc, afterCourseY);
-  textValue(doc, `MODE: ${mode}`, col.desc, afterCourseY + 4.8);
+  let descY = afterCourseY;
+  textValue(doc, `Date: ${proposed || data.proposed_date}`, col.desc, descY);
+  descY += 4.8;
+  textValue(doc, `Mode: ${mode}`, col.desc, descY);
+  descY += 4.8;
+  const location = (data.course_location_address ?? "").trim();
+  if (location) {
+    const locLines = doc.splitTextToSize(`Address: ${location}`, descWidth);
+    textValue(doc, locLines.join("\n"), col.desc, descY);
+  }
 
   textValue(doc, `${data.number_of_employers} pax`, col.qtyUnit, rowY, { align: "right" });
   const uPrice = formatMoney(data.unit_price);
@@ -240,42 +309,66 @@ export function buildQuotationPdfBlob(data: QuotationPdfInput, meta: QuotationPd
 
   // Bottom section: amount in words + total
   const words = ringgitToWords(data.amount_rm);
-  const footerY = 238;
+  const { wordsY, ruleY, totalY, sigTitleY, stampY } = FOOTER_LAYOUT;
+  const wordsAmountX = leftX + 28;
+  const onlyGapMm = 2;
+
   doc.setFont("times", "bold");
   doc.setFontSize(9);
-  doc.text("•", leftX + 5, footerY);
+  doc.text("•", leftX + 5, wordsY);
   doc.setFont("times", "normal");
-  doc.text("RINGGIT (", leftX + 10, footerY);
-  if (words) textValue(doc, words, leftX + 28, footerY);
-  doc.setFont("times", "normal");
-  doc.text(") ONLY", leftX + 140, footerY);
+  doc.text("RINGGIT (", leftX + 10, wordsY);
+  if (words) textValue(doc, words, wordsAmountX, wordsY);
+  const onlyX = words
+    ? wordsAmountX + doc.getTextWidth(words) + onlyGapMm
+    : wordsAmountX;
+  doc.text(") ONLY", onlyX, wordsY);
 
   doc.setLineWidth(0.2);
-  doc.line(leftX, 248, rightX, 248);
+  doc.line(leftX, ruleY, rightX, ruleY);
 
   doc.setFont("times", "bold");
   doc.setFontSize(10);
-  doc.text("Total: RM", rightX - 55, 256);
-  if (amt) textValue(doc, amt, rightX - 10, 256, { align: "right" });
+  doc.text("Total: RM", rightX - 55, totalY);
+  if (amt) textValue(doc, amt, rightX - 10, totalY, { align: "right" });
 
-  // Signature area (slightly smaller right margin here only)
-  const sigRightX = pageW - 12;
+  // Signature area
+  const issuerSigRightX = pageW - ISSUER_SIG_BLOCK.rightMarginMm;
+  const issuerSigCenterX = issuerSigRightX - ISSUER_SIG_BLOCK.widthMm / 2;
+  const companyLine = BRAND.name.toUpperCase();
+  const receivedByLabel = "RECEIVED BY";
+
   doc.setFontSize(9);
   doc.setFont("times", "bold");
-  doc.text("Received By", leftX, 265);
-  doc.text(BRAND.name.toUpperCase(), sigRightX - 80, 265);
+  doc.text(receivedByLabel, leftX, sigTitleY);
+  const recvSigCenterX = leftX + doc.getTextWidth(receivedByLabel) / 2;
+  doc.text(companyLine, issuerSigCenterX, sigTitleY, { align: "center" });
+
+  if (stampDataUrl) {
+    doc.addImage(
+      stampDataUrl,
+      stampImageFormat(stampDataUrl),
+      issuerSigCenterX - STAMP_MM.width / 2,
+      stampY,
+      STAMP_MM.width,
+      STAMP_MM.height
+    );
+  }
+
+  const recvSigLineY = sigTitleY + 14;
+  const recvSigLabelY = recvSigLineY + 6;
+  const issuerSigLineY = stampDataUrl
+    ? stampY + STAMP_MM.height + 1
+    : sigTitleY + 10;
+  const issuerSigLabelY = issuerSigLineY + 6;
 
   doc.setFont("times", "normal");
   doc.setFontSize(8);
   setColor(doc, COLOR.gray);
-  doc.text("..............................", leftX, 278);
-  doc.text("Company Chop & Signature", leftX, 284);
-
-  setColor(doc, COLOR.black);
-  textValue(doc, "(insert company stamp)", sigRightX - 80, 273);
-  setColor(doc, COLOR.gray);
-  doc.text("..............................", sigRightX - 80, 278);
-  doc.text("(Authorised Signature)", sigRightX - 78, 284);
+  doc.text("..............................", recvSigCenterX, recvSigLineY, { align: "center" });
+  doc.text("Company Chop & Signature", recvSigCenterX, recvSigLabelY, { align: "center" });
+  doc.text("..............................", issuerSigCenterX, issuerSigLineY, { align: "center" });
+  doc.text("(Authorised Signature)", issuerSigCenterX, issuerSigLabelY, { align: "center" });
   setColor(doc, COLOR.black);
 
   return doc.output("blob");

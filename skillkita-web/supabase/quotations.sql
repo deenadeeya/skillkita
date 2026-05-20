@@ -17,6 +17,7 @@ create table if not exists public.quotation_requests (
   number_of_employers int not null check (number_of_employers > 0),
   proposed_date date not null,
   additional_description text,
+  course_location_address text,
   status text not null default 'pending'
     check (status in ('pending', 'approved', 'rejected')),
   company_name text,
@@ -34,7 +35,8 @@ create table if not exists public.quotation_requests (
 -- Forward-compatible: if the table already exists, ensure columns exist.
 alter table public.quotation_requests
   add column if not exists quotation_no bigint,
-  add column if not exists company_address text;
+  add column if not exists company_address text,
+  add column if not exists course_location_address text;
 
 alter table public.quotation_requests
   alter column quotation_no set default nextval('public.quotation_requests_no_seq');

@@ -5,9 +5,12 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   HomeIcon,
+  PencilSquareIcon,
+  RectangleStackIcon,
   UserCircleIcon,
   UsersIcon,
 } from "@heroicons/react/24/solid";
+import { HiAnnotation } from "react-icons/hi";
 import type { NavItem } from "./LeftNav";
 
 export const adminNavItems: NavItem[] = [
@@ -22,7 +25,7 @@ export const adminNavItems: NavItem[] = [
         href: "/company-experience",
         icon: ClipboardDocumentListIcon,
       },
-      { label: "Manage Home", href: "/admin/landing", icon: DocumentTextIcon },
+      { label: "Manage Home", href: "/admin/landing", icon: Cog6ToothIcon },
     ],
   },
   {
@@ -30,18 +33,18 @@ export const adminNavItems: NavItem[] = [
     icon: ClipboardDocumentListIcon,
     children: [
       { label: "Browse Course", href: "/courses", icon: ClipboardDocumentListIcon },
-      { label: "Manage Course", href: "/admin", icon: ClipboardDocumentListIcon },
+      { label: "Manage Course", href: "/admin", icon: Cog6ToothIcon },
     ],
   },
   {
     label: "Documents",
-    icon: DocumentTextIcon,
+    icon: RectangleStackIcon,
     children: [
       {
         label: "Quotation",
-        icon: DocumentTextIcon,
+        icon: RectangleStackIcon,
         children: [
-          { label: "Create Quotation", href: "/admin/quotations/create", icon: DocumentTextIcon },
+          { label: "Create Quotation", href: "/admin/quotations/create", icon: PencilSquareIcon },
           { label: "Quotation Requests", href: "/admin/quotations", icon: DocumentTextIcon },
         ],
       },
@@ -53,12 +56,12 @@ export const adminNavItems: NavItem[] = [
     label: "Chat",
     icon: ChatBubbleLeftRightIcon,
     children: [
-      { label: "Messages", href: "/admin/messages?role=admin", icon: ChatBubbleLeftRightIcon },
+      { label: "Messages", href: "/admin/messages?role=admin", icon: HiAnnotation },
     ],
   },
   {
     label: "Manage Users",
-    icon: UsersIcon,
+    icon: Cog6ToothIcon,
     children: [{ label: "Manage Users", href: "/admin/users", icon: UsersIcon }],
   },
   {
@@ -89,13 +92,13 @@ export const employerNavItems: NavItem[] = [
   },
   {
     label: "Documents",
-    icon: DocumentTextIcon,
+    icon: RectangleStackIcon,
     children: [
       {
         label: "Quotation",
-        icon: DocumentTextIcon,
+        icon: RectangleStackIcon,
         children: [
-          { label: "Create Quotation", href: "/employer/quotation", icon: DocumentTextIcon },
+          { label: "Create Quotation", href: "/employer/quotation", icon: PencilSquareIcon },
           { label: "Quotation Requests", href: "/employer", icon: DocumentTextIcon },
         ],
       },
@@ -106,7 +109,7 @@ export const employerNavItems: NavItem[] = [
   {
     label: "Chat",
     icon: ChatBubbleLeftRightIcon,
-    children: [{ label: "Messages", href: "/employer/talk-to-admin", icon: ChatBubbleLeftRightIcon }],
+    children: [{ label: "Messages", href: "/employer/talk-to-admin", icon: HiAnnotation }],
   },
   {
     label: "Settings",
@@ -114,4 +117,3 @@ export const employerNavItems: NavItem[] = [
     children: [{ label: "Profile", href: "/employer/profile", icon: UserCircleIcon }],
   },
 ];
-

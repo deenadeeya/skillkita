@@ -3,10 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../shared/api/supabaseClient";
 import type { Viewer } from "../../shared/hooks/useViewer";
 import {
-  fetchUserNotifications,
-  markChatNotificationsReadForConversation,
-  subscribeUserNotifications,
-} from "./notificationsApi";
+  markNotificationReadForRow,
+  notificationCategoryLabel,
+  notificationHref,
+} from "./notificationDisplay";
+import { fetchUserNotifications, subscribeUserNotifications } from "./notificationsApi";
 import type { UserNotificationRow } from "./types";
 
 type Props = {
@@ -22,13 +23,6 @@ function sortNotifications(rows: UserNotificationRow[]): UserNotificationRow[] {
     const bT = new Date(bUnread ? b.created_at : (b.read_at ?? b.created_at)).getTime();
     return bT - aT;
   });
-}
-
-function chatHref(row: UserNotificationRow, role: Viewer["role"]): string {
-  if (role === "admin") {
-    return `/admin/messages?role=admin&conversation=${encodeURIComponent(row.conversation_id)}`;
-  }
-  return `/employer/talk-to-admin?admin=${encodeURIComponent(row.admin_user_id)}`;
 }
 
 const NotificationBell = ({ viewer }: Props) => {
@@ -93,7 +87,13 @@ const NotificationBell = ({ viewer }: Props) => {
 
   const unreadCount = useMemo(() => rows.filter((r) => r.read_at == null).length, [rows]);
 
-  const labelForSender = (senderId: string) => nameByUserId[senderId] ?? "User";
+  const senderLine = (row: UserNotificationRow) => {
+    if (row.kind === "quotation_request_reviewed" && viewer.role === "employer") {
+      return "SkillKita admin";
+    }
+    const name = nameByUserId[row.sender_user_id] ?? "User";
+    return row.kind === "chat_message" ? `From ${name}` : name;
+  };
 
   return (
     <div className="relative" ref={rootRef}>
@@ -123,7 +123,8 @@ const NotificationBell = ({ viewer }: Props) => {
             <ul className="max-h-[min(70vh,20rem)] overflow-auto">
               {rows.map((n) => {
                 const unread = n.read_at == null;
-                const href = chatHref(n, viewer.role);
+                const href = notificationHref(n, viewer.role);
+                const category = notificationCategoryLabel(n.kind);
                 return (
                   <li key={n.id}>
                     <a
@@ -133,12 +134,12 @@ const NotificationBell = ({ viewer }: Props) => {
                         unread ? "bg-[#faf7f2]" : "opacity-80",
                       ].join(" ")}
                       onClick={() => {
-                        void markChatNotificationsReadForConversation(n.conversation_id);
+                        void markNotificationReadForRow(n);
                         setOpen(false);
                       }}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#0001fc]">Chat</span>
+                        <span className="text-xs font-semibold text-[#0001fc]">{category}</span>
                         <span
                           className={[
                             "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
@@ -148,9 +149,7 @@ const NotificationBell = ({ viewer }: Props) => {
                           {unread ? "Unread" : "Read"}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs font-semibold text-black/80">
-                        From {labelForSender(n.sender_user_id)}
-                      </p>
+                      <p className="mt-0.5 text-xs font-semibold text-black/80">{senderLine(n)}</p>
                       <p className="mt-1 line-clamp-2 text-xs text-black/70">{n.preview}</p>
                       <p className="mt-1 text-[10px] text-black/45">
                         {new Date(n.created_at).toLocaleString()}

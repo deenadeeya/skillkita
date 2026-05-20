@@ -11,8 +11,13 @@ function RequiredStar() {
   );
 }
 
+const INDEPENDENT_COMPANY_LABEL = "Independent";
+
+type CompanyAffiliation = "company" | "independent";
+
 const SignUp = () => {
   const [fullName, setFullName] = useState("");
+  const [companyAffiliation, setCompanyAffiliation] = useState<CompanyAffiliation>("company");
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -38,11 +43,18 @@ const SignUp = () => {
     setSuccessMessage(null);
 
     const trimmedFullName = fullName.trim();
-    const trimmedCompany = companyName.trim();
+    const trimmedCompanyInput = companyName.trim();
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
-    if (!trimmedFullName || !trimmedCompany || !trimmedEmail || !trimmedPhone) {
-      setErrorMessage("Please fill in full name, company name, email, and phone number.");
+    const resolvedCompanyName =
+      companyAffiliation === "independent" ? INDEPENDENT_COMPANY_LABEL : trimmedCompanyInput;
+
+    if (!trimmedFullName || !trimmedEmail || !trimmedPhone) {
+      setErrorMessage("Please fill in full name, email, and phone number.");
+      return;
+    }
+    if (companyAffiliation === "company" && !trimmedCompanyInput) {
+      setErrorMessage("Please enter your company name or select Independent.");
       return;
     }
 
@@ -55,7 +67,7 @@ const SignUp = () => {
         options: {
           data: {
             full_name: trimmedFullName,
-            company_name: trimmedCompany,
+            company_name: resolvedCompanyName,
             phone: trimmedPhone,
           },
         },
@@ -71,7 +83,7 @@ const SignUp = () => {
         const { error: profileError } = await supabase.from("user_profiles").insert({
           user_id: data.user.id,
           full_name: trimmedFullName,
-          company_name: trimmedCompany,
+          company_name: resolvedCompanyName,
           phone: trimmedPhone,
           role: "employer",
           status: "approved",
@@ -162,19 +174,51 @@ const SignUp = () => {
                 </label>
               </div>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Company name <RequiredStar />
-                </span>
-                <input
-                  name="organization"
-                  autoComplete="organization"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  required
-                />
-              </label>
+              <fieldset className="block space-y-3">
+                <legend className="mb-1 text-sm font-semibold text-[#7A1F1F]">Company affiliation</legend>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="company-affiliation"
+                      checked={companyAffiliation === "company"}
+                      onChange={() => setCompanyAffiliation("company")}
+                    />
+                    Company / organisation
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="company-affiliation"
+                      checked={companyAffiliation === "independent"}
+                      onChange={() => {
+                        setCompanyAffiliation("independent");
+                        setCompanyName("");
+                      }}
+                    />
+                    Independent
+                  </label>
+                </div>
+                {companyAffiliation === "company" ? (
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                      Company name <RequiredStar />
+                    </span>
+                    <input
+                      name="organization"
+                      autoComplete="organization"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.currentTarget.value)}
+                      className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                      required
+                    />
+                  </label>
+                ) : (
+                  <p className="text-sm text-black/70">
+                    You are signing up as an independent employer. No company name is required.
+                  </p>
+                )}
+              </fieldset>
 
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">

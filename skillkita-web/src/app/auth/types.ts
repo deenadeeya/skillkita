@@ -8,5 +8,6 @@ export type UserProfileRow = {
   status: UserApprovalStatus;
   full_name: string;
   company_name: string | null;
+  company_address?: string | null;
 };
 
