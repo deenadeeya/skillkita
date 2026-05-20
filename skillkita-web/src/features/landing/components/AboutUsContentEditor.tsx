@@ -9,8 +9,11 @@ type Props = {
   bankQrPreviewUrl: string;
   contact1Name: string;
   contact1Phone: string;
+  contact1Email: string;
   contact2Name: string;
   contact2Phone: string;
+  contact2Email: string;
+  companyHrEmail: string;
   isSaving: boolean;
   onWhoImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onWhoDescriptionChange: (value: string) => void;
@@ -20,8 +23,11 @@ type Props = {
   onBankQrImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onContact1NameChange: (value: string) => void;
   onContact1PhoneChange: (value: string) => void;
+  onContact1EmailChange: (value: string) => void;
   onContact2NameChange: (value: string) => void;
   onContact2PhoneChange: (value: string) => void;
+  onContact2EmailChange: (value: string) => void;
+  onCompanyHrEmailChange: (value: string) => void;
 };
 
 export function AboutUsContentEditor({
@@ -33,8 +39,11 @@ export function AboutUsContentEditor({
   bankQrPreviewUrl,
   contact1Name,
   contact1Phone,
+  contact1Email,
   contact2Name,
   contact2Phone,
+  contact2Email,
+  companyHrEmail,
   isSaving,
   onWhoImageChange,
   onWhoDescriptionChange,
@@ -44,8 +53,11 @@ export function AboutUsContentEditor({
   onBankQrImageChange,
   onContact1NameChange,
   onContact1PhoneChange,
+  onContact1EmailChange,
   onContact2NameChange,
   onContact2PhoneChange,
+  onContact2EmailChange,
+  onCompanyHrEmailChange,
 }: Props) {
   return (
     <section className="sk-card mt-8 p-6">
@@ -124,7 +136,7 @@ export function AboutUsContentEditor({
               onChange={(e) => onBankAccountDetailsChange(e.currentTarget.value)}
               rows={4}
               className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              placeholder="Bank name, account name, account number..."
+              placeholder="Account name, bank, account number (one per line or comma-separated)"
               disabled={isSaving}
             />
           </label>
@@ -147,47 +159,86 @@ export function AboutUsContentEditor({
 
         <div>
           <h3 className="text-lg font-bold text-[#7A1F1F]">4. Contact Details</h3>
-          <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Contact person 1 — name</span>
-              <input
-                type="text"
-                value={contact1Name}
-                onChange={(e) => onContact1NameChange(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                disabled={isSaving}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Contact person 1 — phone</span>
-              <input
-                type="tel"
-                value={contact1Phone}
-                onChange={(e) => onContact1PhoneChange(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                disabled={isSaving}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Contact person 2 — name</span>
-              <input
-                type="text"
-                value={contact2Name}
-                onChange={(e) => onContact2NameChange(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                disabled={isSaving}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Contact person 2 — phone</span>
-              <input
-                type="tel"
-                value={contact2Phone}
-                onChange={(e) => onContact2PhoneChange(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                disabled={isSaving}
-              />
-            </label>
+          <label className="mt-3 block max-w-xl">
+            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Company email</span>
+            <input
+              type="email"
+              value={companyHrEmail}
+              onChange={(e) => onCompanyHrEmailChange(e.currentTarget.value)}
+              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              placeholder="hr@company.com"
+              disabled={isSaving}
+            />
+          </label>
+          <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 space-y-3">
+              <p className="text-sm font-bold text-[#7A1F1F]">Contact person 1</p>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Name</span>
+                <input
+                  type="text"
+                  value={contact1Name}
+                  onChange={(e) => onContact1NameChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  disabled={isSaving}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Phone</span>
+                <input
+                  type="tel"
+                  value={contact1Phone}
+                  onChange={(e) => onContact1PhoneChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  disabled={isSaving}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Email</span>
+                <input
+                  type="email"
+                  value={contact1Email}
+                  onChange={(e) => onContact1EmailChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  placeholder="name@company.com"
+                  disabled={isSaving}
+                />
+              </label>
+            </div>
+            <div className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 space-y-3">
+              <p className="text-sm font-bold text-[#7A1F1F]">Contact person 2</p>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Name</span>
+                <input
+                  type="text"
+                  value={contact2Name}
+                  onChange={(e) => onContact2NameChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  disabled={isSaving}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Phone</span>
+                <input
+                  type="tel"
+                  value={contact2Phone}
+                  onChange={(e) => onContact2PhoneChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  disabled={isSaving}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Email</span>
+                <input
+                  type="email"
+                  value={contact2Email}
+                  onChange={(e) => onContact2EmailChange(e.currentTarget.value)}
+                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  placeholder="name@company.com"
+                  disabled={isSaving}
+                />
+              </label>
+            </div>
           </div>
         </div>
       </div>

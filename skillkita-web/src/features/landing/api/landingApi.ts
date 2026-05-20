@@ -24,8 +24,11 @@ export type LandingContentRow = {
   bank_qr_image_url: string | null;
   contact_1_name: string | null;
   contact_1_phone: string | null;
+  contact_1_email: string | null;
   contact_2_name: string | null;
   contact_2_phone: string | null;
+  contact_2_email: string | null;
+  company_hr_email: string | null;
   updated_at: string;
 };
 
@@ -41,7 +44,7 @@ export type ExperienceRow = {
 const LANDING_SELECT_SOCIAL =
   "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,social_facebook_page_url,social_facebook_post_urls,social_instagram_profile_url,social_instagram_post_url,updated_at";
 
-const LANDING_SELECT_FULL = `${LANDING_SELECT_SOCIAL},location_description,location_map_embed_url,bank_account_details,bank_qr_image_url,contact_1_name,contact_1_phone,contact_2_name,contact_2_phone`;
+const LANDING_SELECT_FULL = `${LANDING_SELECT_SOCIAL},location_description,location_map_embed_url,bank_account_details,bank_qr_image_url,contact_1_name,contact_1_phone,contact_1_email,contact_2_name,contact_2_phone,contact_2_email,company_hr_email`;
 
 const LANDING_SELECT_FEATURED =
   "id,cover_description,who_image_url,who_description,home_featured_1_url,home_featured_2_url,home_featured_3_url,updated_at";
@@ -68,8 +71,11 @@ function applyNullAbout(data: unknown): LandingContentRow {
     bank_qr_image_url: null,
     contact_1_name: null,
     contact_1_phone: null,
+    contact_1_email: null,
     contact_2_name: null,
     contact_2_phone: null,
+    contact_2_email: null,
+    company_hr_email: null,
   };
 }
 

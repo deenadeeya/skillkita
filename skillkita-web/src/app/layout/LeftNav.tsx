@@ -21,6 +21,62 @@ function isItemActive(item: NavItem, currentPath: string): boolean {
   return (item.children ?? []).some((c) => isItemActive(c, currentPath));
 }
 
+function isLinkActive(href: string | undefined, currentPath: string): boolean {
+  if (!href) return false;
+  const path = href.split("?")[0] ?? href;
+  return currentPath === path || currentPath.startsWith(path + "/");
+}
+
+const navTransition = "transition-colors duration-150";
+
+/** Top-level section (Home, Course, Documents, …) */
+const categoryBtnClass = (active: boolean) =>
+  [
+    "group flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+    navTransition,
+    active
+      ? "bg-[#7A1F1F]/12 text-[#7A1F1F] hover:bg-[#7A1F1F]/20"
+      : "text-black/80 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
+  ].join(" ");
+
+/** Subsection with nested children (e.g. Quotation under Documents) */
+const subsectionToggleClass = (hasActiveDescendant: boolean) =>
+  [
+    "group flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+    navTransition,
+    hasActiveDescendant
+      ? "bg-[#7A1F1F]/12 text-[#7A1F1F] hover:bg-[#7A1F1F]/20"
+      : "text-black/70 hover:bg-[#7A1F1F]/14 hover:text-[#7A1F1F]",
+  ].join(" ");
+
+/** Leaf link (direct child or grandchild) */
+const linkClass = (active: boolean) =>
+  [
+    "group flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
+    navTransition,
+    active
+      ? "bg-[#7A1F1F] text-white hover:bg-[#651919]"
+      : "text-black/70 hover:bg-[#7A1F1F]/14 hover:text-[#7A1F1F]",
+  ].join(" ");
+
+const categoryIconClass =
+  "h-5 w-5 shrink-0 text-[#7A1F1F] transition-colors duration-150 group-hover:text-[#651919]";
+
+const subsectionIconClass =
+  "h-5 w-5 shrink-0 text-[#7A1F1F] transition-colors duration-150 group-hover:text-[#651919]";
+
+const linkIconClass = (active: boolean) =>
+  [
+    "h-5 w-5 shrink-0 transition-colors duration-150",
+    active ? "text-white group-hover:text-white" : "text-[#7A1F1F] group-hover:text-[#651919]",
+  ].join(" ");
+
+const chevronClass = (open: boolean) =>
+  [
+    "h-4 w-4 shrink-0 text-[#7A1F1F] transition duration-150 group-hover:text-[#651919]",
+    open ? "rotate-180" : "",
+  ].join(" ");
+
 const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) => {
   const initialOpen = useMemo(() => {
     const open: Record<string, boolean> = {};
@@ -46,30 +102,28 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
               <button
                 type="button"
                 onClick={() => setOpenByLabel((p) => ({ ...p, [cat.label]: !open }))}
-                className={[
-                  "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
-                  active ? "bg-[#7A1F1F]/10 text-[#7A1F1F]" : "text-black/80 hover:bg-black/5",
-                ].join(" ")}
+                className={categoryBtnClass(active)}
               >
                 <span className="flex items-center gap-2">
-                  {CatIcon && <CatIcon className="h-5 w-5 text-[#7A1F1F]" />}
+                  {CatIcon && <CatIcon className={categoryIconClass} />}
                   {cat.label}
                 </span>
-                <ChevronDownIcon
-                  className={["h-4 w-4 transition", open ? "rotate-180" : ""].join(" ")}
-                />
+                <ChevronDownIcon className={chevronClass(open)} />
               </button>
 
               {open && (cat.children?.length ?? 0) > 0 && (
                 <div className="mt-1 space-y-1 pl-2">
                   {(cat.children ?? []).map((child) => {
-                    const childActive = child.href
-                      ? currentPath === child.href || currentPath.startsWith(child.href + "/")
-                      : false;
+                    const childHrefActive = isLinkActive(child.href, currentPath);
+                    const hasActiveGrandchild = (child.children ?? []).some((g) =>
+                      isLinkActive(g.href, currentPath)
+                    );
+                    const childActive = childHrefActive || hasActiveGrandchild;
                     const ChildIcon = child.icon;
                     const childKey = `${cat.label}::${child.label}`;
                     const hasGrandChildren = (child.children?.length ?? 0) > 0;
-                    const childOpen = openChildByKey[childKey] ?? false;
+                    const childOpen = openChildByKey[childKey] ?? childActive;
+
                     return (
                       <div key={child.label}>
                         {hasGrandChildren ? (
@@ -79,56 +133,27 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
                               onClick={() =>
                                 setOpenChildByKey((p) => ({ ...p, [childKey]: !childOpen }))
                               }
-                              className={[
-                                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
-                                childActive
-                                  ? "bg-[#7A1F1F] text-white"
-                                  : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
-                              ].join(" ")}
+                              className={subsectionToggleClass(childActive)}
                             >
                               <span className="flex items-center gap-2">
-                                {ChildIcon && (
-                                  <ChildIcon
-                                    className={[
-                                      "h-5 w-5",
-                                      childActive ? "text-white" : "text-[#7A1F1F]",
-                                    ].join(" ")}
-                                  />
-                                )}
+                                {ChildIcon && <ChildIcon className={subsectionIconClass} />}
                                 {child.label}
                               </span>
-                              <ChevronDownIcon
-                                className={[
-                                  "h-4 w-4 transition",
-                                  childOpen ? "rotate-180" : "",
-                                ].join(" ")}
-                              />
+                              <ChevronDownIcon className={chevronClass(childOpen)} />
                             </button>
                             {childOpen && (
                               <div className="mt-1 space-y-1 pl-4">
                                 {(child.children ?? []).map((g) => {
-                                  const grandActive = g.href
-                                    ? currentPath === g.href || currentPath.startsWith(g.href + "/")
-                                    : false;
+                                  const grandActive = isLinkActive(g.href, currentPath);
                                   const GrandIcon = g.icon;
                                   return (
                                     <a
                                       key={g.label}
                                       href={g.href ?? "#"}
-                                      className={[
-                                        "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
-                                        grandActive
-                                          ? "bg-[#7A1F1F] text-white"
-                                          : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
-                                      ].join(" ")}
+                                      className={linkClass(grandActive)}
                                     >
                                       {GrandIcon && (
-                                        <GrandIcon
-                                          className={[
-                                            "h-5 w-5",
-                                            grandActive ? "text-white" : "text-[#7A1F1F]",
-                                          ].join(" ")}
-                                        />
+                                        <GrandIcon className={linkIconClass(grandActive)} />
                                       )}
                                       {g.label}
                                     </a>
@@ -138,23 +163,8 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
                             )}
                           </>
                         ) : (
-                          <a
-                            href={child.href ?? "#"}
-                            className={[
-                              "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
-                              childActive
-                                ? "bg-[#7A1F1F] text-white"
-                                : "text-black/70 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
-                            ].join(" ")}
-                          >
-                            {ChildIcon && (
-                              <ChildIcon
-                                className={[
-                                  "h-5 w-5",
-                                  childActive ? "text-white" : "text-[#7A1F1F]",
-                                ].join(" ")}
-                              />
-                            )}
+                          <a href={child.href ?? "#"} className={linkClass(childActive)}>
+                            {ChildIcon && <ChildIcon className={linkIconClass(childActive)} />}
                             {child.label}
                           </a>
                         )}
@@ -184,7 +194,7 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
         <button
           type="button"
           onClick={() => void onLogout()}
-          className="mt-3 w-full rounded-xl border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-[#7A1F1F]/5"
+          className="mt-3 w-full rounded-xl border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] transition-colors duration-150 hover:bg-[#7A1F1F]/12"
         >
           Logout
         </button>
@@ -194,5 +204,3 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
 };
 
 export default LeftNav;
-
-

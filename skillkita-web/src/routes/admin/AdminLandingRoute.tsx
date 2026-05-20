@@ -45,8 +45,11 @@ const AdminLandingEditor = () => {
   const [bankQrFile, setBankQrFile] = useState<File | null>(null);
   const [contact1Name, setContact1Name] = useState("");
   const [contact1Phone, setContact1Phone] = useState("");
+  const [contact1Email, setContact1Email] = useState("");
   const [contact2Name, setContact2Name] = useState("");
   const [contact2Phone, setContact2Phone] = useState("");
+  const [contact2Email, setContact2Email] = useState("");
+  const [companyHrEmail, setCompanyHrEmail] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -82,8 +85,11 @@ const AdminLandingEditor = () => {
       setBankQrFile(null);
       setContact1Name("");
       setContact1Phone("");
+      setContact1Email("");
       setContact2Name("");
       setContact2Phone("");
+      setContact2Email("");
+      setCompanyHrEmail("");
       return;
     }
 
@@ -108,8 +114,11 @@ const AdminLandingEditor = () => {
     setBankQrFile(null);
     setContact1Name(row.contact_1_name ?? "");
     setContact1Phone(row.contact_1_phone ?? "");
+    setContact1Email(row.contact_1_email ?? "");
     setContact2Name(row.contact_2_name ?? "");
     setContact2Phone(row.contact_2_phone ?? "");
+    setContact2Email(row.contact_2_email ?? "");
+    setCompanyHrEmail(row.company_hr_email ?? "");
   }, []);
 
   const loadAll = useCallback(async () => {
@@ -225,8 +234,11 @@ const AdminLandingEditor = () => {
         bank_qr_image_url: bankQrUrl ?? landing?.bank_qr_image_url ?? null,
         contact_1_name: contact1Name.trim() || null,
         contact_1_phone: contact1Phone.trim() || null,
+        contact_1_email: contact1Email.trim() || null,
         contact_2_name: contact2Name.trim() || null,
         contact_2_phone: contact2Phone.trim() || null,
+        contact_2_email: contact2Email.trim() || null,
+        company_hr_email: companyHrEmail.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -299,8 +311,11 @@ const AdminLandingEditor = () => {
             bankQrPreviewUrl={bankQrPreviewUrl}
             contact1Name={contact1Name}
             contact1Phone={contact1Phone}
+            contact1Email={contact1Email}
             contact2Name={contact2Name}
             contact2Phone={contact2Phone}
+            contact2Email={contact2Email}
+            companyHrEmail={companyHrEmail}
             isSaving={isSaving}
             onWhoImageChange={onWhoImageChange}
             onWhoDescriptionChange={setWhoDescription}
@@ -310,8 +325,11 @@ const AdminLandingEditor = () => {
             onBankQrImageChange={onBankQrImageChange}
             onContact1NameChange={setContact1Name}
             onContact1PhoneChange={setContact1Phone}
+            onContact1EmailChange={setContact1Email}
             onContact2NameChange={setContact2Name}
             onContact2PhoneChange={setContact2Phone}
+            onContact2EmailChange={setContact2Email}
+            onCompanyHrEmailChange={setCompanyHrEmail}
           />
           <div className="mt-6">
             <button type="submit" disabled={isSaving} className="sk-button-primary">

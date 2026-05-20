@@ -14,15 +14,44 @@ export function sanitizeQuotationFileNameSegment(raw: string, maxLen = 72): stri
   return base.length > 0 ? base : "quotation";
 }
 
-/** Suggested download filename for an approved quotation PDF. */
-export function buildQuotationPdfDownloadFileName(row: QuotationRequestRow): string {
+function buildPdfDownloadFileName(row: QuotationRequestRow, prefix: "Quotation" | "Invoice"): string {
   const no =
     row.quotation_no != null
       ? String(row.quotation_no).padStart(4, "0")
       : `id-${row.id.replace(/-/g, "").slice(0, 12)}`;
   const course = sanitizeQuotationFileNameSegment(row.course_name);
-  const name = `Quotation-${no}-${course}.pdf`;
+  const name = `${prefix}-${no}-${course}.pdf`;
   return name.length > 180 ? `${name.slice(0, 175)}.pdf` : name;
+}
+
+/** Suggested download filename for an approved quotation PDF. */
+export function buildQuotationPdfDownloadFileName(row: QuotationRequestRow): string {
+  return buildPdfDownloadFileName(row, "Quotation");
+}
+
+/** Suggested download filename for an invoice PDF. */
+export function buildInvoicePdfDownloadFileName(row: QuotationRequestRow): string {
+  return buildPdfDownloadFileName(row, "Invoice");
+}
+
+/** Triggers a browser download for a PDF blob generated in the client. */
+export function downloadBlobWithFileName(blob: Blob, downloadFileName: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const safeName = downloadFileName.toLowerCase().endsWith(".pdf")
+    ? downloadFileName
+    : `${downloadFileName}.pdf`;
+
+  try {
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = safeName;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  }
 }
 
 /** Fetches PDF from signed URL and saves with the given file name (not the storage token). */

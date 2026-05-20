@@ -77,6 +77,7 @@ export async function adminCreateApprovedQuotationRequest(
     status: "approved";
     company_name: string;
     course_mode: string;
+    course_location_address: string | null;
     unit_price: number;
     amount_rm: number;
     reviewed_at: string;
@@ -112,7 +113,12 @@ export async function setQuotationPdfPath(id: string, pdf_storage_path: string) 
 export async function createEmployerQuotationRequest(payload: {
   employer_user_id: string;
   company_name_snapshot: string;
+  company_address: string | null;
+  company_name: string | null;
   course_name: string;
+  course_mode: string;
+  unit_price: number;
+  course_location_address: string;
   number_of_employers: number;
   proposed_date: string;
   additional_description: string | null;

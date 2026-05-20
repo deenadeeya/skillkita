@@ -1,4 +1,5 @@
 import type { QuotationRequestRow } from "../types";
+import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
 
 type EmployerLabel = {
@@ -61,13 +62,38 @@ export function AdminQuotationReviewPanel({
           {employer?.company_name ? ` (${employer.company_name})` : ""}
         </p>
         <p className="mt-1">
+          <span className="font-semibold">To (company):</span>{" "}
+          {activeReview.company_name?.trim() || activeReview.company_name_snapshot}
+        </p>
+        {activeReview.company_address?.trim() ? (
+          <p className="mt-1 whitespace-pre-wrap">
+            <span className="font-semibold">To (address):</span> {activeReview.company_address}
+          </p>
+        ) : null}
+        <p className="mt-1">
           <span className="font-semibold">Course:</span> {activeReview.course_name}
+        </p>
+        {activeReview.course_mode?.trim() ? (
+          <p className="mt-1">
+            <span className="font-semibold">Mode:</span> {activeReview.course_mode}
+          </p>
+        ) : null}
+        {activeReview.unit_price != null ? (
+          <p className="mt-1">
+            <span className="font-semibold">Requested price / pax:</span> RM{" "}
+            {Number(activeReview.unit_price).toFixed(2)}
+          </p>
+        ) : null}
+        {activeReview.course_location_address?.trim() ? (
+          <p className="mt-1 whitespace-pre-wrap">
+            <span className="font-semibold">Course location:</span> {activeReview.course_location_address}
+          </p>
+        ) : null}
+        <p className="mt-1">
+          <span className="font-semibold">Course date:</span> {activeReview.proposed_date}
         </p>
         <p className="mt-1">
           <span className="font-semibold">Participants:</span> {activeReview.number_of_employers}
-        </p>
-        <p className="mt-1">
-          <span className="font-semibold">Proposed date:</span> {activeReview.proposed_date}
         </p>
         {activeReview.additional_description && (
           <p className="mt-2 text-black/80">{activeReview.additional_description}</p>
@@ -122,9 +148,11 @@ export function AdminQuotationReviewPanel({
             <option value="" disabled>
               Select…
             </option>
-            <option value="Face-to-Face">Face-to-Face</option>
-            <option value="Online">Online</option>
-            <option value="Hybrid">Hybrid</option>
+            {QUOTATION_COURSE_MODES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
           </select>
         </label>
 

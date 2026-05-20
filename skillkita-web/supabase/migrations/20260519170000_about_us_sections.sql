@@ -8,4 +8,6 @@ alter table public.landing_content
   add column if not exists contact_1_name text,
   add column if not exists contact_1_phone text,
   add column if not exists contact_2_name text,
-  add column if not exists contact_2_phone text;
+  add column if not exists contact_2_phone text,
+  add column if not exists contact_1_email text,
+  add column if not exists contact_2_email text;
