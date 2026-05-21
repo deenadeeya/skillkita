@@ -1,4 +1,4 @@
-import { supabase } from "../../../shared/api/supabaseClient";
+import { normalizeSupabaseStorageUrl, supabase } from "../../../shared/api/supabaseClient";
 
 export type LandingContentRow = {
   id: number;
@@ -96,6 +96,17 @@ function applyNullSocial(data: unknown): LandingContentRow {
   };
 }
 
+function normalizeLandingMediaUrls(row: LandingContentRow): LandingContentRow {
+  return {
+    ...row,
+    who_image_url: normalizeSupabaseStorageUrl(row.who_image_url),
+    home_featured_1_url: normalizeSupabaseStorageUrl(row.home_featured_1_url),
+    home_featured_2_url: normalizeSupabaseStorageUrl(row.home_featured_2_url),
+    home_featured_3_url: normalizeSupabaseStorageUrl(row.home_featured_3_url),
+    bank_qr_image_url: normalizeSupabaseStorageUrl(row.bank_qr_image_url),
+  };
+}
+
 function applyNullFeaturedAndSocial(data: unknown): LandingContentRow {
   const r = data as Omit<
     LandingContentRow,
@@ -125,22 +136,26 @@ export async function getLandingContent(id: number) {
 
   const full = await fetchRow(LANDING_SELECT_FULL);
   if (!full.error) {
-    return (full.data ?? null) as LandingContentRow | null;
+    const row = (full.data ?? null) as LandingContentRow | null;
+    return row ? normalizeLandingMediaUrls(row) : null;
   }
 
   const social = await fetchRow(LANDING_SELECT_SOCIAL);
   if (!social.error) {
-    return social.data ? applyNullAbout(social.data) : null;
+    const row = social.data ? applyNullAbout(social.data) : null;
+    return row ? normalizeLandingMediaUrls(row as LandingContentRow) : null;
   }
 
   const featured = await fetchRow(LANDING_SELECT_FEATURED);
   if (!featured.error) {
-    return featured.data ? applyNullAbout(applyNullSocial(featured.data)) : null;
+    const row = featured.data ? applyNullAbout(applyNullSocial(featured.data)) : null;
+    return row ? normalizeLandingMediaUrls(row as LandingContentRow) : null;
   }
 
   const legacy = await fetchRow(LANDING_SELECT_LEGACY);
   if (!legacy.error) {
-    return legacy.data ? applyNullAbout(applyNullFeaturedAndSocial(legacy.data)) : null;
+    const row = legacy.data ? applyNullAbout(applyNullFeaturedAndSocial(legacy.data)) : null;
+    return row ? normalizeLandingMediaUrls(row as LandingContentRow) : null;
   }
 
   throw new Error(legacy.error?.message ?? full.error.message);

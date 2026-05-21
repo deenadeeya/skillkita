@@ -10,7 +10,7 @@ import {
   uploadCoursePrivateFile,
   type PrivateDocKind,
 } from "../../features/courses/storage/coursePrivateStorage";
-import { supabase } from "../../shared/api/supabaseClient";
+import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
 import {
   createOcrWorker,
   extractPosterFields,
@@ -306,8 +306,7 @@ export default function AdminCreateCourse() {
 
     if (uploadError) throw new Error(uploadError.message);
 
-    const { data } = supabase.storage.from("course-posters").getPublicUrl(filePath);
-    return data.publicUrl ?? null;
+    return getStoragePublicUrl("course-posters", filePath) || null;
   };
 
   const buildMergedPrivatePaths = async (

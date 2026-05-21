@@ -3,12 +3,42 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
 const envSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
 
+/** Real project URL from env — use for persisted storage links, not the dev proxy origin. */
+export function getSupabaseProjectUrl(): string {
+  return envSupabaseUrl ?? "";
+}
+
 export function getSupabaseUrl(): string {
   if (import.meta.env.DEV && typeof window !== "undefined") {
     // Same-origin proxy configured in vite.config.ts (server.proxy).
     return `${window.location.origin}/supabase-api`;
   }
   return envSupabaseUrl ?? "";
+}
+
+/** Public object URL that works in production (avoids localhost dev-proxy URLs in the DB). */
+export function getStoragePublicUrl(bucket: string, path: string): string {
+  const base = getSupabaseProjectUrl().replace(/\/$/, "");
+  if (!base) return "";
+  const cleanPath = path.replace(/^\//, "");
+  return `${base}/storage/v1/object/public/${bucket}/${cleanPath}`;
+}
+
+/**
+ * Rewrite URLs saved while using the Vite dev proxy (`/supabase-api`) back to the real project host.
+ */
+export function normalizeSupabaseStorageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  const base = getSupabaseProjectUrl().replace(/\/$/, "");
+  if (!base) return trimmed;
+
+  const proxyMatch = trimmed.match(/^https?:\/\/[^/]+\/supabase-api(\/storage\/v1\/object\/public\/.+)$/i);
+  if (proxyMatch) return `${base}${proxyMatch[1]}`;
+
+  return trimmed;
 }
 
 const supabaseUrl = getSupabaseUrl();

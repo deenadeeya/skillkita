@@ -1,0 +1,113 @@
+flowchart LR
+
+V[Visitor]
+E[Employer]
+A[Admin]
+S[System]
+OCR[OCR Service]
+REC[Recommendation Engine]
+
+subgraph SK[SkillKita Platform]
+  subgraph M1[Module 1 User and Communication]
+    UC_USR_01[UC-USR-01 Sign Up Create Account]
+    UC_USR_02[UC-USR-02 Log In]
+    UC_USR_03[UC-USR-03 Log Out]
+    UC_USR_04[UC-USR-04 Reset Password]
+    UC_USR_05[UC-USR-05 Manage Users]
+    UC_USR_06[UC-USR-06 Manage Roles Permissions]
+    UC_USR_07[UC-USR-07 Manage Profile]
+    UC_COM_01[UC-COM-01 Send Message]
+    UC_COM_02[UC-COM-02 Receive Message]
+    UC_COM_03[UC-COM-03 Share Files in Message]
+  end
+
+  subgraph M2[Module 2 Courses and Private Documents]
+    UC_CRS_01[UC-CRS-01 View Courses]
+    UC_CRS_02[UC-CRS-02 Manage Courses]
+    UC_DOC_01[UC-DOC-01 Request Access to Private Documents]
+    UC_DOC_02[UC-DOC-02 Approve Reject Access Request]
+    UC_DOC_03[UC-DOC-03 View Access Request Status]
+    UC_DOC_04[UC-DOC-04 Manage Document Permissions]
+  end
+
+  subgraph M3[Module 3 Quotations]
+    UC_QUO_01[UC-QUO-01 Create Quotation]
+    UC_QUO_02[UC-QUO-02 View Quotation]
+    UC_QUO_03[UC-QUO-03 Update Cancel Quotation]
+    UC_QUO_04[UC-QUO-04 Download Quotation]
+    UC_QUO_05[UC-QUO-05 Send Quotation]
+  end
+
+  subgraph M4[Module 4 AI Status and Notifications]
+    UC_AI_01[UC-AI-01 Extract Data from Image OCR]
+    UC_AI_02[UC-AI-02 Validate or Correct OCR Result]
+    UC_AI_03[UC-AI-03 Personalized Course Suggestions]
+    UC_STS_01[UC-STS-01 View Request Process Status]
+    UC_NOT_01[UC-NOT-01 Receive Real Time Notification]
+    UC_NOT_02[UC-NOT-02 Configure Notification Preferences]
+    UC_SYS_01[UC-SYS-01 Trigger Status Update Notification]
+  end
+end
+
+V --> UC_USR_01
+V --> UC_CRS_01
+V --> UC_AI_03
+
+E --> UC_USR_02
+E --> UC_USR_03
+E --> UC_USR_04
+E --> UC_USR_07
+E --> UC_COM_01
+E --> UC_COM_02
+E --> UC_COM_03
+E --> UC_CRS_01
+E --> UC_DOC_01
+E --> UC_DOC_03
+E --> UC_QUO_01
+E --> UC_QUO_02
+E --> UC_QUO_04
+E --> UC_AI_01
+E --> UC_AI_02
+E --> UC_STS_01
+E --> UC_NOT_01
+E --> UC_NOT_02
+
+A --> UC_USR_02
+A --> UC_USR_03
+A --> UC_USR_04
+A --> UC_USR_05
+A --> UC_USR_06
+A --> UC_USR_07
+A --> UC_COM_01
+A --> UC_COM_02
+A --> UC_COM_03
+A --> UC_CRS_01
+A --> UC_CRS_02
+A --> UC_DOC_02
+A --> UC_DOC_04
+A --> UC_QUO_01
+A --> UC_QUO_02
+A --> UC_QUO_03
+A --> UC_QUO_04
+A --> UC_QUO_05
+A --> UC_AI_01
+A --> UC_AI_02
+A --> UC_STS_01
+A --> UC_NOT_01
+A --> UC_NOT_02
+
+S --> UC_SYS_01
+S --> UC_NOT_01
+
+OCR --> UC_AI_01
+REC --> UC_AI_03
+
+UC_QUO_01 -. include .-> UC_USR_02
+UC_DOC_01 -. include .-> UC_USR_02
+UC_DOC_01 -. include .-> UC_STS_01
+UC_AI_01 -. include .-> UC_AI_02
+
+UC_NOT_01 -. extend .-> UC_DOC_02
+UC_NOT_01 -. extend .-> UC_QUO_03
+UC_NOT_01 -. extend .-> UC_COM_01
+UC_SYS_01 -. include .-> UC_NOT_01

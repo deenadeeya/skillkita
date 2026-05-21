@@ -6,7 +6,10 @@ import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
-import TRSCGroupPhoto from "../../assets/TRSCGroupPhoto.png";
+import { LazyWhenVisible } from "../../shared/ui/LazyWhenVisible";
+
+/** Compressed static fallback (public/TRSCGroupPhoto.jpg). */
+const DEFAULT_HERO_IMAGE = "/TRSCGroupPhoto.jpg";
 import { getLandingContent } from "../../features/landing/api/landingApi";
 import { formatCourseDisplayDate, isUpcomingCourseDate } from "../../features/courses/courseDate";
 import { UpcomingCourseRibbon } from "../../features/courses/components/UpcomingCourseRibbon";
@@ -34,7 +37,7 @@ const HomePage = () => {
   const [homeFeatured2Url, setHomeFeatured2Url] = useState<string | null>(null);
   const [homeFeatured3Url, setHomeFeatured3Url] = useState<string | null>(null);
   /** Hero image (right column): same URL as Manage Home → Who are we → Picture (`who_image_url`). */
-  const [heroWhoImageUrl, setHeroWhoImageUrl] = useState<string>(TRSCGroupPhoto);
+  const [heroWhoImageUrl, setHeroWhoImageUrl] = useState<string>(DEFAULT_HERO_IMAGE);
 
   const [socialFacebookPageUrl, setSocialFacebookPageUrl] = useState<string | null>(null);
   const [socialFacebookPostUrls, setSocialFacebookPostUrls] = useState<string | null>(null);
@@ -112,7 +115,7 @@ const HomePage = () => {
           setCoverDescription(landing.cover_description ?? coverDescription);
           setWhoDescription(landing.who_description ?? whoDescription);
           const whoUrl = landing.who_image_url?.trim();
-          setHeroWhoImageUrl(whoUrl || TRSCGroupPhoto);
+          setHeroWhoImageUrl(whoUrl || DEFAULT_HERO_IMAGE);
           setHomeFeatured1Url(landing.home_featured_1_url);
           setHomeFeatured2Url(landing.home_featured_2_url);
           setHomeFeatured3Url(landing.home_featured_3_url);
@@ -121,7 +124,7 @@ const HomePage = () => {
           setSocialInstagramProfileUrl(landing.social_instagram_profile_url);
           setSocialInstagramPostUrls(landing.social_instagram_post_url);
         } else {
-          setHeroWhoImageUrl(TRSCGroupPhoto);
+          setHeroWhoImageUrl(DEFAULT_HERO_IMAGE);
           setHomeFeatured1Url(null);
           setHomeFeatured2Url(null);
           setHomeFeatured3Url(null);
@@ -226,6 +229,9 @@ const HomePage = () => {
                   url={heroWhoImageUrl}
                   alt="Who we are"
                   className="aspect-[4/3] w-full object-cover"
+                  loading="eager"
+                  fetchPriority="high"
+                  optimizeWidth={960}
                 />
               </div>
             </div>
@@ -372,12 +378,18 @@ const HomePage = () => {
         Show All Courses
       </a>
 
-      <HomeSocialFeedsSection
-        facebookPageUrl={socialFacebookPageUrl}
-        facebookPostUrls={socialFacebookPostUrls}
-        instagramProfileUrl={socialInstagramProfileUrl}
-        instagramPostUrls={socialInstagramPostUrls}
-      />
+      <LazyWhenVisible
+        fallback={
+          <div className="mt-10 h-24 w-full max-w-4xl animate-pulse rounded-xl bg-white/50 md:mt-14" />
+        }
+      >
+        <HomeSocialFeedsSection
+          facebookPageUrl={socialFacebookPageUrl}
+          facebookPostUrls={socialFacebookPostUrls}
+          instagramProfileUrl={socialInstagramProfileUrl}
+          instagramPostUrls={socialInstagramPostUrls}
+        />
+      </LazyWhenVisible>
 
     </div>
   );
