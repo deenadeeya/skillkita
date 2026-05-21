@@ -10,6 +10,7 @@ React + TypeScript + Vite app backed by Supabase.
 3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`.
 4. Deploy. SPA routes (`/login`, `/admin`, `/employer`, etc.) are rewritten to `index.html` so React Router works on refresh.
 5. In **Supabase** → Authentication → URL Configuration, set **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://your-app.vercel.app`).
+6. **Home page images:** In Storage, create public buckets `site-assets` and `experience-photos` (if missing). Run `supabase/storage_site_assets.sql` in the SQL Editor (or `npx supabase db push` from `skillkita-web`). Also apply `migrations/20260521130000_landing_home_featured_photos.sql` if `home_featured_*_url` columns are missing.
 
 Local dev: copy `.env.example` to `.env`, then `npm install` and `npm run dev`.
 

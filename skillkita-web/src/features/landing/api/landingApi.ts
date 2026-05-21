@@ -174,7 +174,10 @@ export async function listExperiences() {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ExperienceRow[];
+  return ((data ?? []) as ExperienceRow[]).map((row) => ({
+    ...row,
+    photo_urls: row.photo_urls?.map((u) => normalizeSupabaseStorageUrl(u) ?? u) ?? null,
+  }));
 }
 
 export async function insertExperience(payload: {
