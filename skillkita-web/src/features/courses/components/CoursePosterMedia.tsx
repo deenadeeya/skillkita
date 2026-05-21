@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { optimizeImageUrl } from "../../../shared/media/optimizeImageUrl";
 
@@ -40,21 +40,30 @@ export function CoursePosterMedia({
   fetchPriority,
   optimizeWidth = 720,
 }: CoursePosterMediaProps) {
-  const asPdf = forcePdf || isPosterPdfUrl(url);
-  const optimizedSrc = optimizeImageUrl(url, { width: optimizeWidth });
+  const displayUrl = url?.trim() || PlaceholderPoster;
+  const asPdf = forcePdf || isPosterPdfUrl(displayUrl);
+  const optimizedSrc = useMemo(
+    () => optimizeImageUrl(displayUrl, { width: optimizeWidth }),
+    [displayUrl, optimizeWidth]
+  );
   const [src, setSrc] = useState(optimizedSrc);
+
+  // Home page (and other screens) pass URLs after async Supabase fetch — sync img src when url changes.
+  useEffect(() => {
+    setSrc(optimizedSrc);
+  }, [optimizedSrc]);
 
   if (asPdf) {
     return (
       <div className={`overflow-hidden ${className}`}>
         <object
-          data={url}
+          data={displayUrl}
           type="application/pdf"
           title={alt}
           className="block h-full min-h-[280px] w-full bg-white"
         >
           <a
-            href={url}
+            href={displayUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-semibold text-[#7A1F1F] underline"
@@ -67,8 +76,8 @@ export function CoursePosterMedia({
   }
 
   const handleImageError = () => {
-    if (src === optimizedSrc && optimizedSrc !== url) {
-      setSrc(url);
+    if (src === optimizedSrc && optimizedSrc !== displayUrl) {
+      setSrc(displayUrl);
       return;
     }
     if (src !== PlaceholderPoster) {

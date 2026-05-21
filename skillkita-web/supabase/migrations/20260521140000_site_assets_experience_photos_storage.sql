@@ -1,5 +1,10 @@
 -- Public read + admin write for landing CMS and experience photo buckets.
--- Create buckets in Dashboard first: site-assets, experience-photos (both public).
+
+insert into storage.buckets (id, name, public)
+values
+  ('site-assets', 'site-assets', true),
+  ('experience-photos', 'experience-photos', true)
+on conflict (id) do update set public = true;
 
 drop policy if exists "site_assets_public_select" on storage.objects;
 create policy "site_assets_public_select"

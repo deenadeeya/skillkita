@@ -4,7 +4,7 @@ import { CoursePosterMedia } from "../../features/courses/components/CoursePoste
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
+import { normalizeSupabaseStorageUrl, supabase } from "../../shared/api/supabaseClient";
 import PlaceholderPoster from "../../assets/placeholder.jpg";
 import { LazyWhenVisible } from "../../shared/ui/LazyWhenVisible";
 
@@ -134,7 +134,12 @@ const HomePage = () => {
           setSocialInstagramPostUrls(null);
         }
 
-        setUpcomingCourses((coursesRes.data ?? []) as CourseRow[]);
+        setUpcomingCourses(
+          ((coursesRes.data ?? []) as CourseRow[]).map((row) => ({
+            ...row,
+            poster_url: normalizeSupabaseStorageUrl(row.poster_url),
+          }))
+        );
       } catch (err) {
         setErrorMessage(err instanceof Error ? err.message : "Failed to load landing page.");
       }
