@@ -44,6 +44,12 @@ export function normalizeSupabaseStorageUrl(url: string | null | undefined): str
   const publicMatch = trimmed.match(STORAGE_PUBLIC_PATH);
   if (publicMatch) return `${base}${publicMatch[1]}`;
 
+  // Bare storage path saved in DB (bucket/key...)
+  const pathOnly = trimmed.match(/^(site-assets|experience-photos|course-posters)\/(.+)$/i);
+  if (pathOnly) {
+    return getStoragePublicUrl(pathOnly[1].toLowerCase(), pathOnly[2]);
+  }
+
   return trimmed;
 }
 
