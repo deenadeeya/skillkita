@@ -1,3 +1,7 @@
+import { useState } from "react";
+import PlaceholderPoster from "../../../assets/placeholder.jpg";
+import { optimizeImageUrl } from "../../../shared/media/optimizeImageUrl";
+
 /** True when URL path ends in .pdf (Supabase public URLs include the file extension). */
 export function isPosterPdfUrl(url: string): boolean {
   if (!url) return false;
@@ -18,6 +22,10 @@ type CoursePosterMediaProps = {
    * Local blob: URLs do not end in .pdf; set true when the selected file is a PDF.
    */
   forcePdf?: boolean;
+  loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
+  /** Max width sent to Supabase image transform (when supported). */
+  optimizeWidth?: number;
 };
 
 /**
@@ -28,8 +36,13 @@ export function CoursePosterMedia({
   alt,
   className,
   forcePdf = false,
+  loading = "lazy",
+  fetchPriority,
+  optimizeWidth = 720,
 }: CoursePosterMediaProps) {
   const asPdf = forcePdf || isPosterPdfUrl(url);
+  const optimizedSrc = optimizeImageUrl(url, { width: optimizeWidth });
+  const [src, setSrc] = useState(optimizedSrc);
 
   if (asPdf) {
     return (
@@ -53,6 +66,25 @@ export function CoursePosterMedia({
     );
   }
 
-  return <img src={url} alt={alt} className={className} />;
-}
+  const handleImageError = () => {
+    if (src === optimizedSrc && optimizedSrc !== url) {
+      setSrc(url);
+      return;
+    }
+    if (src !== PlaceholderPoster) {
+      setSrc(PlaceholderPoster);
+    }
+  };
 
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={loading}
+      decoding="async"
+      fetchPriority={fetchPriority}
+      onError={handleImageError}
+    />
+  );
+}

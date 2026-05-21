@@ -1,4 +1,4 @@
-import { supabase } from "../../shared/api/supabaseClient";
+import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
 
 export const PROFILE_PICS_BUCKET = "profile-pics" as const;
 
@@ -12,7 +12,6 @@ export async function uploadProfilePic(userId: string, file: File) {
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from(PROFILE_PICS_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  return getStoragePublicUrl(PROFILE_PICS_BUCKET, path);
 }
 

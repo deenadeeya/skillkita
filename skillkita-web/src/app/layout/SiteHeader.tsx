@@ -1,6 +1,6 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
-import TRSCLogo from "../../assets/TRSCLogo.png";
+const TRSC_LOGO_SRC = "/TRSCLogo.png";
 import NotificationBell from "../../features/notifications/NotificationBell";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
@@ -90,7 +90,14 @@ const SiteHeader = ({ onMenuClick }: Props) => {
 
           <a href="/" className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
-              <img src={TRSCLogo} alt="TRSC logo" className="h-7 w-7 rounded-full" />
+              <img
+                src={TRSC_LOGO_SRC}
+                alt="TRSC logo"
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full"
+                decoding="async"
+              />
             </span>
             <span className="truncate text-sm font-semibold">TRSC SkillKita</span>
           </a>
@@ -113,7 +120,14 @@ const SiteHeader = ({ onMenuClick }: Props) => {
         {/* Desktop: logo + center nav + auth/profile menus */}
         <a href="/" className="hidden min-w-0 shrink items-center gap-3 md:flex">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-            <img src={TRSCLogo} alt="TRSC logo" className="h-8 w-8 rounded-full" />
+            <img
+              src={TRSC_LOGO_SRC}
+              alt="TRSC logo"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-full"
+              decoding="async"
+            />
           </span>
           <span className="truncate text-sm font-semibold md:text-base">TRSC SkillKita</span>
         </a>

@@ -1,4 +1,21 @@
-# React + TypeScript + Vite
+# SkillKita Web
+
+React + TypeScript + Vite app backed by Supabase.
+
+## Deploy to Vercel
+
+1. Import this repository in [Vercel](https://vercel.com/new).
+2. Set **Root Directory** to `skillkita-web` (recommended). Build settings come from `vercel.json` in this folder.
+   - Alternatively, leave the repo root as the project root; the root `vercel.json` builds `skillkita-web` for you.
+3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`.
+4. Deploy. SPA routes (`/login`, `/admin`, `/employer`, etc.) are rewritten to `index.html` so React Router works on refresh.
+5. In **Supabase** → Authentication → URL Configuration, set **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://your-app.vercel.app`).
+
+Local dev: copy `.env.example` to `.env`, then `npm install` and `npm run dev`.
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

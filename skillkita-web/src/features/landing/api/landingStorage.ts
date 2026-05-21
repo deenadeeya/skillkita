@@ -1,4 +1,4 @@
-import { supabase } from "../../../shared/api/supabaseClient";
+import { getStoragePublicUrl, supabase } from "../../../shared/api/supabaseClient";
 
 export async function uploadSiteAssetWhoImage(file: File) {
   const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -10,8 +10,7 @@ export async function uploadSiteAssetWhoImage(file: File) {
 
   if (uploadError) throw new Error(uploadError.message);
 
-  const { data } = supabase.storage.from("site-assets").getPublicUrl(filePath);
-  return data.publicUrl ?? null;
+  return getStoragePublicUrl("site-assets", filePath) || null;
 }
 
 /** Home page collage slot 1 (top-left), 2 (top-right), 3 (wide bottom). */
@@ -25,8 +24,7 @@ export async function uploadSiteAssetHomeFeatured(file: File, slot: 1 | 2 | 3) {
 
   if (uploadError) throw new Error(uploadError.message);
 
-  const { data } = supabase.storage.from("site-assets").getPublicUrl(filePath);
-  return data.publicUrl ?? null;
+  return getStoragePublicUrl("site-assets", filePath) || null;
 }
 
 export async function uploadSiteAssetBankQr(file: File) {
@@ -39,8 +37,7 @@ export async function uploadSiteAssetBankQr(file: File) {
 
   if (uploadError) throw new Error(uploadError.message);
 
-  const { data } = supabase.storage.from("site-assets").getPublicUrl(filePath);
-  return data.publicUrl ?? null;
+  return getStoragePublicUrl("site-assets", filePath) || null;
 }
 
 export async function uploadExperiencePhotos(files: File[]) {
@@ -57,8 +54,8 @@ export async function uploadExperiencePhotos(files: File[]) {
 
     if (uploadError) throw new Error(uploadError.message);
 
-    const { data } = supabase.storage.from("experience-photos").getPublicUrl(filePath);
-    if (data.publicUrl) urls.push(data.publicUrl);
+    const publicUrl = getStoragePublicUrl("experience-photos", filePath);
+    if (publicUrl) urls.push(publicUrl);
   }
 
   return urls;

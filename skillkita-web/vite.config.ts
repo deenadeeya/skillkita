@@ -63,7 +63,10 @@ export default defineConfig(({ mode }) => {
       },
       workbox: {
         navigateFallback: "/index.html",
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+        // Precache app shell only; large photos load on demand (faster first visit on mobile).
+        globPatterns: ["**/*.{js,css,html,ico,svg,webmanifest}"],
+        globIgnores: ["**/TRSCGroupPhoto*.png", "**/pdf.worker*.mjs"],
+        maximumFileSizeToCacheInBytes: 600_000,
       },
     }),
   ],
