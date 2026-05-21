@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { supabase } from "../../../shared/api/supabaseClient";
+import { getSupabaseUrl, supabase } from "../../../shared/api/supabaseClient";
 
 export type ProfileRow = {
   user_id: string;
@@ -112,8 +112,8 @@ export async function createAdminAuthUser(params: {
   email: string;
   password: string;
 }) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase env vars. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");

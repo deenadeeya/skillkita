@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
+import { formatSupabaseNetworkError, supabase } from "../../shared/api/supabaseClient";
 
 type UserProfileRow = {
   user_id: string;
@@ -104,7 +104,7 @@ const Login = () => {
       window.location.href = "/employer";
     } catch (err) {
       setIsLoading(false);
-      setErrorMessage(err instanceof Error ? err.message : "Login failed.");
+      setErrorMessage(formatSupabaseNetworkError(err));
     }
   };
 

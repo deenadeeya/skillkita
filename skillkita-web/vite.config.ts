@@ -1,9 +1,25 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const supabaseTarget =
+    env.VITE_SUPABASE_URL?.trim() || "https://ieckdfppqtnejletnqyi.supabase.co";
+
+  return {
+  server: {
+    // Dev-only: browser calls localhost; Vite forwards to Supabase (avoids firewall/ad-block on *.supabase.co).
+    proxy: {
+      "/supabase-api": {
+        target: supabaseTarget,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/supabase-api/, ""),
+      },
+    },
+  },
   plugins: [
     react({
       babel: {
@@ -11,6 +27,8 @@ export default defineConfig({
       },
     }),
     VitePWA({
+      // Avoid registering a service worker during `npm run dev` (can break API calls after a production build).
+      devOptions: { enabled: false },
       registerType: "autoUpdate",
       includeAssets: [
         "vite.svg",
@@ -49,4 +67,5 @@ export default defineConfig({
       },
     }),
   ],
+  };
 });
