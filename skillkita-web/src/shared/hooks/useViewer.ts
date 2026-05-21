@@ -10,6 +10,7 @@ export type Viewer = {
   status: UserProfileRow["status"];
   fullName: string;
   companyName: string | null;
+  companyAddress: string | null;
 };
 
 export type ViewerState =
@@ -46,6 +47,7 @@ export function useViewer(): ViewerState {
             status: profile.status,
             fullName: profile.full_name,
             companyName: profile.company_name ?? null,
+            companyAddress: profile.company_address ?? null,
           },
         });
       } catch {

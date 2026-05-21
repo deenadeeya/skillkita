@@ -3,8 +3,15 @@ import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import {
-  createQuotationPdfSignedUrl,
+  quotationRowToPdfInput,
+  quotationRowToPdfMeta,
+} from "../../features/quotation/quotationRowToPdf";
+import {
+  buildInvoicePdfDownloadFileName,
+  buildQuotationPdfDownloadFileName,
   deleteQuotationPdf,
+  downloadBlobWithFileName,
+  downloadQuotationPdfWithFileName,
   uploadQuotationPdf,
 } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
@@ -35,6 +42,7 @@ const AdminQuotations = () => {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [downloadId, setDownloadId] = useState<string | null>(null);
+  const [invoiceDownloadId, setInvoiceDownloadId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeReview, setActiveReview] = useState<QuotationRequestRow | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -85,8 +93,19 @@ const AdminQuotations = () => {
           ""
       );
       setCourseMode(activeReview.course_mode ?? "");
-      setUnitPrice(activeReview.unit_price != null ? String(activeReview.unit_price) : "");
-      setAmountRm(activeReview.amount_rm != null ? String(activeReview.amount_rm) : "");
+      const requestedUnit = activeReview.unit_price != null ? activeReview.unit_price : null;
+      setUnitPrice(requestedUnit != null ? String(requestedUnit) : "");
+      const suggestedAmount =
+        requestedUnit != null
+          ? requestedUnit * activeReview.number_of_employers
+          : null;
+      setAmountRm(
+        activeReview.amount_rm != null
+          ? String(activeReview.amount_rm)
+          : suggestedAmount != null
+            ? String(suggestedAmount)
+            : ""
+      );
     }
   }, [activeReview, employerLabels]);
 
@@ -150,9 +169,10 @@ const AdminQuotations = () => {
         number_of_employers: activeReview.number_of_employers,
         proposed_date: activeReview.proposed_date,
         additional_description: activeReview.additional_description,
+        course_location_address: activeReview.course_location_address,
       };
 
-      const blob = buildQuotationPdfBlob(pdfInput, {
+      const blob = await buildQuotationPdfBlob(pdfInput, {
         quotation_id:
           activeReview.quotation_no != null ? String(activeReview.quotation_no) : activeReview.id,
         approved_date: new Date().toISOString(),
@@ -183,16 +203,38 @@ const AdminQuotations = () => {
     }
   };
 
-  const downloadPdf = async (path: string, quotationId: string) => {
-    setDownloadId(quotationId);
+  const downloadQuotationPdf = async (row: QuotationRequestRow) => {
+    if (!row.pdf_storage_path) return;
+    setDownloadId(row.id);
     setErrorMessage(null);
     try {
-      const url = await createQuotationPdfSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
+      await downloadQuotationPdfWithFileName(
+        row.pdf_storage_path,
+        buildQuotationPdfDownloadFileName(row)
+      );
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Download failed.");
+      setErrorMessage(err instanceof Error ? err.message : "Quotation download failed.");
     } finally {
       setDownloadId(null);
+    }
+  };
+
+  const downloadInvoicePdf = async (row: QuotationRequestRow) => {
+    const pdfInput = quotationRowToPdfInput(row);
+    if (!pdfInput) {
+      setErrorMessage("Invoice requires approved pricing (company, mode, unit price, and amount).");
+      return;
+    }
+
+    setInvoiceDownloadId(row.id);
+    setErrorMessage(null);
+    try {
+      const blob = await buildQuotationPdfBlob(pdfInput, quotationRowToPdfMeta(row, "invoice"));
+      downloadBlobWithFileName(blob, buildInvoicePdfDownloadFileName(row));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Invoice download failed.");
+    } finally {
+      setInvoiceDownloadId(null);
     }
   };
 
@@ -244,7 +286,7 @@ const AdminQuotations = () => {
     >
       <AdminPageFrame
         title="Quotation requests"
-        subtitle="Review employer submissions. Set company name/address (for the PDF), mode, unit price, and total amount (RM), then approve to generate the PDF. Employers download it from their quotation page."
+        subtitle="Review employer submissions, approve to generate a quotation PDF, then download quotation or invoice for approved requests. Employers download quotations from their dashboard."
         errorMessage={errorMessage}
         isAuthChecking={false}
         isAuthorized
@@ -280,10 +322,12 @@ const AdminQuotations = () => {
           employerLabels={employerLabels}
           isLoading={isLoading}
           downloadId={downloadId}
+          invoiceDownloadId={invoiceDownloadId}
           deleteId={deleteId}
           isSaving={isSaving}
           onReview={openReview}
-          onDownload={(path, id) => void downloadPdf(path, id)}
+          onDownloadQuotation={(row) => void downloadQuotationPdf(row)}
+          onDownloadInvoice={(row) => void downloadInvoicePdf(row)}
           onDeleteRequest={(row) => void handleDelete(row)}
         />
       </AdminPageFrame>

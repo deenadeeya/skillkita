@@ -1,16 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
-import { supabase } from "../../shared/api/supabaseClient";
-import { useViewer } from "../../shared/hooks/useViewer";
-import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
+import { uploadProfilePic } from "../../features/profile/profilePicStorage";
 import {
   createAdminAuthUser,
   listUserProfiles,
   promoteProfileToAdmin,
   setEmployerApproval,
+  updateEmployerProfile,
   type ProfileRow,
 } from "../../features/users/api/adminUsersApi";
+import { supabase } from "../../shared/api/supabaseClient";
+import { useViewer } from "../../shared/hooks/useViewer";
+import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
+
+function profileInitials(fullName: string, shortName: string | null) {
+  const base = (shortName || fullName || "—").trim();
+  const parts = base.split(/\s+/).filter(Boolean);
+  const a = parts[0]?.[0] ?? "—";
+  const b = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+  return (a + b).toUpperCase();
+}
+
+type EmployerEditDraft = {
+  userId: string;
+  fullName: string;
+  shortName: string;
+  companyName: string;
+  companyAddress: string;
+  phone: string;
+  pendingPic: File | null;
+};
 
 const AdminUsers = () => {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -37,6 +57,9 @@ const AdminUsers = () => {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminSuccess, setNewAdminSuccess] = useState<string | null>(null);
+
+  const [employerEdit, setEmployerEdit] = useState<EmployerEditDraft | null>(null);
+  const [employerEditSuccess, setEmployerEditSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -112,6 +135,52 @@ const AdminUsers = () => {
       setErrorMessage(e instanceof Error ? e.message : "Failed to create admin.");
       setIsSaving(false);
       await load();
+    }
+  };
+
+  const openEmployerEdit = (p: ProfileRow) => {
+    setEmployerEditSuccess(null);
+    setEmployerEdit({
+      userId: p.user_id,
+      fullName: p.full_name,
+      shortName: p.short_name ?? "",
+      companyName: p.company_name ?? "",
+      companyAddress: p.company_address ?? "",
+      phone: p.phone ?? "",
+      pendingPic: null,
+    });
+  };
+
+  const saveEmployerEdit = async () => {
+    if (!employerEdit) return;
+    setIsSaving(true);
+    setErrorMessage(null);
+    setEmployerEditSuccess(null);
+
+    try {
+      const profile = profiles.find((x) => x.user_id === employerEdit.userId);
+      let profilePicUrl = profile?.profile_pic_url ?? null;
+      if (employerEdit.pendingPic) {
+        profilePicUrl = await uploadProfilePic(employerEdit.userId, employerEdit.pendingPic);
+      }
+
+      await updateEmployerProfile({
+        userId: employerEdit.userId,
+        fullName: employerEdit.fullName,
+        shortName: employerEdit.shortName.trim() ? employerEdit.shortName.trim() : null,
+        companyName: employerEdit.companyName.trim() ? employerEdit.companyName.trim() : null,
+        companyAddress: employerEdit.companyAddress.trim() ? employerEdit.companyAddress.trim() : null,
+        phone: employerEdit.phone.trim() ? employerEdit.phone.trim() : null,
+        profilePicUrl,
+      });
+
+      setEmployerEditSuccess("Employer profile updated.");
+      setEmployerEdit(null);
+      await load();
+      setIsSaving(false);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to update employer profile.");
+      setIsSaving(false);
     }
   };
 
@@ -203,7 +272,15 @@ const AdminUsers = () => {
               {existingEmployers.length} employers
             </p>
           </div>
-          <p className="mt-2 text-sm text-black">Display the company name they are associated with.</p>
+          <p className="mt-2 text-sm text-black">
+            Company contact details and profile photo. Use Edit to update an employer&apos;s profile.
+          </p>
+
+          {employerEditSuccess && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              {employerEditSuccess}
+            </div>
+          )}
 
           <div className="mt-5 space-y-3">
             {isLoading && (
@@ -219,22 +296,186 @@ const AdminUsers = () => {
             )}
 
             {!isLoading &&
-              existingEmployers.map((p) => (
-                <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
-                      <p className="mt-1 text-sm text-black/80">
-                        Company:{" "}
-                        <span className="font-semibold text-[#7A1F1F]">{p.company_name ?? "—"}</span>
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-black/70">
-                        Approved: {p.approved_at ? new Date(p.approved_at).toLocaleString() : "—"}
-                      </p>
+              existingEmployers.map((p) => {
+                const isEditing = employerEdit?.userId === p.user_id;
+                const initials = profileInitials(p.full_name, p.short_name);
+
+                return (
+                  <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="flex min-w-0 flex-1 gap-4">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-[#efe1db] bg-white shadow-sm">
+                          {p.profile_pic_url ? (
+                            <img
+                              src={p.profile_pic_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-lg font-bold text-[#7A1F1F]">
+                              {initials}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                          <p className="mt-1 text-sm text-black/80">
+                            Company:{" "}
+                            <span className="font-semibold text-[#7A1F1F]">{p.company_name ?? "—"}</span>
+                          </p>
+                          <p className="mt-1 text-sm text-black/80">
+                            Email:{" "}
+                            <span className="break-all font-medium text-black/90">
+                              {p.email?.trim() ? p.email : "—"}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-black/80">
+                            Company address:{" "}
+                            <span className="whitespace-pre-wrap text-black/90">
+                              {p.company_address?.trim() ? p.company_address : "—"}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-sm text-black/80">
+                            Phone: <span className="font-medium">{p.phone?.trim() ? p.phone : "—"}</span>
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-black/70">
+                            Approved: {p.approved_at ? new Date(p.approved_at).toLocaleString() : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 flex-wrap gap-2 md:pt-1">
+                        {isEditing ? (
+                          <button
+                            type="button"
+                            disabled={isSaving}
+                            onClick={() => setEmployerEdit(null)}
+                            className="sk-button-secondary px-3 py-2"
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isSaving}
+                            onClick={() => openEmployerEdit(p)}
+                            className="sk-button-primary px-3 py-2"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+
+                    {isEditing && employerEdit && (
+                      <form
+                        className="mt-5 space-y-4 border-t border-[#efe1db] pt-5"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void saveEmployerEdit();
+                        }}
+                      >
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Full name
+                            </span>
+                            <input
+                              value={employerEdit.fullName}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, fullName: e.target.value })
+                              }
+                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              required
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Short name
+                            </span>
+                            <input
+                              value={employerEdit.shortName}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, shortName: e.target.value })
+                              }
+                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              placeholder="Optional"
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Company name
+                            </span>
+                            <input
+                              value={employerEdit.companyName}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, companyName: e.target.value })
+                              }
+                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Company address
+                            </span>
+                            <textarea
+                              value={employerEdit.companyAddress}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, companyAddress: e.target.value })
+                              }
+                              rows={3}
+                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Phone number
+                            </span>
+                            <input
+                              value={employerEdit.phone}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, phone: e.target.value })
+                              }
+                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                              Profile picture
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) =>
+                                setEmployerEdit({
+                                  ...employerEdit,
+                                  pendingPic: e.currentTarget.files?.[0] ?? null,
+                                })
+                              }
+                              className="block w-full text-sm text-black"
+                              disabled={isSaving}
+                            />
+                            {employerEdit.pendingPic && (
+                              <p className="mt-1 text-xs text-black/70">
+                                Selected:{" "}
+                                <span className="font-semibold">{employerEdit.pendingPic.name}</span>
+                              </p>
+                            )}
+                          </label>
+                        </div>
+                        <button type="submit" disabled={isSaving} className="sk-button-primary px-4 py-2">
+                          {isSaving ? "Saving…" : "Save changes"}
+                        </button>
+                      </form>
+                    )}
+                  </article>
+                );
+              })}
           </div>
         </section>
 
@@ -311,6 +552,12 @@ const AdminUsers = () => {
               admins.map((p) => (
                 <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
                   <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                  <p className="mt-1 text-sm text-black/80">
+                    Email:{" "}
+                    <span className="break-all font-medium text-black/90">
+                      {p.email?.trim() ? p.email : "—"}
+                    </span>
+                  </p>
                   <p className="mt-1 text-xs font-semibold text-black/70">
                     Created: {new Date(p.created_at).toLocaleString()}
                   </p>

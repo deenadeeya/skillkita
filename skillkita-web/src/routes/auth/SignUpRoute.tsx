@@ -3,8 +3,21 @@ import { useEffect, useState } from "react";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
 
+function RequiredStar() {
+  return (
+    <span className="text-red-600" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
+const INDEPENDENT_COMPANY_LABEL = "Independent";
+
+type CompanyAffiliation = "company" | "independent";
+
 const SignUp = () => {
   const [fullName, setFullName] = useState("");
+  const [companyAffiliation, setCompanyAffiliation] = useState<CompanyAffiliation>("company");
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -28,17 +41,34 @@ const SignUp = () => {
     event.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    const trimmedFullName = fullName.trim();
+    const trimmedCompanyInput = companyName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    const resolvedCompanyName =
+      companyAffiliation === "independent" ? INDEPENDENT_COMPANY_LABEL : trimmedCompanyInput;
+
+    if (!trimmedFullName || !trimmedEmail || !trimmedPhone) {
+      setErrorMessage("Please fill in full name, email, and phone number.");
+      return;
+    }
+    if (companyAffiliation === "company" && !trimmedCompanyInput) {
+      setErrorMessage("Please enter your company name or select Independent.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
         options: {
           data: {
-            full_name: fullName.trim(),
-            company_name: companyName.trim() || undefined,
-            phone: phone.trim() || undefined,
+            full_name: trimmedFullName,
+            company_name: resolvedCompanyName,
+            phone: trimmedPhone,
           },
         },
       });
@@ -52,11 +82,11 @@ const SignUp = () => {
       if (data.session) {
         const { error: profileError } = await supabase.from("user_profiles").insert({
           user_id: data.user.id,
-          full_name: fullName.trim(),
-          company_name: companyName.trim() ? companyName.trim() : null,
-          phone: phone.trim() ? phone.trim() : null,
+          full_name: trimmedFullName,
+          company_name: resolvedCompanyName,
+          phone: trimmedPhone,
           role: "employer",
-          status: "pending",
+          status: "approved",
         });
 
         if (
@@ -71,9 +101,14 @@ const SignUp = () => {
       }
 
       setIsLoading(false);
-      setSuccessMessage(
-        "Account created. You can log in now, but access will be unlocked after admin approval."
-      );
+
+      if (data.session) {
+        window.localStorage.setItem("skillkita-role", "employer");
+        window.location.href = "/employer";
+        return;
+      }
+
+      setSuccessMessage("Account created. Log in to access your employer dashboard.");
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(err instanceof Error ? err.message : "Sign up failed.");
@@ -87,9 +122,9 @@ const SignUp = () => {
       <main className="sk-container py-12">
         <div className="mx-auto max-w-xl">
           <div className="sk-card p-6">
-            <h1 className="text-3xl font-bold text-[#0001fc]">Create account</h1>
+            <h1 className="text-3xl font-bold text-[#0001fc]">Create Account</h1>
             <p className="mt-2 text-sm text-black">
-              Sign up as an employer. An admin will approve your account before you can access employer tools.
+              Sign up as an employer. You can access the employer dashboard right after creating your account.
             </p>
 
             {errorMessage && (
@@ -111,9 +146,11 @@ const SignUp = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                    Full name
+                    Full name <RequiredStar />
                   </span>
                   <input
+                    name="name"
+                    autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.currentTarget.value)}
                     className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
@@ -123,35 +160,74 @@ const SignUp = () => {
 
                 <label className="block">
                   <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                    Phone number
+                    Phone number <RequiredStar />
                   </span>
                   <input
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.currentTarget.value)}
                     className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                    placeholder="Optional"
+                    required
                   />
                 </label>
               </div>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Company name
-                </span>
-                <input
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  placeholder="Optional"
-                />
-              </label>
+              <fieldset className="block space-y-3">
+                <legend className="mb-1 text-sm font-semibold text-[#7A1F1F]">Company affiliation</legend>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="company-affiliation"
+                      checked={companyAffiliation === "company"}
+                      onChange={() => setCompanyAffiliation("company")}
+                    />
+                    Company / organisation
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="company-affiliation"
+                      checked={companyAffiliation === "independent"}
+                      onChange={() => {
+                        setCompanyAffiliation("independent");
+                        setCompanyName("");
+                      }}
+                    />
+                    Independent
+                  </label>
+                </div>
+                {companyAffiliation === "company" ? (
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                      Company name <RequiredStar />
+                    </span>
+                    <input
+                      name="organization"
+                      autoComplete="organization"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.currentTarget.value)}
+                      className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                      required
+                    />
+                  </label>
+                ) : (
+                  <p className="text-sm text-black/70">
+                    You are signing up as an independent employer. No company name is required.
+                  </p>
+                )}
+              </fieldset>
 
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Email
+                  Email <RequiredStar />
                 </span>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.currentTarget.value)}
                   className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
@@ -161,10 +237,12 @@ const SignUp = () => {
 
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
-                  Password
+                  Password <RequiredStar />
                 </span>
                 <input
                   type="password"
+                  name="new-password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.currentTarget.value)}
                   className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"

@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
+import { formatSupabaseNetworkError, supabase } from "../../shared/api/supabaseClient";
 
 type UserProfileRow = {
   user_id: string;
@@ -16,7 +16,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ const Login = () => {
         window.location.href = "/admin";
         return;
       }
-      if (row.role === "employer" && row.status === "approved") {
+      if (row.role === "employer" && row.status !== "rejected") {
         window.location.href = "/employer";
         return;
       }
@@ -58,7 +57,6 @@ const Login = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
-    setPendingMessage(null);
     setIsLoading(true);
 
     try {
@@ -97,25 +95,16 @@ const Login = () => {
 
       // employer
       window.localStorage.setItem("skillkita-role", "employer");
-      if (row.status === "approved") {
-        window.location.href = "/employer";
-        return;
-      }
-
       if (row.status === "rejected") {
         await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
-        throw new Error("Your account request was rejected. Please contact support.");
+        throw new Error("Your account was rejected. Please contact support.");
       }
 
-      // pending
-      setIsLoading(false);
-      setPendingMessage(
-        "Your account is pending approval. You can browse public pages, but employer tools will unlock after an admin approves your account."
-      );
+      window.location.href = "/employer";
     } catch (err) {
       setIsLoading(false);
-      setErrorMessage(err instanceof Error ? err.message : "Login failed.");
+      setErrorMessage(formatSupabaseNetworkError(err));
     }
   };
 
@@ -134,12 +123,6 @@ const Login = () => {
             {errorMessage && (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {errorMessage}
-              </div>
-            )}
-
-            {pendingMessage && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                {pendingMessage}
               </div>
             )}
 

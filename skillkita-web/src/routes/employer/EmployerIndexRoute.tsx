@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
-import { createQuotationPdfSignedUrl } from "../../features/quotation/storage";
+import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
+import { EmployerQuotationRequestsTable } from "../../features/quotation/components/EmployerQuotationRequestsTable";
+import {
+  quotationRowToPdfInput,
+  quotationRowToPdfMeta,
+} from "../../features/quotation/quotationRowToPdf";
+import {
+  buildInvoicePdfDownloadFileName,
+  buildQuotationPdfDownloadFileName,
+  downloadBlobWithFileName,
+  downloadQuotationPdfWithFileName,
+} from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { supabase } from "../../shared/api/supabaseClient";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 
 type UserProfileRow = {
   user_id: string;
@@ -21,6 +33,7 @@ const EmployerDashboard = () => {
   const [quotationsLoading, setQuotationsLoading] = useState(true);
   const [quotationError, setQuotationError] = useState<string | null>(null);
   const [downloadQuotationId, setDownloadQuotationId] = useState<string | null>(null);
+  const [downloadInvoiceId, setDownloadInvoiceId] = useState<string | null>(null);
 
   const loadQuotations = useCallback(async (userId: string) => {
     setQuotationsLoading(true);
@@ -81,7 +94,7 @@ const EmployerDashboard = () => {
         return;
       }
 
-      if (row.status !== "approved") {
+      if (row.status === "rejected") {
         window.location.href = "/login";
         return;
       }
@@ -92,16 +105,38 @@ const EmployerDashboard = () => {
     void load();
   }, [loadQuotations]);
 
-  const downloadQuotationPdf = async (path: string, quotationId: string) => {
-    setDownloadQuotationId(quotationId);
+  const downloadQuotationPdf = async (row: QuotationRequestRow) => {
+    if (!row.pdf_storage_path) return;
+    setDownloadQuotationId(row.id);
     setQuotationError(null);
     try {
-      const url = await createQuotationPdfSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
+      await downloadQuotationPdfWithFileName(
+        row.pdf_storage_path,
+        buildQuotationPdfDownloadFileName(row)
+      );
     } catch (err) {
-      setQuotationError(err instanceof Error ? err.message : "Download failed.");
+      setQuotationError(err instanceof Error ? err.message : "Quotation download failed.");
     } finally {
       setDownloadQuotationId(null);
+    }
+  };
+
+  const downloadInvoicePdf = async (row: QuotationRequestRow) => {
+    const pdfInput = quotationRowToPdfInput(row);
+    if (!pdfInput) {
+      setQuotationError("Invoice requires approved pricing (company, mode, unit price, and amount).");
+      return;
+    }
+
+    setDownloadInvoiceId(row.id);
+    setQuotationError(null);
+    try {
+      const blob = await buildQuotationPdfBlob(pdfInput, quotationRowToPdfMeta(row, "invoice"));
+      downloadBlobWithFileName(blob, buildInvoicePdfDownloadFileName(row));
+    } catch (err) {
+      setQuotationError(err instanceof Error ? err.message : "Invoice download failed.");
+    } finally {
+      setDownloadInvoiceId(null);
     }
   };
 
@@ -110,10 +145,8 @@ const EmployerDashboard = () => {
       items={employerNavItems}
       userName={profile?.full_name ?? "Employer"}
       userEmail={email}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
+      onLogout={() => {
+        void signOutAndRedirectHome();
       }}
     >
         
@@ -121,81 +154,23 @@ const EmployerDashboard = () => {
           {profile ? `Welcome, ${profile.full_name}.` : "Welcome."}
         </p>
         <p className="mt-2 text-sm text-black/80">
-          Request access to private course documents (syllabus, trainer files). An admin must approve
-          before you can open them.
+          View your quotation requests and download your quotation PDF along with the invoice PDF.
         </p>
 
-        <div className="mt-6 rounded-xl border border-[#0001fc]/20 bg-white p-4 shadow-sm">
-          <p className="text-xl font-semibold text-[#7A1F1F]">Quotation Application History</p>
-          <p className="mt-1 text-sm text-black/80">
-            Request a formal quotation for a course. After admin sets pricing and approves, download your
-            PDF below or from the quotation page.
-          </p>
-          <a
-            href="/employer/quotation"
-            className="mt-3 inline-block rounded-lg bg-[#0001fc] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0001fc]/90"
-          >
-            Request a Quotation
-          </a>
+        {quotationError && (
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {quotationError}
+          </div>
+        )}
 
-          {quotationError && (
-            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {quotationError}
-            </p>
-          )}
-
-          {quotationsLoading && (
-            <p className="mt-4 text-sm text-black/70">Loading quotation history…</p>
-          )}
-          {!quotationsLoading && quotationRows.length === 0 && !quotationError && (
-            <p className="mt-4 text-sm text-black/70">No quotation requests yet.</p>
-          )}
-          {!quotationsLoading && quotationRows.length > 0 && (
-            <ul className="mt-4 space-y-3 border-t border-[#efe1db] pt-4">
-              {quotationRows.map((r) => (
-                <li
-                  key={r.id}
-                  className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 text-sm text-black"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
-                      <p className="mt-1 text-black/80">
-                        Proposed: {r.proposed_date} · Participants: {r.number_of_employers}
-                      </p>
-                      <p className="mt-1 text-xs text-black/60">
-                        Submitted: {new Date(r.created_at).toLocaleString()}
-                      </p>
-                      <p className="mt-1">
-                        Status:{" "}
-                        <span className="font-semibold capitalize">
-                          {r.status === "pending" && "Pending admin review"}
-                          {r.status === "approved" && "Approved — PDF ready"}
-                          {r.status === "rejected" && "Rejected"}
-                        </span>
-                      </p>
-                    </div>
-                    {r.status === "approved" && r.pdf_storage_path && (
-                      <button
-                        type="button"
-                        disabled={downloadQuotationId === r.id}
-                        onClick={() => void downloadQuotationPdf(r.pdf_storage_path!, r.id)}
-                        className="sk-button-primary shrink-0 px-4 py-2 text-sm"
-                      >
-                        {downloadQuotationId === r.id ? "Opening…" : "Download PDF"}
-                      </button>
-                    )}
-                  </div>
-                  {r.additional_description && (
-                    <p className="mt-2 border-t border-[#efe1db] pt-2 text-xs text-black/75">
-                      {r.additional_description}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <EmployerQuotationRequestsTable
+          rows={quotationRows}
+          isLoading={quotationsLoading}
+          downloadId={downloadQuotationId}
+          invoiceDownloadId={downloadInvoiceId}
+          onDownloadQuotation={(row) => void downloadQuotationPdf(row)}
+          onDownloadInvoice={(row) => void downloadInvoicePdf(row)}
+        />
 
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

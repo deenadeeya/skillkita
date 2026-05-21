@@ -36,7 +36,7 @@ type CoursePrivatePaths = {
 type CourseRow = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   trainer_names: string | null;
   course_time: string | null;
@@ -101,14 +101,10 @@ function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePr
   };
 }
 
-function defaultCourseDateISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function buildCoursePayload(draft: CourseFormState): Partial<CourseRow> {
   return {
     name: draft.name.trim(),
-    date: draft.date,
+    date: draft.date.trim() || null,
     details: draft.details.trim(),
     trainer_names: draft.trainerNames.trim() || null,
     course_time: draft.time.trim() || null,
@@ -135,6 +131,7 @@ export default function AdminCreateCourse() {
 
   const [form, setForm] = useState<CourseFormState>(initialFormState);
   const [selectedPosterFile, setSelectedPosterFile] = useState<File | null>(null);
+  const [existingPosterUrl, setExistingPosterUrl] = useState<string | null>(null);
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
   const [privateSelections, setPrivateSelections] =
     useState<Record<PrivateDocKind, File | null>>(emptyPrivateSelections);
@@ -213,6 +210,7 @@ export default function AdminCreateCourse() {
   const loadCourseForEdit = useCallback(async () => {
     if (!editingId) return;
     setErrorMessage(null);
+    setExistingPosterUrl(null);
 
     const { data, error } = await supabase
       .from("courses")
@@ -248,6 +246,11 @@ export default function AdminCreateCourse() {
     });
 
     setExistingPrivatePaths(normalizePrivateFiles(row.course_private_files));
+    setExistingPosterUrl(row.poster_url ?? null);
+  }, [editingId]);
+
+  useEffect(() => {
+    if (!editingId) setExistingPosterUrl(null);
   }, [editingId]);
 
   useEffect(() => {
@@ -395,7 +398,10 @@ export default function AdminCreateCourse() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
-    if (!form.name.trim() || !form.date.trim() || !form.details.trim()) return;
+    if (!form.name.trim()) {
+      setErrorMessage("Please enter course name.");
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -426,7 +432,7 @@ export default function AdminCreateCourse() {
       const { data: inserted, error } = await supabase
         .from("courses")
         .insert({
-          ...buildCoursePayload({ ...form, date: form.date || defaultCourseDateISO() }),
+          ...buildCoursePayload(form),
           poster_url: posterUrl,
         })
         .select("id")
@@ -487,38 +493,40 @@ export default function AdminCreateCourse() {
 
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
             <CourseDetailsForm
+              leading={
+                <CoursePosterOcrPanel
+                  selectedPosterFile={selectedPosterFile}
+                  existingPosterUrl={existingPosterUrl}
+                  isSaving={isSaving}
+                  ocrState={
+                    ocrState as unknown as
+                      | { status: "idle" }
+                      | { status: "running"; progressLabel?: string; progressPct?: number }
+                      | { status: "error"; message: string }
+                      | { status: "done" }
+                  }
+                  onPosterChange={(file) => {
+                    if (!file) {
+                      setSelectedPosterFile(null);
+                      return;
+                    }
+                    handlePosterChange({
+                      target: { files: [file] },
+                    } as unknown as ChangeEvent<HTMLInputElement>);
+                  }}
+                  canRunOcr={Boolean(
+                    selectedPosterFile &&
+                      (isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile))
+                  )}
+                  onRunOcr={() => void runPosterOcr()}
+                  onClearOcr={() => setOcrState({ status: "idle" })}
+                />
+              }
               form={form}
               isSaving={isSaving}
               onInputChange={handleInputChange}
               submitLabel={editingId ? "Update Course" : "Add Course"}
             >
-              <CoursePosterOcrPanel
-                selectedPosterFile={selectedPosterFile}
-                isSaving={isSaving}
-                ocrState={
-                  ocrState as unknown as
-                    | { status: "idle" }
-                    | { status: "running"; progressLabel?: string; progressPct?: number }
-                    | { status: "error"; message: string }
-                    | { status: "done" }
-                }
-                onPosterChange={(file) => {
-                  if (!file) {
-                    setSelectedPosterFile(null);
-                    return;
-                  }
-                  // Delegate to existing handler path for consistent behavior
-                  handlePosterChange({
-                    target: { files: [file] },
-                  } as unknown as ChangeEvent<HTMLInputElement>);
-                }}
-                canRunOcr={Boolean(
-                  selectedPosterFile && (isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile))
-                )}
-                onRunOcr={() => void runPosterOcr()}
-                onClearOcr={() => setOcrState({ status: "idle" })}
-              />
-
               <CoursePrivateDocumentsPicker
                 privateSelections={privateSelections}
                 onPickFile={(kind, file) => {

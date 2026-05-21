@@ -3,6 +3,7 @@ import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
 import { supabase } from "../../shared/api/supabaseClient";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 
 const EmployerProfile = () => {
   const [name, setName] = useState("Employer");
@@ -35,9 +36,7 @@ const EmployerProfile = () => {
       userName={name}
       userEmail={email}
       onLogout={() => {
-        void supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
+        void signOutAndRedirectHome();
       }}
     >
       <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Profile</h1>

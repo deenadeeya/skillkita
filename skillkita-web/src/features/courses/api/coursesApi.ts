@@ -3,7 +3,7 @@ import { supabase } from "../../../shared/api/supabaseClient";
 export type PublicCourseRow = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   poster_url: string | null;
   is_visible: boolean;
@@ -13,7 +13,7 @@ export type PublicCourseRow = {
 export type CourseDetailRow = {
   id: string;
   name: string;
-  date: string;
+  date: string | null;
   details: string;
   trainer_names: string | null;
   course_time: string | null;
@@ -32,7 +32,8 @@ export async function listVisibleCourses() {
     .from("courses")
     .select("id,name,date,details,poster_url,is_visible,created_at")
     .eq("is_visible", true)
-    .order("date", { ascending: true });
+    .order("date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
   return (data ?? []) as PublicCourseRow[];

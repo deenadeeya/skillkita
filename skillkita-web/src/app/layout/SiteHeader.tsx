@@ -1,11 +1,14 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
 import TRSCLogo from "../../assets/TRSCLogo.png";
-import { supabase } from "../../shared/api/supabaseClient";
+import NotificationBell from "../../features/notifications/NotificationBell";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
 
 const PRIMARY_NAV = [
   { label: "Home", href: "/" },
+  { label: "About Us", href: "/about-us" },
+  { label: "Company Experience", href: "/company-experience" },
   { label: "Courses", href: "/courses" },
 ] as const;
 
@@ -18,7 +21,10 @@ const SiteHeader = ({ onMenuClick }: Props) => {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const viewerState = useViewer();
+
+  const useBuiltInMobileNav = !onMenuClick;
 
   const hasAuthSession =
     viewerState.kind === "signedIn" || viewerState.kind === "signedInNoProfile";
@@ -44,18 +50,16 @@ const SiteHeader = ({ onMenuClick }: Props) => {
     viewerState.kind === "signedIn" && viewerState.viewer.role === "employer"
       ? viewerState.viewer.status
       : null;
-  const isEmployer = Boolean(employerStatus === "approved");
+  const isEmployer = Boolean(employerStatus && employerStatus !== "rejected");
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    window.localStorage.removeItem("skillkita-role");
-    window.location.href = "/";
+  const signOut = () => {
+    void signOutAndRedirectHome();
   };
 
   const profileHref = useMemo(() => {
     if (isAdmin) return "/admin/profile?role=admin";
     if (isEmployer) return "/employer/profile";
-    if (employerStatus === "pending" || employerStatus === "rejected") return "/employer/profile";
+    if (employerStatus === "rejected") return "/employer/profile";
     return hasAuthSession ? "/login?stay=1" : "/login";
   }, [employerStatus, hasAuthSession, isAdmin, isEmployer]);
 
@@ -68,10 +72,13 @@ const SiteHeader = ({ onMenuClick }: Props) => {
             type="button"
             aria-label="Toggle navigation menu"
             onClick={() => {
-              onMenuClick?.();
+              if (onMenuClick) {
+                onMenuClick();
+                return;
+              }
+              setIsMobileNavOpen((open) => !open);
             }}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
-            disabled={!onMenuClick}
           >
             <span className="sr-only">Menu</span>
             <span className="flex flex-col gap-1.5">
@@ -88,14 +95,19 @@ const SiteHeader = ({ onMenuClick }: Props) => {
             <span className="truncate text-sm font-semibold">TRSC SkillKita</span>
           </a>
 
-          <a
-            href={profileHref}
-            aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
-            title={viewerEmail ?? viewerName}
-          >
-            <UserCircleIcon className="h-7 w-7 text-white" />
-          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
+              <NotificationBell viewer={viewerState.viewer} />
+            )}
+            <a
+              href={profileHref}
+              aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+              title={viewerEmail ?? viewerName}
+            >
+              <UserCircleIcon className="h-7 w-7 text-white" />
+            </a>
+          </div>
         </div>
 
         {/* Desktop: logo + center nav + auth/profile menus */}
@@ -138,7 +150,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {isAdmin && (
-            <div className="relative">
+            <div className={["relative", isAdminMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsAdminMenuOpen((p) => !p)}
@@ -148,15 +160,15 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Admin
               </button>
               {isAdminMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <a
-                    href="/#about-us"
+                    href="/about-us"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
                     About Us
                   </a>
                   <a
-                    href="/#courses"
+                    href="/company-experience"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
                   >
                     Company Experience
@@ -216,7 +228,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {isEmployer && (
-            <div className="relative">
+            <div className={["relative", isEmployerMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsEmployerMenuOpen((p) => !p)}
@@ -226,7 +238,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Employer
               </button>
               {isEmployerMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <a
                     href="/employer/quotation"
                     className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
@@ -264,30 +276,20 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           )}
 
           {hasAuthSession && !isAdmin && !isEmployer && (
-            <div className="relative">
+            <div className={["relative", isAccountMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
               <button
                 type="button"
                 onClick={() => setIsAccountMenuOpen((p) => !p)}
                 className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
                 aria-expanded={isAccountMenuOpen}
               >
-                {employerStatus === "pending"
-                  ? "Employer (pending)"
-                  : employerStatus === "rejected"
-                    ? "Employer (rejected)"
-                    : "Account"}
+                {employerStatus === "rejected" ? "Employer (rejected)" : "Account"}
               </button>
               {isAccountMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-12 z-[70] w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
                   <div className="px-3 py-2 text-xs text-black/70">
                     <div className="font-semibold text-[#7A1F1F]">{viewerName}</div>
                     {viewerEmail && <div className="mt-1 break-all">{viewerEmail}</div>}
-                    {employerStatus === "pending" && (
-                      <div className="mt-2 text-[11px] leading-snug">
-                        Your employer account is pending admin approval. You can browse public pages and update your
-                        profile while you wait.
-                      </div>
-                    )}
                     {employerStatus === "rejected" && (
                       <div className="mt-2 text-[11px] leading-snug text-red-700">
                         Your employer request was rejected. Please contact support if you believe this is a mistake.
@@ -302,7 +304,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                     Browse courses
                   </a>
 
-                  {(employerStatus === "pending" || employerStatus === "rejected") && (
+                  {employerStatus === "rejected" && (
                     <a
                       href="/employer/profile"
                       className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
@@ -329,8 +331,40 @@ const SiteHeader = ({ onMenuClick }: Props) => {
               )}
             </div>
           )}
+
+          {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
+            <div className="relative z-10 flex items-center gap-2">
+              <NotificationBell viewer={viewerState.viewer} />
+              <a
+                href={profileHref}
+                aria-label="Open profile"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+                title={viewerEmail ?? viewerName}
+              >
+                <UserCircleIcon className="h-8 w-8 text-white" />
+              </a>
+            </div>
+          )}
         </div>
       </div>
+
+      {useBuiltInMobileNav && isMobileNavOpen && (
+        <nav className="border-t border-white/20 bg-[#6a1a1a] px-4 py-3 md:hidden">
+          <ul className="flex flex-col gap-1">
+            {PRIMARY_NAV.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </header>
   );
 };

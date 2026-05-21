@@ -2,44 +2,53 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
+import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { AdminCreateQuotationForm } from "../../features/quotation/components/AdminCreateQuotationForm";
+import {
+  resolveQuotationTo,
+  type QuotationFormValues,
+} from "../../features/quotation/components/QuotationRequestFormFields";
+import { isQuotationCourseMode } from "../../features/quotation/quotationCourseMode";
 import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 import {
   adminCreateApprovedQuotationRequest,
   listApprovedEmployers,
-  listCourseLabels,
   setQuotationPdfPath,
   type ApprovedEmployerOption,
-  type CourseLabel,
 } from "../../features/quotation/api/quotationRequestsApi";
+
+type CourseLabel = Pick<PublicCourseRow, "id" | "name">;
+
+const emptyFormValues = (): QuotationFormValues => ({
+  toSource: "profile",
+  manualCompanyName: "",
+  manualCompanyAddress: "",
+  courseName: "",
+  courseMode: "",
+  pricePerPax: "",
+  courseLocationAddress: "",
+  courseDate: "",
+  additionalDescription: "",
+});
 
 const AdminCreateQuotation = () => {
   const [approvedEmployers, setApprovedEmployers] = useState<ApprovedEmployerOption[]>([]);
-  const [courses, setCourses] = useState<CourseLabel[]>([]);
+  const [courseOptions, setCourseOptions] = useState<CourseLabel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const viewerState = useViewer();
 
-  // Admin-created quotation (auto-approved)
   const [createEmployerUserId, setCreateEmployerUserId] = useState("");
   const [createManualEmployerName, setCreateManualEmployerName] = useState("");
-  const [createCompanyName, setCreateCompanyName] = useState("");
-  const [createCompanyAddress, setCreateCompanyAddress] = useState("");
-  const [createCourseId, setCreateCourseId] = useState("");
-  const [createCourseName, setCreateCourseName] = useState("");
-  const [createParticipants, setCreateParticipants] = useState("");
-  const [createProposedDate, setCreateProposedDate] = useState("");
-  const [createAdditionalDescription, setCreateAdditionalDescription] = useState("");
-  const [createCourseMode, setCreateCourseMode] = useState("");
-  const [createUnitPrice, setCreateUnitPrice] = useState("");
-  const [createAmountRm, setCreateAmountRm] = useState("");
+  const [formValues, setFormValues] = useState<QuotationFormValues>(emptyFormValues);
 
   const loadApprovedEmployers = useCallback(async () => {
     try {
@@ -53,10 +62,10 @@ const AdminCreateQuotation = () => {
 
   const loadCourses = useCallback(async () => {
     try {
-      const rows = await listCourseLabels();
-      setCourses(rows);
+      const rows = await listVisibleCourses();
+      setCourseOptions(rows.map((c) => ({ id: c.id, name: c.name })));
     } catch (e) {
-      setCourses([]);
+      setCourseOptions([]);
       setErrorMessage(e instanceof Error ? e.message : "Failed to load courses.");
     }
   }, []);
@@ -69,8 +78,8 @@ const AdminCreateQuotation = () => {
   }, [viewerState]);
 
   useEffect(() => {
-    void loadApprovedEmployers();
-    void loadCourses();
+    setIsLoading(true);
+    void Promise.all([loadApprovedEmployers(), loadCourses()]).finally(() => setIsLoading(false));
   }, [loadApprovedEmployers, loadCourses]);
 
   const createEmployerOptions = useMemo(() => {
@@ -83,46 +92,51 @@ const AdminCreateQuotation = () => {
   }, [approvedEmployers]);
 
   const isManualEmployer = createEmployerUserId === "__manual__";
-  const isManualCourse = createCourseId === "__manual__";
 
-  const createCourseOptions = useMemo(() => {
-    return courses.map((c) => ({ value: c.id, label: c.name }));
-  }, [courses]);
+  const selectedEmployer = useMemo(
+    () => approvedEmployers.find((e) => e.user_id === createEmployerUserId) ?? null,
+    [approvedEmployers, createEmployerUserId]
+  );
 
-  useEffect(() => {
-    if (isManualEmployer) return;
-    const match = approvedEmployers.find((e) => e.user_id === createEmployerUserId);
-    if (!match) return;
-    if (!createCompanyName.trim() && match.company_name?.trim()) {
-      setCreateCompanyName(match.company_name);
-    }
-    if (!createCompanyAddress.trim() && match.company_address?.trim()) {
-      setCreateCompanyAddress(match.company_address);
-    }
-  }, [
-    approvedEmployers,
-    createCompanyAddress,
-    createCompanyName,
-    createEmployerUserId,
-    isManualEmployer,
-  ]);
+  const profileCompanyName = isManualEmployer
+    ? ""
+    : (selectedEmployer?.company_name?.trim() ?? "");
+  const profileCompanyAddress = isManualEmployer
+    ? ""
+    : (selectedEmployer?.company_address?.trim() ?? "");
 
-  useEffect(() => {
-    if (isManualCourse) return;
-    const match = courses.find((c) => c.id === createCourseId);
-    if (!match) return;
-    if (match.name.trim() && createCourseName !== match.name) {
-      setCreateCourseName(match.name);
+  const courseNameSuggestions = useMemo(() => {
+    const uniq = new Map<string, CourseLabel>();
+    for (const c of courseOptions) {
+      const key = c.name.trim().toLowerCase();
+      if (!key) continue;
+      if (!uniq.has(key)) uniq.set(key, c);
     }
-  }, [courses, createCourseId, createCourseName, isManualCourse]);
+    return Array.from(uniq.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [courseOptions]);
+
+  const handleEmployerChange = (employerUserId: string) => {
+    setCreateEmployerUserId(employerUserId);
+    const manual = employerUserId === "__manual__";
+    const match = approvedEmployers.find((e) => e.user_id === employerUserId);
+    const hasProfile = Boolean(match?.company_name?.trim() || match?.company_address?.trim());
+
+    setFormValues((prev) => ({
+      ...prev,
+      toSource: manual || !hasProfile ? "manual" : "profile",
+      manualCompanyName: manual ? prev.manualCompanyName : (match?.company_name?.trim() ?? ""),
+      manualCompanyAddress: manual ? prev.manualCompanyAddress : (match?.company_address?.trim() ?? ""),
+    }));
+  };
 
   const handleAdminCreate = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
     setErrorMessage(null);
 
-    const participants = parseInt(createParticipants, 10);
-    const unit = parseFloat(createUnitPrice);
-    const amount = parseFloat(createAmountRm);
+    const resolvedTo = resolveQuotationTo(formValues, profileCompanyName, profileCompanyAddress);
+    const unit = parseFloat(formValues.pricePerPax);
+    const participants = 1;
+    const amount = unit * participants;
 
     const manualEmployerName = createManualEmployerName.trim();
     const hasEmployer =
@@ -130,19 +144,16 @@ const AdminCreateQuotation = () => {
 
     if (
       !hasEmployer ||
-      !createCompanyName.trim() ||
-      !createCourseName.trim() ||
-      !Number.isFinite(participants) ||
-      participants < 1 ||
-      !createProposedDate ||
-      !createCourseMode.trim() ||
+      !resolvedTo.companyName ||
+      !formValues.courseName.trim() ||
+      !isQuotationCourseMode(formValues.courseMode) ||
       !Number.isFinite(unit) ||
       unit < 0 ||
-      !Number.isFinite(amount) ||
-      amount < 0
+      !formValues.courseLocationAddress.trim() ||
+      !formValues.courseDate
     ) {
       setErrorMessage(
-        "Fill employer (or manual employer name), company name, course name, participants (≥1), proposed booking date, mode, unit price (RM), and amount (RM)."
+        "Fill employer (or manual employer name), To (company name), course name, course mode, price per pax, course location address, and course date."
       );
       return;
     }
@@ -153,26 +164,26 @@ const AdminCreateQuotation = () => {
       if (!reviewer) throw new Error("Not authenticated.");
 
       const targetEmployerUserId = isManualEmployer ? reviewer : createEmployerUserId;
-      const snapshot = createCompanyName.trim();
       const employerDisplayName = isManualEmployer
         ? manualEmployerName
-        : approvedEmployers.find((e) => e.user_id === createEmployerUserId)?.full_name ?? "Employer";
+        : (selectedEmployer?.full_name ?? "Employer");
       const mergedAdditional =
         `Employer: ${employerDisplayName}${
-          createAdditionalDescription.trim() ? `\n\n${createAdditionalDescription.trim()}` : ""
+          formValues.additionalDescription.trim() ? `\n\n${formValues.additionalDescription.trim()}` : ""
         }` || null;
 
       const payload = {
         employer_user_id: targetEmployerUserId,
-        company_name_snapshot: snapshot,
-        company_address: createCompanyAddress.trim() ? createCompanyAddress.trim() : null,
-        course_name: createCourseName.trim(),
+        company_name_snapshot: resolvedTo.companyName,
+        company_address: resolvedTo.companyAddress ? resolvedTo.companyAddress : null,
+        course_name: formValues.courseName.trim(),
         number_of_employers: participants,
-        proposed_date: createProposedDate,
+        proposed_date: formValues.courseDate,
         additional_description: mergedAdditional,
         status: "approved" as const,
-        company_name: createCompanyName.trim(),
-        course_mode: createCourseMode.trim(),
+        company_name: resolvedTo.companyName,
+        course_mode: formValues.courseMode,
+        course_location_address: formValues.courseLocationAddress.trim(),
         unit_price: unit,
         amount_rm: amount,
         reviewed_at: new Date().toISOString(),
@@ -183,20 +194,21 @@ const AdminCreateQuotation = () => {
       const created = (await adminCreateApprovedQuotationRequest(payload)) as QuotationRequestRow;
 
       const pdfInput = {
-        company_name: createCompanyName.trim(),
-        course_name: createCourseName.trim(),
-        course_mode: createCourseMode.trim(),
+        company_name: resolvedTo.companyName,
+        course_name: formValues.courseName.trim(),
+        course_mode: formValues.courseMode,
         unit_price: unit,
         amount_rm: amount,
         number_of_employers: participants,
-        proposed_date: createProposedDate,
+        proposed_date: formValues.courseDate,
         additional_description: mergedAdditional,
+        course_location_address: formValues.courseLocationAddress.trim(),
       };
 
-      const blob = buildQuotationPdfBlob(pdfInput, {
+      const blob = await buildQuotationPdfBlob(pdfInput, {
         quotation_id: created.quotation_no != null ? String(created.quotation_no) : created.id,
         approved_date: new Date().toISOString(),
-        employer_company_address: createCompanyAddress.trim() || undefined,
+        employer_company_address: resolvedTo.companyAddress || undefined,
       });
       const path = await uploadQuotationPdf(targetEmployerUserId, created.id, blob);
 
@@ -204,16 +216,7 @@ const AdminCreateQuotation = () => {
 
       setCreateEmployerUserId("");
       setCreateManualEmployerName("");
-      setCreateCompanyName("");
-      setCreateCompanyAddress("");
-      setCreateCourseId("");
-      setCreateCourseName("");
-      setCreateParticipants("");
-      setCreateProposedDate("");
-      setCreateAdditionalDescription("");
-      setCreateCourseMode("");
-      setCreateUnitPrice("");
-      setCreateAmountRm("");
+      setFormValues(emptyFormValues());
 
       window.location.href = "/admin/quotations";
     } catch (e) {
@@ -236,7 +239,7 @@ const AdminCreateQuotation = () => {
     >
       <AdminPageFrame
         title="Create quotation"
-        subtitle="Admin-created quotations are automatically approved. Fill all details and a PDF will be generated immediately."
+        subtitle="Use the same quotation application form as employers. The quotation is created as approved and a PDF is generated immediately."
         errorMessage={errorMessage}
         isAuthChecking={false}
         isAuthorized
@@ -248,43 +251,18 @@ const AdminCreateQuotation = () => {
       >
         <AdminCreateQuotationForm
           isSaving={isSaving}
+          isLoading={isLoading}
           createEmployerUserId={createEmployerUserId}
           createEmployerOptions={createEmployerOptions}
           isManualEmployer={isManualEmployer}
           createManualEmployerName={createManualEmployerName}
-          createCompanyName={createCompanyName}
-          createCompanyAddress={createCompanyAddress}
-          createCourseId={createCourseId}
-          createCourseOptions={createCourseOptions}
-          isManualCourse={isManualCourse}
-          createCourseName={createCourseName}
-          createParticipants={createParticipants}
-          createProposedDate={createProposedDate}
-          createAdditionalDescription={createAdditionalDescription}
-          createCourseMode={createCourseMode}
-          createUnitPrice={createUnitPrice}
-          createAmountRm={createAmountRm}
-          onChange={(patch) => {
-            if (patch.createEmployerUserId !== undefined) setCreateEmployerUserId(patch.createEmployerUserId);
-            if (patch.createManualEmployerName !== undefined) setCreateManualEmployerName(patch.createManualEmployerName);
-            if (patch.createCompanyName !== undefined) setCreateCompanyName(patch.createCompanyName);
-            if (patch.createCompanyAddress !== undefined) setCreateCompanyAddress(patch.createCompanyAddress);
-            if (patch.createCourseId !== undefined) {
-              const next = patch.createCourseId;
-              setCreateCourseId(next);
-              if (next !== "__manual__") {
-                const match = courses.find((c) => c.id === next);
-                if (match?.name) setCreateCourseName(match.name);
-              }
-            }
-            if (patch.createCourseName !== undefined) setCreateCourseName(patch.createCourseName);
-            if (patch.createParticipants !== undefined) setCreateParticipants(patch.createParticipants);
-            if (patch.createProposedDate !== undefined) setCreateProposedDate(patch.createProposedDate);
-            if (patch.createAdditionalDescription !== undefined) setCreateAdditionalDescription(patch.createAdditionalDescription);
-            if (patch.createCourseMode !== undefined) setCreateCourseMode(patch.createCourseMode);
-            if (patch.createUnitPrice !== undefined) setCreateUnitPrice(patch.createUnitPrice);
-            if (patch.createAmountRm !== undefined) setCreateAmountRm(patch.createAmountRm);
-          }}
+          profileCompanyName={profileCompanyName}
+          profileCompanyAddress={profileCompanyAddress}
+          formValues={formValues}
+          courseNameSuggestions={courseNameSuggestions}
+          onEmployerChange={handleEmployerChange}
+          onManualEmployerNameChange={setCreateManualEmployerName}
+          onFormChange={(patch) => setFormValues((prev) => ({ ...prev, ...patch }))}
           onSubmit={(ev) => void handleAdminCreate(ev)}
         />
       </AdminPageFrame>
@@ -293,4 +271,3 @@ const AdminCreateQuotation = () => {
 };
 
 export default AdminCreateQuotation;
-

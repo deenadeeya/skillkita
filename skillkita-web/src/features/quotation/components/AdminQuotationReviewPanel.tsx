@@ -1,4 +1,6 @@
 import type { QuotationRequestRow } from "../types";
+import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
+import { RequiredMark } from "../../../shared/ui/RequiredMark";
 
 type EmployerLabel = {
   full_name: string;
@@ -60,13 +62,38 @@ export function AdminQuotationReviewPanel({
           {employer?.company_name ? ` (${employer.company_name})` : ""}
         </p>
         <p className="mt-1">
+          <span className="font-semibold">To (company):</span>{" "}
+          {activeReview.company_name?.trim() || activeReview.company_name_snapshot}
+        </p>
+        {activeReview.company_address?.trim() ? (
+          <p className="mt-1 whitespace-pre-wrap">
+            <span className="font-semibold">To (address):</span> {activeReview.company_address}
+          </p>
+        ) : null}
+        <p className="mt-1">
           <span className="font-semibold">Course:</span> {activeReview.course_name}
+        </p>
+        {activeReview.course_mode?.trim() ? (
+          <p className="mt-1">
+            <span className="font-semibold">Mode:</span> {activeReview.course_mode}
+          </p>
+        ) : null}
+        {activeReview.unit_price != null ? (
+          <p className="mt-1">
+            <span className="font-semibold">Requested price / pax:</span> RM{" "}
+            {Number(activeReview.unit_price).toFixed(2)}
+          </p>
+        ) : null}
+        {activeReview.course_location_address?.trim() ? (
+          <p className="mt-1 whitespace-pre-wrap">
+            <span className="font-semibold">Course location:</span> {activeReview.course_location_address}
+          </p>
+        ) : null}
+        <p className="mt-1">
+          <span className="font-semibold">Course date:</span> {activeReview.proposed_date}
         </p>
         <p className="mt-1">
           <span className="font-semibold">Participants:</span> {activeReview.number_of_employers}
-        </p>
-        <p className="mt-1">
-          <span className="font-semibold">Proposed date:</span> {activeReview.proposed_date}
         </p>
         {activeReview.additional_description && (
           <p className="mt-2 text-black/80">{activeReview.additional_description}</p>
@@ -74,9 +101,13 @@ export function AdminQuotationReviewPanel({
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <p className="text-sm text-black/70 md:col-span-2">
+          Required fields are marked with <RequiredMark />.
+        </p>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
             Company name (on quotation PDF)
+            <RequiredMark />
           </span>
           <input
             value={companyName}
@@ -104,7 +135,10 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Course mode</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Course mode
+            <RequiredMark />
+          </span>
           <select
             value={courseMode}
             onChange={(e) => onChangeCourseMode(e.target.value)}
@@ -114,14 +148,19 @@ export function AdminQuotationReviewPanel({
             <option value="" disabled>
               Select…
             </option>
-            <option value="Face-to-Face">Face-to-Face</option>
-            <option value="Online">Online</option>
-            <option value="Hybrid">Hybrid</option>
+            {QUOTATION_COURSE_MODES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Unit price (RM)</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Unit price (RM)
+            <RequiredMark />
+          </span>
           <input
             type="number"
             min={0}
@@ -133,7 +172,10 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Amount (RM)</span>
+          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            Amount (RM)
+            <RequiredMark />
+          </span>
           <input
             type="number"
             min={0}

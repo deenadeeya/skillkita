@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { markChatNotificationsReadForConversation } from "../notifications/notificationsApi";
 import { supabase } from "../../shared/api/supabaseClient";
 import { CHAT_ATTACHMENTS_BUCKET, createChatAttachmentSignedUrl, makeChatAttachmentPath } from "./chatStorage";
 import type { ChatMessageRow } from "./types";
@@ -50,6 +51,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
     setMessages((data ?? []) as ChatMessageRow[]);
     setIsLoading(false);
     setTimeout(scrollToBottom, 50);
+    void markChatNotificationsReadForConversation(conversationId);
   }, [conversationId, scrollToBottom]);
 
   useEffect(() => {
@@ -58,23 +60,23 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
   }, [loadMessages]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`chat:${conversationId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` },
-        () => {
-          void loadMessages();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_message_attachments" },
-        () => {
-          void loadMessages();
-        }
-      )
-      .subscribe();
+    const topic = `chat:${conversationId}:${crypto.randomUUID()}`;
+    const channel = supabase.channel(topic);
+    channel.on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_id=eq.${conversationId}` },
+      () => {
+        void loadMessages();
+      }
+    );
+    channel.on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "chat_message_attachments" },
+      () => {
+        void loadMessages();
+      }
+    );
+    channel.subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
