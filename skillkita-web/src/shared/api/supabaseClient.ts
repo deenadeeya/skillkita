@@ -24,8 +24,11 @@ export function getStoragePublicUrl(bucket: string, path: string): string {
   return `${base}/storage/v1/object/public/${bucket}/${cleanPath}`;
 }
 
+const STORAGE_PUBLIC_PATH =
+  /^https?:\/\/[^/]+(\/storage\/v1\/(?:object\/public|render\/image\/public)\/.+)$/i;
+
 /**
- * Rewrite URLs saved while using the Vite dev proxy (`/supabase-api`) back to the real project host.
+ * Rewrite storage URLs to VITE_SUPABASE_URL (dev proxy, wrong host, or old project ref in DB).
  */
 export function normalizeSupabaseStorageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -37,6 +40,9 @@ export function normalizeSupabaseStorageUrl(url: string | null | undefined): str
 
   const proxyMatch = trimmed.match(/^https?:\/\/[^/]+\/supabase-api(\/storage\/v1\/object\/public\/.+)$/i);
   if (proxyMatch) return `${base}${proxyMatch[1]}`;
+
+  const publicMatch = trimmed.match(STORAGE_PUBLIC_PATH);
+  if (publicMatch) return `${base}${publicMatch[1]}`;
 
   return trimmed;
 }
