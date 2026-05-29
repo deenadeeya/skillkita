@@ -1,6 +1,14 @@
 import { supabase } from "../../../shared/api/supabaseClient";
 import type { QuotationRequestRow, QuotationStatus } from "../types";
 
+function quotationRlsHint(action: string): string {
+  return ` Admin ${action} requires Supabase RLS (public.is_admin()). Run supabase/migrations/20260520110000_quotation_requests_base.sql on your project, and ensure your login user has user_profiles.role = 'admin'.`;
+}
+
+function quotationStorageHint(): string {
+  return " Ensure the private Storage bucket `quotation-pdfs` exists and storage policies from supabase/quotations.sql (or migration 20260520110000) are applied.";
+}
+
 export type EmployerLabel = {
   full_name: string;
   company_name: string | null;
@@ -93,7 +101,7 @@ export async function adminCreateApprovedQuotationRequest(
 
   if (error) {
     const hint = error.message.toLowerCase().includes("row-level security")
-      ? " (RLS) Run skillkita-web/supabase/quotations.sql in Supabase SQL editor to add the admin insert policy."
+      ? quotationRlsHint("create")
       : "";
     throw new Error(error.message + hint);
   }
@@ -132,7 +140,7 @@ export async function createEmployerQuotationRequest(payload: {
     throw new Error(
       error.message +
         (error.message.toLowerCase().includes("row-level security")
-          ? " Run supabase/quotations.sql in the SQL editor if this table is new."
+          ? quotationRlsHint("submit")
           : "")
     );
   }
@@ -168,7 +176,15 @@ export async function updateQuotationRequest(
     .update(patch)
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const msg = error.message.toLowerCase();
+    const hint = msg.includes("row-level security")
+      ? quotationRlsHint("update")
+      : msg.includes("bucket") || msg.includes("storage")
+        ? quotationStorageHint()
+        : "";
+    throw new Error(error.message + hint);
+  }
 }
 
 export async function deleteQuotationRequest(id: string) {
@@ -178,7 +194,14 @@ export async function deleteQuotationRequest(id: string) {
     .eq("id", id)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(
+      error.message +
+        (error.message.toLowerCase().includes("row-level security")
+          ? quotationRlsHint("delete")
+          : "")
+    );
+  }
   if (!deletedRows || deletedRows.length === 0) {
     throw new Error("Delete blocked (no rows removed). Check Supabase RLS delete policy.");
   }
