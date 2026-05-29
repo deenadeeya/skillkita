@@ -5,6 +5,7 @@ import {
   QuotationRequestFormFields,
   type QuotationFormValues,
 } from "./QuotationRequestFormFields";
+import type { QuotationCourseOption } from "./CourseSearchSelect";
 
 type EmployerOption = {
   value: string;
@@ -12,8 +13,6 @@ type EmployerOption = {
   company_name: string | null;
   company_address: string | null;
 };
-
-type CourseSuggestion = { id: string; name: string };
 
 type Props = {
   isSaving: boolean;
@@ -25,7 +24,7 @@ type Props = {
   profileCompanyName: string;
   profileCompanyAddress: string;
   formValues: QuotationFormValues;
-  courseNameSuggestions: CourseSuggestion[];
+  courseOptions: QuotationCourseOption[];
   onEmployerChange: (employerUserId: string) => void;
   onManualEmployerNameChange: (name: string) => void;
   onFormChange: (patch: Partial<QuotationFormValues>) => void;
@@ -42,18 +41,29 @@ export function AdminCreateQuotationForm({
   profileCompanyName,
   profileCompanyAddress,
   formValues,
-  courseNameSuggestions,
+  courseOptions,
   onEmployerChange,
   onManualEmployerNameChange,
   onFormChange,
   onSubmit,
 }: Props) {
+  const employerReady =
+    Boolean(createEmployerUserId) &&
+    (!isManualEmployer || Boolean(createManualEmployerName.trim()));
+
   const employerPrefix = (
     <div className="space-y-4 rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4">
-      <p className="text-sm font-semibold text-[#7A1F1F]">
-        Employer
-        <RequiredMark />
-      </p>
+      <div>
+        <p className="text-sm font-semibold text-[#7A1F1F]">
+          Employer
+          <RequiredMark />
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-black/70">
+          <span className="font-semibold text-[#7A1F1F]">Start here:</span> search and select an
+          employer first. If you choose Manual / not listed, enter the employer name below before
+          filling in course details and other fields.
+        </p>
+      </div>
       <label className="block">
         <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">Search employer</span>
         <EmployerSearchSelect
@@ -89,13 +99,21 @@ export function AdminCreateQuotationForm({
   );
 
   return (
-    <section className="sk-card mx-auto max-w-2xl overflow-hidden p-6 md:p-8">
+    <section className="sk-card mx-auto max-w-3xl overflow-hidden p-6 md:p-8">
       <div className="border-b border-black/5 pb-5">
         <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">New Quotation Application</h2>
         <p className="mt-2 text-sm leading-relaxed text-black/70">
           Same fields as the employer quotation form. The quotation is created as approved and a PDF
           is generated immediately.
         </p>
+        {!employerReady && (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Select an employer above first — the rest of the form unlocks after that.
+            {isManualEmployer && createEmployerUserId
+              ? " For manual entry, also type the employer name."
+              : null}
+          </p>
+        )}
       </div>
 
       <div className="mt-6">
@@ -104,13 +122,12 @@ export function AdminCreateQuotationForm({
           onChange={onFormChange}
           profileCompanyName={profileCompanyName}
           profileCompanyAddress={profileCompanyAddress}
-          courseNameSuggestions={courseNameSuggestions}
-          disabled={isLoading || !createEmployerUserId}
+          courseOptions={courseOptions}
+          disabled={isLoading || !employerReady}
           isSubmitting={isSaving}
           submitLabel="Create & generate PDF"
           onSubmit={onSubmit}
           prefix={employerPrefix}
-          datalistId="admin-quotation-course-name-options"
         />
       </div>
     </section>

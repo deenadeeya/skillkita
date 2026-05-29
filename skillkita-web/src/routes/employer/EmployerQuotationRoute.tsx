@@ -1,10 +1,10 @@
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
-import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
+import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import { createEmployerQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
 import { isQuotationCourseMode } from "../../features/quotation/quotationCourseMode";
 import {
@@ -12,14 +12,14 @@ import {
   resolveQuotationTo,
   type QuotationFormValues,
 } from "../../features/quotation/components/QuotationRequestFormFields";
-
-type CourseLabel = Pick<PublicCourseRow, "id" | "name" | "date" | "created_at">;
+import type { QuotationCourseOption } from "../../features/quotation/components/CourseSearchSelect";
 
 const emptyFormValues = (): QuotationFormValues => ({
   toSource: "profile",
   manualCompanyName: "",
   manualCompanyAddress: "",
   courseName: "",
+  selectedCourseId: "",
   courseMode: "",
   pricePerPax: "",
   courseLocationAddress: "",
@@ -30,7 +30,7 @@ const emptyFormValues = (): QuotationFormValues => ({
 const EmployerQuotationRequest = () => {
   const viewerState = useViewer();
   const [formValues, setFormValues] = useState<QuotationFormValues>(emptyFormValues);
-  const [courseOptions, setCourseOptions] = useState<CourseLabel[]>([]);
+  const [courseOptions, setCourseOptions] = useState<QuotationCourseOption[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +48,7 @@ const EmployerQuotationRequest = () => {
           id: c.id,
           name: c.name,
           date: c.date,
-          created_at: c.created_at,
+          poster_url: c.poster_url,
         }))
       );
     } catch (e) {
@@ -63,15 +63,7 @@ const EmployerQuotationRequest = () => {
     void loadCourseOptions().finally(() => setIsLoading(false));
   }, [loadCourseOptions]);
 
-  const courseNameSuggestions = useMemo(() => {
-    const uniq = new Map<string, CourseLabel>();
-    for (const c of courseOptions) {
-      const key = c.name.trim().toLowerCase();
-      if (!key) continue;
-      if (!uniq.has(key)) uniq.set(key, c);
-    }
-    return Array.from(uniq.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [courseOptions]);
+  const sortedCourseOptions = [...courseOptions].sort((a, b) => a.name.localeCompare(b.name));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -159,7 +151,7 @@ const EmployerQuotationRequest = () => {
         </div>
       )}
 
-      <section className="sk-card mx-auto mt-8 max-w-2xl overflow-hidden p-6 md:p-8">
+      <section className="sk-card mx-auto mt-8 max-w-3xl overflow-hidden p-6 md:p-8">
         <div className="border-b border-black/5 pb-5">
           <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">New Quotation Application</h2>
           <p className="mt-2 text-sm leading-relaxed text-black/70">
@@ -173,12 +165,11 @@ const EmployerQuotationRequest = () => {
             onChange={(patch) => setFormValues((prev) => ({ ...prev, ...patch }))}
             profileCompanyName={profileCompanyName}
             profileCompanyAddress={profileCompanyAddress}
-            courseNameSuggestions={courseNameSuggestions}
+            courseOptions={sortedCourseOptions}
             disabled={isLoading}
             isSubmitting={isSubmitting}
             submitLabel="Submit"
             onSubmit={(ev) => void handleSubmit(ev)}
-            datalistId="employer-course-name-options"
           />
         </div>
       </section>

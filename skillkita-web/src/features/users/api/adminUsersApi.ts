@@ -155,3 +155,35 @@ export async function promoteProfileToAdmin(params: { userId: string; approvedBy
   if (error) throw new Error(error.message);
 }
 
+export async function setAdminActiveStatus(params: {
+  userId: string;
+  active: boolean;
+  approvedBy: string | null;
+}) {
+  const status = params.active ? "approved" : "rejected";
+
+  const { data: updatedRows, error } = await supabase
+    .from("user_profiles")
+    .update({
+      status,
+      approved_at: params.active ? new Date().toISOString() : null,
+      approved_by: params.active ? params.approvedBy : null,
+    })
+    .eq("user_id", params.userId)
+    .eq("role", "admin")
+    .select("user_id");
+
+  if (error) throw new Error(error.message);
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("Admin account not found or update blocked.");
+  }
+
+  if (!params.active) {
+    const { error: adminUsersError } = await supabase
+      .from("admin_users")
+      .delete()
+      .eq("user_id", params.userId);
+    if (adminUsersError) throw new Error(adminUsersError.message);
+  }
+}
+
