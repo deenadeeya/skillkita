@@ -9,8 +9,8 @@ export function getSupabaseProjectUrl(): string {
 }
 
 export function getSupabaseUrl(): string {
-  if (import.meta.env.DEV && typeof window !== "undefined") {
-    // Same-origin proxy configured in vite.config.ts (server.proxy).
+  if (typeof window !== "undefined") {
+    // Same-origin proxy: Vite dev server (vite.config.ts) and Vercel (api/supabase-proxy).
     return `${window.location.origin}/supabase-api`;
   }
   return envSupabaseUrl ?? "";
@@ -77,12 +77,22 @@ export function formatSupabaseNetworkError(err: unknown): string {
 
   if (!/failed to fetch/i.test(message)) return message;
 
+  const devHints = import.meta.env.DEV
+    ? [
+        "Restart `npm run dev` after .env changes, then hard-refresh (Ctrl+Shift+R).",
+        "Check .env.local overrides .env. In DevTools → Application → Service Workers, click Unregister for localhost.",
+      ]
+    : [
+        "On Vercel, confirm VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set for Production (and Preview).",
+        "Redeploy after changing env vars — Vite bakes them in at build time.",
+      ];
+
   return [
     "Cannot reach Supabase (network error).",
-    "In dev, requests go through http://localhost:5173/supabase-api — restart `npm run dev` after .env changes, then hard-refresh (Ctrl+Shift+R).",
-    "Check .env.local overrides .env. In DevTools → Application → Service Workers, click Unregister for localhost.",
-    "If you disabled legacy API keys in Supabase, use the Publishable key (`sb_publishable_...`) in .env or re-enable legacy anon.",
-    "If it still fails: allow *.supabase.co in firewall/VPN/ad-block, or try another browser.",
+    "Requests go through your app origin at /supabase-api (same in dev and production).",
+    ...devHints,
+    "If you disabled legacy API keys in Supabase, use the Publishable key (`sb_publishable_...`) or re-enable legacy anon.",
+    "If it still fails: allow your app domain and *.supabase.co in firewall/VPN/ad-block.",
   ].join(" ");
 }
 

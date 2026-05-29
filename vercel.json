@@ -6,6 +6,10 @@
   "outputDirectory": "skillkita-web/dist",
   "rewrites": [
     {
+      "source": "/supabase-api/(.*)",
+      "destination": "/api/supabase-proxy/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

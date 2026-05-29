@@ -7,10 +7,11 @@ React + TypeScript + Vite app backed by Supabase.
 1. Import this repository in [Vercel](https://vercel.com/new).
 2. Set **Root Directory** to `skillkita-web` (recommended). Build settings come from `vercel.json` in this folder.
    - Alternatively, leave the repo root as the project root; the root `vercel.json` builds `skillkita-web` for you.
-3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`.
-4. Deploy. SPA routes (`/login`, `/admin`, `/employer`, etc.) are rewritten to `index.html` so React Router works on refresh.
+3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`. Use the **same Supabase project** as local dev unless you intentionally maintain separate databases.
+4. Deploy. SPA routes (`/login`, `/admin`, `/employer`, etc.) are rewritten to `index.html` so React Router works on refresh. Supabase API calls go through `/supabase-api` on your domain (same as local dev) via a Vercel serverless proxy.
 5. In **Supabase** → Authentication → URL Configuration, set **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://your-app.vercel.app`).
-6. **Home page images:** In Storage, create public buckets `site-assets` and `experience-photos` (if missing). Run `supabase/storage_site_assets.sql` in the SQL Editor (or `npx supabase db push` from `skillkita-web`). Also apply `migrations/20260521130000_landing_home_featured_photos.sql` if `home_featured_*_url` columns are missing.
+6. **Database (required for quotations and admin review):** From `skillkita-web`, run `npx supabase db push` against your production project, **or** paste and run these in the Supabase SQL Editor (in order): `supabase/auth_roles_setup.sql`, then apply all files under `supabase/migrations/` (including `20260520110000_quotation_requests_base.sql`). Confirm your admin login has `user_profiles.role = 'admin'` on that project.
+7. **Home page images:** In Storage, create public buckets `site-assets` and `experience-photos` (if missing). Run `supabase/storage_site_assets.sql` in the SQL Editor (or `npx supabase db push` from `skillkita-web`). Also apply `migrations/20260521130000_landing_home_featured_photos.sql` if `home_featured_*_url` columns are missing.
 
 Local dev: copy `.env.example` to `.env`, then `npm install` and `npm run dev`.
 

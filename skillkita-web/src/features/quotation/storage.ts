@@ -2,6 +2,14 @@ import { supabase } from "../../shared/api/supabaseClient";
 import type { QuotationRequestRow } from "./types";
 import { QUOTATION_PDF_BUCKET, quotationPdfPath } from "./types";
 
+function quotationStorageHint(): string {
+  return " Ensure the private Storage bucket `quotation-pdfs` exists (see supabase/migrations/20260520110000_quotation_requests_base.sql).";
+}
+
+function quotationUploadRlsHint(): string {
+  return " Admin upload requires storage RLS and user_profiles.role = 'admin' on this Supabase project.";
+}
+
 /** Strip characters invalid in file names (Windows + common). */
 export function sanitizeQuotationFileNameSegment(raw: string, maxLen = 72): string {
   const cleaned = raw
@@ -96,7 +104,14 @@ export async function uploadQuotationPdf(
       contentType: "application/pdf",
     });
   if (error) {
-    throw new Error(error.message);
+    const msg = error.message.toLowerCase();
+    const hint =
+      msg.includes("row-level security") || msg.includes("policy")
+        ? quotationStorageHint() + quotationUploadRlsHint()
+        : msg.includes("bucket")
+          ? quotationStorageHint()
+          : "";
+    throw new Error(error.message + hint);
   }
   return path;
 }

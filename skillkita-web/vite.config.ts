@@ -5,20 +5,26 @@ import { VitePWA } from "vite-plugin-pwa";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const supabaseTarget =
-    env.VITE_SUPABASE_URL?.trim() || "https://ieckdfppqtnejletnqyi.supabase.co";
+  const supabaseTarget = env.VITE_SUPABASE_URL?.trim() ?? "";
+  const supabaseProxy = supabaseTarget
+    ? {
+        "/supabase-api": {
+          target: supabaseTarget,
+          changeOrigin: true,
+          secure: true,
+          rewrite: (path: string) => path.replace(/^\/supabase-api/, ""),
+        },
+      }
+    : undefined;
 
   return {
   server: {
-    // Dev-only: browser calls localhost; Vite forwards to Supabase (avoids firewall/ad-block on *.supabase.co).
-    proxy: {
-      "/supabase-api": {
-        target: supabaseTarget,
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/supabase-api/, ""),
-      },
-    },
+    // Browser calls same-origin /supabase-api; Vite forwards to VITE_SUPABASE_URL.
+    proxy: supabaseProxy,
+  },
+  preview: {
+    // `npm run preview` uses the same proxy as dev (matches production /supabase-api behavior).
+    proxy: supabaseProxy,
   },
   plugins: [
     react({

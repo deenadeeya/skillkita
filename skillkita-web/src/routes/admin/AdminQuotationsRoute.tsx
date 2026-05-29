@@ -123,7 +123,6 @@ const AdminQuotations = () => {
     setErrorMessage(null);
     const reviewer = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
 
-    setIsSaving(false);
     try {
       await updateQuotationRequest(row.id, {
         status: "rejected",
@@ -134,6 +133,8 @@ const AdminQuotations = () => {
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "Reject failed.");
       return;
+    } finally {
+      setIsSaving(false);
     }
     if (activeReview?.id === row.id) closeReview();
     await load();
@@ -288,8 +289,8 @@ const AdminQuotations = () => {
         title="Quotation requests"
         subtitle="Review employer submissions, approve to generate a quotation PDF, then download quotation or invoice for approved requests. Employers download quotations from their dashboard."
         errorMessage={errorMessage}
-        isAuthChecking={false}
-        isAuthorized
+        isAuthChecking={viewerState.kind === "loading"}
+        isAuthorized={viewerState.kind === "signedIn" && viewerState.viewer.role === "admin"}
         actions={
           <a href="/admin" className="sk-button-secondary px-3 py-2">
             Back to manage courses
