@@ -10,7 +10,7 @@
       "destination": "/api/supabase-proxy/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/|supabase-api/).*)",
       "destination": "/index.html"
     }
   ],
