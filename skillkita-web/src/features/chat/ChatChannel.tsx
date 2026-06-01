@@ -152,7 +152,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
 
   return (
     <section className="sk-card p-0">
-      {header && <div className="border-b border-[#efe1db] p-5">{header}</div>}
+      {header && <div className="border-b border-black/10 p-5">{header}</div>}
 
       {errorMessage && (
         <div className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -161,10 +161,10 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
       )}
 
       <div className="px-5 pb-5 pt-4">
-        {isLoading && <p className="text-sm text-black/70">Loading messages…</p>}
+        {isLoading && <p className="text-sm text-ink-muted">Loading messages…</p>}
 
         {!isLoading && messages.length === 0 && (
-          <p className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+          <p className="rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
             No messages yet. Send the first one.
           </p>
         )}
@@ -179,15 +179,15 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
                   className={[
                     "max-w-[85%] rounded-2xl border px-4 py-3 text-sm shadow-sm",
                     mine
-                      ? "border-[#0001fc]/20 bg-[#0001fc] text-white"
-                      : "border-[#efe1db] bg-white text-black",
+                      ? "border-primary/20 bg-primary text-white"
+                      : "border-black/10 bg-white text-ink",
                   ].join(" ")}
                 >
                   {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
 
                   {attachments.length > 0 && (
                     <div className={m.body ? "mt-3" : ""}>
-                      <p className={`text-xs font-semibold ${mine ? "text-white/90" : "text-black/70"}`}>
+                      <p className={`text-xs font-semibold ${mine ? "text-white/90" : "text-ink-muted"}`}>
                         Attachment{attachments.length > 1 ? "s" : ""}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
                               "rounded-lg border px-3 py-1.5 text-xs font-semibold",
                               mine
                                 ? "border-white/30 bg-white/10 hover:bg-white/15"
-                                : "border-[#7A1F1F] bg-[#f9f5ed] text-[#7A1F1F] hover:bg-[#f3ece1]",
+                                : "border-primary bg-paper text-primary hover:bg-primary/10",
                             ].join(" ")}
                           >
                             {a.file_name}
@@ -210,7 +210,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
                     </div>
                   )}
 
-                  <p className={`mt-2 text-[11px] ${mine ? "text-white/70" : "text-black/50"}`}>
+                  <p className={`mt-2 text-[11px] ${mine ? "text-white/70" : "text-ink-muted"}`}>
                     {new Date(m.created_at).toLocaleString()}
                   </p>
                 </div>
@@ -220,22 +220,22 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
           <div ref={bottomRef} />
         </div>
 
-        <div className="mt-5 rounded-xl border border-[#efe1db] bg-white p-4">
+        <div className="mt-5 rounded-xl border border-black/10 bg-white p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end">
             <label className="flex-1">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Message</span>
+              <span className="mb-1 block text-sm font-semibold text-primary">Message</span>
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.currentTarget.value)}
                 rows={3}
                 placeholder="Type a message…"
-                className="w-full resize-none rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
+                className="w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
               />
             </label>
 
             <div className="flex flex-col gap-2 md:w-64">
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">File (optional)</span>
+                <span className="mb-1 block text-sm font-semibold text-primary">File (optional)</span>
                 <input
                   type="file"
                   onChange={(e) => setPendingFile(e.currentTarget.files?.[0] ?? null)}
@@ -244,7 +244,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
               </label>
 
               {pendingFile && (
-                <div className="rounded-lg border border-[#efe1db] bg-[#faf7f2] px-3 py-2 text-xs text-black">
+                <div className="rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-xs text-ink">
                   Selected: <span className="font-semibold">{pendingFile.name}</span>
                 </div>
               )}
@@ -259,7 +259,7 @@ const ChatChannel = ({ conversationId, currentUserId, header }: Props) => {
               </button>
             </div>
           </div>
-          <p className="mt-2 text-xs text-black/60">
+          <p className="mt-2 text-xs text-ink-muted">
             Files open via signed URLs (private storage). If you can’t open an attachment, check your Supabase
             storage bucket policies.
           </p>

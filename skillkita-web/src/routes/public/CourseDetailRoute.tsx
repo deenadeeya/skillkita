@@ -116,28 +116,39 @@ export default function CoursePage() {
     void loadDocuments();
   }, [canViewCourse, courseId]);
 
+  const heroTitle = course?.name?.trim() || "Course details";
+
   const body = (
-    <main className="sk-container py-12">
-      <div className="text-sm font-semibold text-[#7A1F1F]">
-        <a href="/courses" className="underline">
-          ← Back to Browse Courses
-        </a>
-      </div>
+    <div className="w-full pb-8">
+      <a
+        href="/courses"
+        className="inline-flex min-h-[44px] items-center text-sm font-semibold text-primary transition hover:underline"
+      >
+        ← Back to courses
+      </a>
+
+      <section className="mt-4 rounded-hero bg-primary px-6 py-10 text-center sm:px-10 sm:py-12">
+        <h1 className="sk-heading-2 text-white">{heroTitle}</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-base text-white/90">
+          Schedule, venue, syllabus, and downloadable materials for this programme.
+        </p>
+      </section>
 
       {errorMessage && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 rounded-card border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {errorMessage}
         </div>
       )}
 
       {isLoading && (
-        <p className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
-          Loading course...
-        </p>
+        <div className="mt-10 space-y-6">
+          <div className="sk-card h-64 animate-pulse bg-white/80" />
+          <div className="sk-card h-40 animate-pulse bg-white/80" />
+        </div>
       )}
 
       {!isLoading && course && isHidden && !canViewHidden && (
-        <p className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+        <p className="mt-10 rounded-hero border border-dashed border-primary/20 bg-white p-10 text-center text-ink-muted">
           This course is currently not available for public viewing.
         </p>
       )}
@@ -152,29 +163,34 @@ export default function CoursePage() {
           />
         </>
       )}
-    </main>
+
+      
+    </div>
   );
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    window.localStorage.removeItem("skillkita-role");
+    window.location.href = "/";
+  };
+
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
         <DashboardLayout
           showHeader
+          fullWidth
           items={viewerRole === "admin" ? adminNavItems : employerNavItems}
           userName={viewerName}
           userEmail={viewerEmail}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            window.localStorage.removeItem("skillkita-role");
-            window.location.href = "/";
-          }}
+          onLogout={logout}
         >
           {body}
         </DashboardLayout>
       ) : (
         <>
           <SiteHeader />
-          {body}
+          <main className="sk-page-container">{body}</main>
         </>
       )}
     </div>

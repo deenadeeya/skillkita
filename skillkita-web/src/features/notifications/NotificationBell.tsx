@@ -106,18 +106,18 @@ const NotificationBell = ({ viewer }: Props) => {
       >
         <BellIcon className="h-6 w-6 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0001fc] px-1 text-[10px] font-bold text-white ring-2 ring-[#7A1F1F]">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-primary">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-[60] w-[min(100vw-2rem,22rem)] rounded-xl border border-black/10 bg-white p-2 text-[#7A1F1F] shadow-xl ring-1 ring-black/5">
-          <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-black/50">Notifications</p>
-          {loading && <p className="px-2 py-4 text-sm text-black/60">Loading…</p>}
+        <div className="absolute right-0 top-12 z-[60] w-[min(100vw-2rem,22rem)] rounded-xl border border-black/10 bg-white p-2 text-primary shadow-xl ring-1 ring-black/5">
+          <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Notifications</p>
+          {loading && <p className="px-2 py-4 text-sm text-ink-muted">Loading…</p>}
           {!loading && rows.length === 0 && (
-            <p className="px-2 py-4 text-sm text-black/60">No notifications yet.</p>
+            <p className="px-2 py-4 text-sm text-ink-muted">No notifications yet.</p>
           )}
           {!loading && rows.length > 0 && (
             <ul className="max-h-[min(70vh,20rem)] overflow-auto">
@@ -130,8 +130,8 @@ const NotificationBell = ({ viewer }: Props) => {
                     <a
                       href={href}
                       className={[
-                        "block rounded-lg px-2 py-2.5 text-left hover:bg-[#F5F1E8]",
-                        unread ? "bg-[#faf7f2]" : "opacity-80",
+                        "block rounded-lg px-2 py-2.5 text-left hover:bg-paper",
+                        unread ? "bg-primary/5" : "opacity-80",
                       ].join(" ")}
                       onClick={() => {
                         void markNotificationReadForRow(n);
@@ -139,19 +139,19 @@ const NotificationBell = ({ viewer }: Props) => {
                       }}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#0001fc]">{category}</span>
+                        <span className="text-xs font-semibold text-ink">{category}</span>
                         <span
                           className={[
                             "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                            unread ? "bg-amber-100 text-amber-900" : "bg-black/10 text-black/60",
+                            unread ? "bg-amber-100 text-amber-900" : "bg-black/10 text-ink-muted",
                           ].join(" ")}
                         >
                           {unread ? "Unread" : "Read"}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs font-semibold text-black/80">{senderLine(n)}</p>
-                      <p className="mt-1 line-clamp-2 text-xs text-black/70">{n.preview}</p>
-                      <p className="mt-1 text-[10px] text-black/45">
+                      <p className="mt-0.5 text-xs font-semibold text-ink-muted">{senderLine(n)}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{n.preview}</p>
+                      <p className="mt-1 text-[10px] text-ink-muted">
                         {new Date(n.created_at).toLocaleString()}
                       </p>
                     </a>

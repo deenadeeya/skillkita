@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
+import { normalizeSupabaseStorageUrl, supabase } from "../../shared/api/supabaseClient";
+import { HomeCtaBanner } from "../../features/homepage/components/HomeCtaBanner";
 import {
   deleteExperience as deleteExperienceRow,
   insertExperience,
@@ -16,6 +17,7 @@ import {
   ExperienceUpsertForm,
   type ExperienceFormState,
 } from "../../features/landing/components/ExperienceUpsertForm";
+import { ExperienceShowcaseCard } from "../../features/landing/components/ExperienceShowcaseCard";
 
 const initialExperienceForm: ExperienceFormState = {
   name: "",
@@ -23,10 +25,20 @@ const initialExperienceForm: ExperienceFormState = {
   details: "",
 };
 
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="text-center">
+      <h2 className="sk-heading-2 text-ink">{title}</h2>
+      {subtitle ? <p className="mx-auto mt-3 max-w-2xl text-ink-muted">{subtitle}</p> : null}
+    </div>
+  );
+}
+
 const CompanyExperience = () => {
   const [viewerRole, setViewerRole] = useState<"admin" | "employer" | null>(null);
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
 
   const [experiences, setExperiences] = useState<ExperienceRow[]>([]);
   const [experienceForm, setExperienceForm] =
@@ -39,6 +51,8 @@ const CompanyExperience = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isAdmin = viewerRole === "admin";
 
   const loadExperiences = useCallback(async () => {
     const rows = await listExperiences();
@@ -65,12 +79,18 @@ const CompanyExperience = () => {
           setViewerEmail(user.email ?? null);
           const { data: profileRow } = await supabase
             .from("user_profiles")
-            .select("role,status,full_name")
+            .select("role,status,full_name,profile_pic_url")
             .eq("user_id", user.id)
             .maybeSingle();
 
           if (profileRow) {
-            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            const r = profileRow as {
+              role: "admin" | "employer";
+              status: string;
+              full_name?: string;
+              profile_pic_url?: string | null;
+            };
+            setProfilePicUrl(normalizeSupabaseStorageUrl(r.profile_pic_url ?? null));
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
@@ -86,6 +106,7 @@ const CompanyExperience = () => {
         } else {
           setViewerRole(null);
           setViewerEmail(null);
+          setProfilePicUrl(null);
         }
 
         await loadExperiences();
@@ -121,8 +142,7 @@ const CompanyExperience = () => {
   };
 
   const onExperiencePhotosChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.currentTarget.files ?? []);
-    setExperienceFiles(files);
+    setExperienceFiles(Array.from(event.currentTarget.files ?? []));
   };
 
   const uploadExperiencePhotosIfNeeded = async (): Promise<string[]> => {
@@ -135,6 +155,7 @@ const CompanyExperience = () => {
     setExperienceForm({ name: exp.name, date: exp.date, details: exp.details });
     setExperienceFiles([]);
     setFormNonce((n) => n + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const deleteExperience = async (id: string) => {
@@ -213,101 +234,61 @@ const CompanyExperience = () => {
     }
   };
 
-  const showcaseGrid = (opts: { isAdmin: boolean }) => (
+  const showcaseGrid = (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {experiences.map((exp) => (
-        <article key={exp.id} className="sk-card overflow-hidden p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-xl font-bold text-[#0001fc]">{exp.name}</h3>
-              <p className="mt-1 text-sm font-semibold text-[#7A1F1F]">Date: {exp.date}</p>
-            </div>
-          </div>
-          {exp.details?.trim() ? (
-            <p className="mt-3 text-sm text-black">{exp.details}</p>
-          ) : null}
-
-          {(exp.photo_urls?.length ?? 0) > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {(exp.photo_urls ?? []).slice(0, 6).map((url) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt={`${exp.name} photo`}
-                  className="h-24 w-full rounded-xl object-cover ring-1 ring-black/5"
-                  loading="lazy"
-                />
-              ))}
-            </div>
-          )}
-
-          {opts.isAdmin && (
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-[#efe1db] pt-4">
-              <button
-                type="button"
-                onClick={() => startEditExperience(exp)}
-                className="sk-button-secondary px-3 py-2"
-                disabled={isSaving}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => void deleteExperience(exp.id)}
-                className="sk-button-secondary border-red-200 px-3 py-2 text-red-800 hover:bg-red-50"
-                disabled={isSaving}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </article>
+        <ExperienceShowcaseCard
+          key={exp.id}
+          experience={exp}
+          isAdmin={isAdmin}
+          isSaving={isSaving}
+          onEdit={() => startEditExperience(exp)}
+          onDelete={() => void deleteExperience(exp.id)}
+        />
       ))}
     </div>
   );
 
   const body = (
-    <div className="w-full">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0001fc] md:text-5xl">
-            Company Experience
-          </h1>
-          <p className="mt-2 text-sm font-semibold text-black/70 md:text-base">
-            Activities and past experiences.
-          </p>
-        </div>
-      </div>
+    <div className="w-full pb-8">
+      <section className="rounded-hero bg-primary px-6 py-12 text-center sm:px-10 sm:py-14">
+        <h1 className="sk-heading-1 text-white">Company Experience</h1>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 sm:text-lg">
+          Training activities, industry collaboration, and milestones from Tawau Resources &amp; Skills
+          Centre.
+        </p>
+      </section>
 
       {errorMessage && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-700">
+        <div className="mt-6 rounded-card border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {errorMessage}
         </div>
       )}
 
-      {viewerRole === "admin" && (
-        <div className="mt-6 w-full max-w-6xl space-y-10">
-          <section className="sk-card p-6">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Add new experience</h2>
-            <p className="mt-2 text-sm text-black/80">
-              {editingExperienceId
-                ? "You are editing an existing entry. Save to update the showcase, or cancel to close the form."
-                : formVisible
-                  ? "Fill in the details below. You can attach several photos at once."
-                  : "Open the form to publish a new company experience."}
-            </p>
+      {isAdmin && (
+        <section className="mx-auto mt-16 max-w-3xl sm:mt-20">
+          <SectionHeader
+            title="Manage experiences"
+            subtitle="Add or update entries shown on this page and the About Us slideshow."
+          />
+          <article className="sk-card mt-8 p-6 md:p-8">
             {!formVisible && (
               <button
                 type="button"
-                className="sk-button-primary mt-4"
+                className="sk-button-primary w-full sm:w-auto"
                 onClick={openAddExperience}
                 disabled={isSaving}
               >
-                Add New Experience
+                Add new experience
               </button>
             )}
             {formVisible && (
-              <div className="mt-5">
+              <div>
+                <p className="mb-4 text-sm text-ink-muted">
+                  {editingExperienceId
+                    ? "Update this entry and save to refresh the showcase."
+                    : "Fill in the details and attach photos from your training activities."}
+                </p>
                 <ExperienceUpsertForm
                   formResetKey={formNonce}
                   experienceForm={experienceForm}
@@ -321,71 +302,66 @@ const CompanyExperience = () => {
                 />
               </div>
             )}
-          </section>
-
-          <section className="w-full text-left">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Showcase</h2>
-            <p className="mt-2 text-sm text-black/80">
-              Preview of how each experience appears to visitors and employers.
-            </p>
-
-            {isLoading && (
-              <p className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-                Loading content...
-              </p>
-            )}
-
-            {!isLoading && experiences.length === 0 && (
-              <p className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-                No experiences posted yet.
-              </p>
-            )}
-
-            {!isLoading && experiences.length > 0 && <div className="mt-6">{showcaseGrid({ isAdmin: true })}</div>}
-          </section>
-        </div>
-      )}
-
-      {viewerRole !== "admin" && (
-        <section className="mt-6 w-full max-w-6xl text-left md:mt-8">
-          {isLoading && (
-            <p className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-              Loading content...
-            </p>
-          )}
-
-          {!isLoading && experiences.length === 0 && (
-            <p className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-              No experiences posted yet.
-            </p>
-          )}
-
-          {!isLoading && experiences.length > 0 && showcaseGrid({ isAdmin: false })}
+          </article>
         </section>
       )}
+
+      <section className="mt-16 sm:mt-20">
+        <SectionHeader
+          title="Experience showcase"
+          subtitle={
+            isAdmin
+              ? "Preview of how each experience appears to visitors and employers."
+              : "Snapshots from our workshops, assessments, and partnership programmes."
+          }
+        />
+
+        {isLoading && (
+          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {[1, 2].map((n) => (
+              <div key={n} className="sk-card h-80 animate-pulse bg-white/80" />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && experiences.length === 0 && (
+          <p className="mx-auto mt-10 max-w-3xl rounded-hero border border-dashed border-primary/20 bg-white p-10 text-center text-ink-muted">
+            No experiences posted yet.
+          </p>
+        )}
+
+        {!isLoading && experiences.length > 0 && <div className="mt-10">{showcaseGrid}</div>}
+      </section>
+
+      <HomeCtaBanner />
     </div>
   );
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    window.localStorage.removeItem("skillkita-role");
+    window.location.href = "/";
+  };
+
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
         <DashboardLayout
           showHeader
+          fullWidth
           items={viewerRole === "admin" ? adminNavItems : employerNavItems}
           userName={viewerName}
+          userRole={viewerRole}
           userEmail={viewerEmail}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            window.localStorage.removeItem("skillkita-role");
-            window.location.href = "/";
-          }}
+          profilePicUrl={profilePicUrl}
+          onLogout={logout}
         >
           {body}
         </DashboardLayout>
       ) : (
         <>
           <SiteHeader />
-          <main className="sk-container py-10">{body}</main>
+          <main className="sk-page-container">{body}</main>
         </>
       )}
     </div>

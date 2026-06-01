@@ -171,25 +171,25 @@ const ProfileEditor = ({ expectedRole }: Props) => {
     <section className="sk-card mt-8 p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
-          <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[#efe1db] bg-white shadow-sm">
+          <div className="relative h-16 w-16 overflow-hidden rounded-full border border-black/10 bg-white shadow-sm">
             {profile?.profile_pic_url ? (
               <img src={profile.profile_pic_url} alt="Profile" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-lg font-bold text-[#7A1F1F]">
+              <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary">
                 {initials}
               </div>
             )}
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">My profile</h2>
-            <p className="mt-1 text-sm text-black/70">
+            <h2 className="text-2xl font-bold text-primary">My profile</h2>
+            <p className="mt-1 text-sm text-ink-muted">
               Role: <span className="font-semibold capitalize">{expectedRole}</span>
             </p>
           </div>
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Profile picture</span>
+          <span className="mb-1 block text-sm font-semibold text-primary">Profile picture</span>
           <input
             type="file"
             accept="image/*"
@@ -198,7 +198,7 @@ const ProfileEditor = ({ expectedRole }: Props) => {
             disabled={isSaving}
           />
           {pendingPic && (
-            <p className="mt-1 text-xs text-black/70">
+            <p className="mt-1 text-xs text-ink-muted">
               Selected: <span className="font-semibold">{pendingPic.name}</span>
             </p>
           )}
@@ -217,7 +217,7 @@ const ProfileEditor = ({ expectedRole }: Props) => {
       )}
 
       {isLoading && (
-        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+        <div className="mt-6 rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
           Loading…
         </div>
       )}
@@ -225,22 +225,22 @@ const ProfileEditor = ({ expectedRole }: Props) => {
       {!isLoading && (
         <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={save}>
           <label className="block md:col-span-2">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Full name</span>
+            <span className="mb-1 block text-sm font-semibold text-primary">Full name</span>
             <input
               value={fullName}
               onChange={(e) => setFullName(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
               required
               disabled={isSaving}
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Short name</span>
+            <span className="mb-1 block text-sm font-semibold text-primary">Short name</span>
             <input
               value={shortName}
               onChange={(e) => setShortName(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
               placeholder="Optional (e.g. Aiman)"
               disabled={isSaving}
             />
@@ -248,40 +248,40 @@ const ProfileEditor = ({ expectedRole }: Props) => {
 
           {showEmail && (
             <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Email</span>
+              <span className="mb-1 block text-sm font-semibold text-primary">Email</span>
               <input
                 value={email ?? ""}
                 readOnly
-                className="w-full rounded-lg border border-[#d8c9c2] bg-[#faf7f2] px-3 py-2 text-black/80"
+                className="w-full rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-ink-muted"
               />
-              <p className="mt-1 text-xs text-black/60">Email is managed by Supabase Auth.</p>
+              <p className="mt-1 text-xs text-ink-muted">Email is managed by Supabase Auth.</p>
             </label>
           )}
 
           {showCompany && (
             <>
               <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Company representing
                 </span>
                 <input
                   value={companyName}
                   onChange={(e) => setCompanyName(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
                   placeholder="Optional"
                   disabled={isSaving}
                 />
               </label>
 
               <label className="block md:col-span-2">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Company address
                 </span>
                 <textarea
                   value={companyAddress}
                   onChange={(e) => setCompanyAddress(e.currentTarget.value)}
                   rows={3}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
                   placeholder="Optional"
                   disabled={isSaving}
                 />
@@ -291,11 +291,11 @@ const ProfileEditor = ({ expectedRole }: Props) => {
 
           {showPhone && (
             <label className="block md:col-span-2">
-              <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Phone number</span>
+              <span className="mb-1 block text-sm font-semibold text-primary">Phone number</span>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.currentTarget.value)}
-                className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
                 placeholder="Optional"
                 disabled={isSaving}
               />

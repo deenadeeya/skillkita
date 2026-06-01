@@ -58,12 +58,12 @@ export function QuotationRequestFormFields({
     <form className="space-y-6" onSubmit={onSubmit}>
       {prefix}
 
-      <fieldset className="space-y-3 rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4">
-        <legend className="px-1 text-sm font-semibold text-[#7A1F1F]">
+      <fieldset className="space-y-3 rounded-xl border border-black/10 bg-primary/5 p-4">
+        <legend className="px-1 text-sm font-semibold text-primary">
           To
           <RequiredMark />
         </legend>
-        <p className="text-xs text-black/70">
+        <p className="text-xs text-ink-muted">
           Choose company name and address from the employer profile, or enter them manually.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -92,11 +92,11 @@ export function QuotationRequestFormFields({
         {values.toSource === "profile" ? (
           <div className="rounded-lg border border-black/10 bg-white p-3 text-sm">
             <p>
-              <span className="font-semibold text-[#7A1F1F]">Company name:</span>{" "}
+              <span className="font-semibold text-primary">Company name:</span>{" "}
               {profileCompanyName || "—"}
             </p>
             <p className="mt-2 whitespace-pre-wrap">
-              <span className="font-semibold text-[#7A1F1F]">Address:</span>{" "}
+              <span className="font-semibold text-primary">Address:</span>{" "}
               {profileCompanyAddress || "—"}
             </p>
             {!canUseProfile && (
@@ -108,7 +108,7 @@ export function QuotationRequestFormFields({
         ) : (
           <div className="space-y-3">
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+              <span className="mb-1.5 block text-sm font-semibold text-primary">
                 Company name
                 <RequiredMark />
               </span>
@@ -116,21 +116,21 @@ export function QuotationRequestFormFields({
                 value={values.manualCompanyName}
                 onChange={(e) => onChange({ manualCompanyName: e.target.value })}
                 disabled={disabled}
-                className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+                className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 required={values.toSource === "manual"}
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+              <span className="mb-1.5 block text-sm font-semibold text-primary">
                 Company address
-                <span className="ml-1 font-normal text-black/50">(optional)</span>
+                <span className="ml-1 font-normal text-ink-muted">(optional)</span>
               </span>
               <textarea
                 value={values.manualCompanyAddress}
                 onChange={(e) => onChange({ manualCompanyAddress: e.target.value })}
                 disabled={disabled}
                 rows={3}
-                className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+                className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 placeholder="Street, city, postcode"
               />
             </label>
@@ -140,7 +140,7 @@ export function QuotationRequestFormFields({
 
       <div className="grid gap-4 md:grid-cols-[1fr,min(200px,38%)] md:items-start">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1.5 block text-sm font-semibold text-primary">
             Course name / Tajuk
             <RequiredMark />
           </span>
@@ -155,12 +155,12 @@ export function QuotationRequestFormFields({
         </label>
 
         <aside
-          className={`rounded-xl border border-[#efe1db] bg-[#faf7f2] p-3 transition-opacity ${
+          className={`rounded-xl border border-black/10 bg-primary/5 p-3 transition-opacity ${
             selectedCourse ? "opacity-100" : "opacity-60"
           }`}
           aria-live="polite"
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7A1F1F]">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Course poster
           </p>
           {selectedCourse ? (
@@ -171,12 +171,12 @@ export function QuotationRequestFormFields({
                 className="mt-2 aspect-[210/297] w-full rounded-lg object-cover shadow-sm"
                 optimizeWidth={400}
               />
-              <p className="mt-2 line-clamp-3 text-xs font-medium text-black/80">
+              <p className="mt-2 line-clamp-3 text-xs font-medium text-ink-muted">
                 {selectedCourse.name}
               </p>
             </>
           ) : (
-            <div className="mt-2 flex aspect-[210/297] w-full items-center justify-center rounded-lg border border-dashed border-black/15 bg-white/80 px-3 text-center text-xs text-black/50">
+            <div className="mt-2 flex aspect-[210/297] w-full items-center justify-center rounded-lg border border-dashed border-black/15 bg-white/80 px-3 text-center text-xs text-ink-muted">
               Select a course from the list to preview its poster
             </div>
           )}
@@ -185,7 +185,7 @@ export function QuotationRequestFormFields({
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1.5 block text-sm font-semibold text-primary">
             Course mode / Mode kursus
             <RequiredMark />
           </span>
@@ -193,7 +193,7 @@ export function QuotationRequestFormFields({
             value={values.courseMode}
             onChange={(e) => onChange({ courseMode: e.target.value })}
             disabled={disabled}
-            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
             required
           >
             <option value="" disabled>
@@ -208,7 +208,7 @@ export function QuotationRequestFormFields({
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1.5 block text-sm font-semibold text-primary">
             Price / pax (RM)
             <RequiredMark />
           </span>
@@ -219,7 +219,7 @@ export function QuotationRequestFormFields({
             value={values.pricePerPax}
             onChange={(e) => onChange({ pricePerPax: e.target.value })}
             disabled={disabled}
-            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
             placeholder="0.00"
             required
           />
@@ -227,7 +227,7 @@ export function QuotationRequestFormFields({
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
           Address of course location / Alamat tempat kursus
           <RequiredMark />
         </span>
@@ -236,14 +236,14 @@ export function QuotationRequestFormFields({
           onChange={(e) => onChange({ courseLocationAddress: e.target.value })}
           disabled={disabled}
           rows={3}
-          className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+          className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
           placeholder="Venue name, full address"
           required
         />
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
           Course date
           <RequiredMark />
         </span>
@@ -252,22 +252,22 @@ export function QuotationRequestFormFields({
           value={values.courseDate}
           onChange={(e) => onChange({ courseDate: e.target.value })}
           disabled={disabled}
-          className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20 md:max-w-xs"
+          className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20 md:max-w-xs"
           required
         />
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
           Additional notes
-          <span className="ml-1 font-normal text-black/50">(optional)</span>
+          <span className="ml-1 font-normal text-ink-muted">(optional)</span>
         </span>
         <textarea
           value={values.additionalDescription}
           onChange={(e) => onChange({ additionalDescription: e.target.value })}
           disabled={disabled}
           rows={3}
-          className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+          className="w-full resize-y rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
           placeholder="Participants, contact person, special requirements…"
         />
       </label>
@@ -276,7 +276,7 @@ export function QuotationRequestFormFields({
         <button
           type="submit"
           disabled={disabled || isSubmitting}
-          className="sk-button-primary min-w-[10rem] rounded-xl px-8 py-2.5 text-base shadow-md shadow-[#7A1F1F]/15 transition hover:shadow-lg hover:shadow-[#7A1F1F]/20 disabled:shadow-none"
+          className="sk-button-primary min-w-[10rem] rounded-xl px-8 py-2.5 text-base shadow-md shadow-primary/15 transition hover:shadow-lg hover:shadow-primary/20 disabled:shadow-none"
         >
           {isSubmitting ? "Saving…" : submitLabel}
         </button>

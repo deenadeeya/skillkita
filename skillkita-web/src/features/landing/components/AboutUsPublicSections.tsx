@@ -1,15 +1,19 @@
 import {
   BuildingLibraryIcon,
   EnvelopeIcon,
-  MapPinIcon,
   PhoneIcon,
   QrCodeIcon,
-} from "@heroicons/react/24/solid";
-import type { LandingContentRow } from "../api/landingApi";
-import { sanitizeMapEmbedUrl } from "../aboutUsMap";
+} from "@heroicons/react/24/outline";
+import type { ReactNode } from "react";
+import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
+import { HomeCtaBanner } from "../../homepage/components/HomeCtaBanner";
+import type { ExperienceRow, LandingContentRow } from "../api/landingApi";
+import { AboutUsLocationHero } from "./AboutUsLocationHero";
+import { CompanyExperienceSlideshow } from "./CompanyExperienceSlideshow";
+import { sanitizeGoogleMapsLink } from "../aboutUsMap";
 import {
   BANK_DETAIL_LABELS,
-  formatLocationForDisplay,
+  formatMultilineForDisplay,
   multilineToDisplayLines,
 } from "../formatLocationDisplay";
 
@@ -20,6 +24,21 @@ function splitParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
+/** First paragraph = short intro; rest (or all) = address for the location hero. */
+function splitLocationContent(text: string): { shortDescription: string; address: string } {
+  const paragraphs = splitParagraphs(text);
+  if (paragraphs.length >= 2) {
+    return {
+      shortDescription: paragraphs[0]!,
+      address: paragraphs.slice(1).join("\n\n"),
+    };
+  }
+  return {
+    shortDescription: "",
+    address: formatMultilineForDisplay(text),
+  };
+}
+
 type ContactEntry = {
   name?: string | null;
   phone?: string | null;
@@ -28,17 +47,55 @@ type ContactEntry = {
 
 type Props = {
   landing: LandingContentRow | null;
+  experiences: ExperienceRow[];
   isLoading: boolean;
 };
 
-export function AboutUsPublicSections({ landing, isLoading }: Props) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="text-center">
+      <h2 className="sk-heading-2 text-ink">{title}</h2>
+      {subtitle ? (
+        <p className="mx-auto mt-3 max-w-2xl text-ink-muted">{subtitle}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function IconTile({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof PhoneIcon;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="sk-card group flex h-full flex-col p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition duration-200 group-hover:bg-primary group-hover:text-white">
+        <Icon className="h-6 w-6" aria-hidden />
+      </div>
+      <h3 className="mt-4 font-heading text-lg font-semibold text-ink">{title}</h3>
+      <div className="mt-2 flex-1 text-sm leading-relaxed text-ink-muted md:text-base">{children}</div>
+    </article>
+  );
+}
+
+export function AboutUsPublicSections({ landing, experiences, isLoading }: Props) {
   const profileParagraphs = splitParagraphs(landing?.who_description ?? "");
+  const profileImage = landing?.who_image_url?.trim() || "/TRSCGroupPhoto.jpg";
   const locationRaw = (landing?.location_description ?? "").trim();
-  const locationText = formatLocationForDisplay(locationRaw);
+  const { shortDescription: locationShortDescription, address: locationAddress } =
+    splitLocationContent(locationRaw);
+  const locationBuildingImage =
+    landing?.home_featured_3_url?.trim() ||
+    landing?.who_image_url?.trim() ||
+    profileImage;
   const bankRaw = (landing?.bank_account_details ?? "").trim();
   const bankLines = multilineToDisplayLines(bankRaw);
   const bankQrUrl = landing?.bank_qr_image_url?.trim() ?? "";
-  const mapSrc = sanitizeMapEmbedUrl(landing?.location_map_embed_url);
+  const mapsLink = sanitizeGoogleMapsLink(landing?.location_map_embed_url);
 
   const contacts: ContactEntry[] = [
     {
@@ -58,234 +115,202 @@ export function AboutUsPublicSections({ landing, isLoading }: Props) {
 
   if (isLoading) {
     return (
-      <p className="mt-8 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
-        Loading content...
-      </p>
+      <div className="space-y-8">
+        <div className="h-48 animate-pulse rounded-hero bg-primary/20" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="sk-card h-64 animate-pulse" />
+          <div className="sk-card h-64 animate-pulse" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="mt-8 max-w-4xl space-y-8">
-      {/* 1. Company Profile */}
-      <section className="sk-card overflow-hidden">
-        <div className="border-b border-[#efe1db] px-5 py-4 md:px-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">1. Company Profile</h2>
-        </div>
-        {landing?.who_image_url && (
-          <img
-            src={landing.who_image_url}
-            alt="Company"
-            className="h-48 w-full object-cover md:h-64"
-            loading="lazy"
-          />
-        )}
-        <div className="px-5 py-5 md:px-6 md:py-6">
-          {profileParagraphs.length === 0 ? (
-            <p className="text-sm text-black/70">Company description will appear here once added by admin.</p>
-          ) : (
-            profileParagraphs.map((p) => (
-              <p key={p.slice(0, 40)} className="mt-3 text-base text-black first:mt-0 md:text-lg">
-                {p}
+    <div className="w-full pb-8">
+      {/* Page hero — matches homepage maroon banner tone */}
+      <section className="rounded-hero bg-primary px-6 py-12 text-center sm:px-10 sm:py-14">
+        <h1 className="sk-heading-1 text-white">About Us</h1>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 sm:text-lg">
+          Company profile, location, payment details, and contacts for Tawau Resources &amp; Skills
+          Centre.
+        </p>
+      </section>
+
+      {/* Company profile — same layout as homepage “Why Choose TRSC” */}
+      <section className="mt-16 sm:mt-20">
+        <SectionHeader
+          title="Who We Are"
+          subtitle="A Bumiputera training provider committed to accredited skills development."
+        />
+        <div className="mt-10 grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <div className="overflow-hidden rounded-hero shadow-card">
+            <CoursePosterMedia
+              url={profileImage}
+              alt="TRSC team and training facilities"
+              className="aspect-[4/3] w-full object-cover lg:aspect-[5/4]"
+              optimizeWidth={800}
+            />
+          </div>
+          <div>
+            {profileParagraphs.length === 0 ? (
+              <p className="text-ink-muted">
+                Company description will appear here once added by admin.
               </p>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* 2. Location */}
-      <section className="sk-card overflow-hidden">
-        <div className="border-b border-[#efe1db] px-5 py-4 md:px-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">2. Location</h2>
-        </div>
-        <div className="px-5 py-5 md:px-6 md:py-6">
-          {!locationText && !mapSrc ? (
-            <p className="text-sm text-black/70">Location details will appear here once added by admin.</p>
-          ) : (
-            <div className={mapSrc && locationText ? "grid gap-6 lg:grid-cols-2 lg:items-start" : ""}>
-              {locationText && (
-                <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-[#7A1F1F]/80">
-                    Location details
-                  </h3>
-                  <div className="mt-3 flex gap-3 rounded-2xl border border-[#e8d9cf] bg-gradient-to-br from-white via-[#fdfbf7] to-[#f5efe6] p-4 shadow-sm md:p-5">
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7A1F1F]/10"
-                      aria-hidden
-                    >
-                      <MapPinIcon className="h-6 w-6 text-[#7A1F1F]" />
-                    </span>
-                    <address className="not-italic whitespace-pre-line text-base leading-relaxed text-black/90 md:text-lg">
-                      {locationText}
-                    </address>
-                  </div>
-                </div>
-              )}
-              {mapSrc && (
-                <div className={locationText ? "" : "max-w-3xl"}>
-                  {locationText && (
-                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#7A1F1F]/80 lg:sr-only">
-                      Map
-                    </h3>
-                  )}
-                  <div className="overflow-hidden rounded-2xl border border-[#e8d9cf] bg-[#f5f1e8] shadow-sm ring-1 ring-black/5">
-                    <iframe
-                      title="Company location on Google Maps"
-                      src={mapSrc}
-                      className="aspect-[4/3] w-full border-0 lg:aspect-[16/11]"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 3. Bank Account */}
-      <section className="sk-card overflow-hidden">
-        <div className="border-b border-[#efe1db] px-5 py-4 md:px-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">3. Bank Account Details</h2>
-        </div>
-        <div className="px-5 py-5 md:px-6 md:py-6">
-          {bankLines.length === 0 && !bankQrUrl ? (
-            <p className="text-sm text-black/70">Bank account information will appear here once added by admin.</p>
-          ) : (
-            <div
-              className={
-                bankLines.length > 0 && bankQrUrl
-                  ? "grid gap-6 lg:grid-cols-[1fr_auto] lg:items-stretch"
-                  : "flex flex-col gap-6"
-              }
-            >
-              {bankLines.length > 0 && (
-                <div className="rounded-2xl border border-[#e8d9cf] bg-gradient-to-br from-white via-[#fdfbf7] to-[#f5efe6] p-5 shadow-sm md:p-6">
-                  <div className="flex items-center gap-3 border-b border-[#efe1db] pb-4">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7A1F1F]/10">
-                      <BuildingLibraryIcon className="h-6 w-6 text-[#7A1F1F]" aria-hidden />
-                    </span>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-[#7A1F1F]">
-                      Payment information
-                    </h3>
-                  </div>
-                  <dl className="mt-4 space-y-4">
-                    {bankLines.map((line, idx) => {
-                      const label = BANK_DETAIL_LABELS[idx] ?? `Details ${idx + 1}`;
-                      const isAccountNumber = idx === 2 || /^\d[\d\s-]+$/.test(line);
-                      return (
-                        <div key={`${idx}-${line.slice(0, 24)}`}>
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-black/50">
-                            {label}
-                          </dt>
-                          <dd
-                            className={
-                              isAccountNumber
-                                ? "mt-1 font-mono text-lg font-semibold tracking-wide text-[#0001fc] md:text-xl"
-                                : "mt-1 text-base font-semibold text-black/90 md:text-lg"
-                            }
-                          >
-                            {line}
-                          </dd>
-                        </div>
-                      );
-                    })}
-                  </dl>
-                </div>
-              )}
-              {bankQrUrl && (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-[#e8d9cf] bg-gradient-to-b from-[#f9f5ed] to-white p-5 shadow-sm lg:min-w-[240px]">
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#7A1F1F]">
-                    <QrCodeIcon className="h-4 w-4" aria-hidden />
-                    Scan to pay
-                  </p>
-                  <div className="mt-4 rounded-xl border-2 border-dashed border-[#d8c9c2] bg-white p-3 shadow-inner">
-                    <img
-                      src={bankQrUrl}
-                      alt="Payment QR code"
-                      className="mx-auto h-auto w-full max-w-[200px] object-contain"
-                      loading="lazy"
-                    />
-                  </div>
-                  <p className="mt-3 max-w-[12rem] text-center text-xs leading-relaxed text-black/60">
-                    Use your banking app to scan and transfer
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 4. Contact */}
-      <section className="sk-card overflow-hidden">
-        <div className="border-b border-[#efe1db] px-5 py-4 md:px-6">
-          <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">4. Contact Details</h2>
-        </div>
-        <div className="px-5 py-5 md:px-6 md:py-6">
-          {!hasContactContent ? (
-            <p className="text-sm text-black/70">Contact details will appear here once added by admin.</p>
-          ) : (
-            <>
-              {companyHrEmail && (
-                <div className="mb-5 rounded-2xl border border-[#e8d9cf] bg-gradient-to-br from-[#f8f7ff] to-[#f9f5ed] p-4 shadow-sm md:max-w-xl">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#7A1F1F]/80">
-                    Company Email
-                  </p>
-                  <a
-                    href={`mailto:${companyHrEmail}`}
-                    className="mt-2 flex items-center gap-2.5 text-base font-semibold text-[#7A1F1F] transition hover:text-[#5a1818] hover:underline"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7A1F1F]/10">
-                      <EnvelopeIcon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <span className="break-all">{companyHrEmail}</span>
-                  </a>
-                </div>
-              )}
-            {contacts.length > 0 && (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {contacts.map((c, idx) => (
-                <li
-                  key={`${c.name ?? "contact"}-${idx}`}
-                  className="flex flex-col gap-3 rounded-2xl border border-[#e8d9cf] bg-gradient-to-br from-white to-[#f9f5ed] p-4 shadow-sm"
-                >
-                  {c.name?.trim() && (
-                    <p className="text-lg font-bold text-[#0001fc]">{c.name.trim()}</p>
-                  )}
-                  <div className="space-y-2.5">
-                    {c.phone?.trim() && (
-                      <a
-                        href={`tel:${c.phone.trim().replace(/\s/g, "")}`}
-                        className="flex items-center gap-2.5 text-sm font-medium text-[#7A1F1F] transition hover:text-[#5a1818] hover:underline"
-                      >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#7A1F1F]/10">
-                          <PhoneIcon className="h-4 w-4" aria-hidden />
-                        </span>
-                        {c.phone.trim()}
-                      </a>
-                    )}
-                    {c.email?.trim() && (
-                      <a
-                        href={`mailto:${c.email.trim()}`}
-                        className="flex items-center gap-2.5 text-sm font-medium text-[#7A1F1F] transition hover:text-[#5a1818] hover:underline"
-                      >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#7A1F1F]/10">
-                          <EnvelopeIcon className="h-4 w-4" aria-hidden />
-                        </span>
-                        <span className="break-all">{c.email.trim()}</span>
-                      </a>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            ) : (
+              <div className="space-y-4 whitespace-pre-line text-ink-muted md:text-lg">
+                {profileParagraphs.map((p) => (
+                  <p key={p.slice(0, 40)}>{p}</p>
+                ))}
+              </div>
             )}
-            </>
-          )}
+            <a href="/courses" className="sk-button-primary mt-8">
+              Browse our courses
+            </a>
+          </div>
         </div>
       </section>
+
+      <CompanyExperienceSlideshow experiences={experiences} />
+
+      <AboutUsLocationHero
+        imageUrl={locationBuildingImage}
+        shortDescription={locationShortDescription}
+        address={locationAddress}
+        mapsLink={mapsLink}
+      />
+
+      {/* Bank */}
+      <section className="mt-16 sm:mt-20">
+        <SectionHeader
+          title="Payment Details"
+          subtitle="Bank transfer information for course fees and registrations."
+        />
+        {bankLines.length === 0 && !bankQrUrl ? (
+          <p className="mx-auto mt-10 max-w-3xl rounded-hero border border-dashed border-primary/20 bg-white p-10 text-center text-ink-muted">
+            Bank account information will appear here once added by admin.
+          </p>
+        ) : (
+          <div className="mx-auto mt-10 grid max-w-3xl gap-6 lg:grid-cols-2 lg:items-stretch">
+            {bankLines.length > 0 && (
+              <article className="sk-card p-6 md:p-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <BuildingLibraryIcon className="h-6 w-6" aria-hidden />
+                </div>
+                <h3 className="mt-4 font-heading text-lg font-semibold text-ink">Payment information</h3>
+                <dl className="mt-6 space-y-5">
+                  {bankLines.map((line, idx) => {
+                    const label = BANK_DETAIL_LABELS[idx] ?? `Details ${idx + 1}`;
+                    const isAccountNumber = idx === 2 || /^\d[\d\s-]+$/.test(line);
+                    return (
+                      <div key={`${idx}-${line.slice(0, 24)}`}>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                          {label}
+                        </dt>
+                        <dd
+                          className={
+                            isAccountNumber
+                              ? "mt-1 font-mono text-xl font-bold text-secondary md:text-2xl"
+                              : "mt-1 text-base font-semibold text-ink"
+                          }
+                        >
+                          {line}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </article>
+            )}
+            {bankQrUrl && (
+              <article className="sk-card flex flex-col items-center justify-center p-6 text-center md:p-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <QrCodeIcon className="h-6 w-6" aria-hidden />
+                </div>
+                <h3 className="mt-4 font-heading text-lg font-semibold text-ink">Scan to pay</h3>
+                <div className="mt-6 rounded-card border-2 border-dashed border-primary/15 bg-paper p-4">
+                  <img
+                    src={bankQrUrl}
+                    alt="Payment QR code"
+                    className="mx-auto max-h-[200px] w-full max-w-[200px] object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <p className="mt-4 text-sm text-ink-muted">
+                  Use your banking app to scan and transfer
+                </p>
+              </article>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Contact */}
+      <section className="mt-16 sm:mt-20">
+        <SectionHeader
+          title="Get In Touch"
+          subtitle="Reach our team for course enquiries and registrations."
+        />
+        {!hasContactContent ? (
+          <p className="mx-auto mt-10 max-w-3xl rounded-hero border border-dashed border-primary/20 bg-white p-10 text-center text-ink-muted">
+            Contact details will appear here once added by admin.
+          </p>
+        ) : (
+          <div className="mx-auto mt-10 max-w-3xl space-y-6">
+            {companyHrEmail && (
+              <article className="sk-card group p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg md:p-8">
+                <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
+                    <EnvelopeIcon className="h-7 w-7" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
+                      Company email
+                    </p>
+                    <a
+                      href={`mailto:${companyHrEmail}`}
+                      className="mt-1 block break-all font-heading text-lg font-semibold text-primary transition hover:text-primary-dark md:text-xl"
+                    >
+                      {companyHrEmail}
+                    </a>
+                  </div>
+                </div>
+              </article>
+            )}
+            {contacts.length > 0 && (
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {contacts.map((c, idx) => (
+                  <li key={`${c.name ?? "contact"}-${idx}`}>
+                    <IconTile icon={PhoneIcon} title={c.name?.trim() || "Contact"}>
+                      <div className="space-y-3">
+                        {c.phone?.trim() && (
+                          <a
+                            href={`tel:${c.phone.trim().replace(/\s/g, "")}`}
+                            className="flex items-center gap-2 font-medium text-primary transition hover:text-primary-dark"
+                          >
+                            <PhoneIcon className="h-4 w-4 shrink-0" aria-hidden />
+                            {c.phone.trim()}
+                          </a>
+                        )}
+                        {c.email?.trim() && (
+                          <a
+                            href={`mailto:${c.email.trim()}`}
+                            className="flex items-center gap-2 break-all font-medium text-primary transition hover:text-primary-dark"
+                          >
+                            <EnvelopeIcon className="h-4 w-4 shrink-0" aria-hidden />
+                            {c.email.trim()}
+                          </a>
+                        )}
+                      </div>
+                    </IconTile>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </section>
+
+      <HomeCtaBanner />
     </div>
   );
 }

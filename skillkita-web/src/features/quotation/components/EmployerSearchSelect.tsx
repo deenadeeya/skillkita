@@ -98,7 +98,7 @@ export function EmployerSearchSelect({ value, options, onChange, disabled = fals
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoComplete="off"
-        className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+        className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
       />
 
       {open && !disabled && (
@@ -111,30 +111,30 @@ export function EmployerSearchSelect({ value, options, onChange, disabled = fals
             <li role="option" aria-selected={value === MANUAL_VALUE}>
               <button
                 type="button"
-                className="w-full px-3.5 py-2 text-left hover:bg-[#faf7f2] aria-selected:bg-[#faf7f2]"
+                className="w-full px-3.5 py-2 text-left hover:bg-primary/5 aria-selected:bg-primary/5"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selectValue(MANUAL_VALUE)}
               >
-                <span className="font-semibold text-[#7A1F1F]">{MANUAL_LABEL}</span>
+                <span className="font-semibold text-primary">{MANUAL_LABEL}</span>
               </button>
             </li>
           )}
 
           {filteredOptions.employers.length === 0 && !filteredOptions.showManual && (
-            <li className="px-3.5 py-3 text-black/60">No employers match your search.</li>
+            <li className="px-3.5 py-3 text-ink-muted">No employers match your search.</li>
           )}
 
           {filteredOptions.employers.map((opt) => (
             <li key={opt.value} role="option" aria-selected={value === opt.value}>
               <button
                 type="button"
-                className="w-full px-3.5 py-2 text-left hover:bg-[#faf7f2] aria-selected:bg-[#faf7f2]"
+                className="w-full px-3.5 py-2 text-left hover:bg-primary/5 aria-selected:bg-primary/5"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selectValue(opt.value)}
               >
-                <span className="block font-medium text-black/90">{opt.label}</span>
+                <span className="block font-medium text-ink">{opt.label}</span>
                 {opt.company_name?.trim() ? (
-                  <span className="mt-0.5 block text-xs text-black/55">{opt.company_name}</span>
+                  <span className="mt-0.5 block text-xs text-ink/55">{opt.company_name}</span>
                 ) : null}
               </button>
             </li>
@@ -143,7 +143,7 @@ export function EmployerSearchSelect({ value, options, onChange, disabled = fals
       )}
 
       {value && !open && (
-        <p className="mt-1 text-xs text-black/55">
+        <p className="mt-1 text-xs text-ink/55">
           {value === MANUAL_VALUE
             ? "Quotation will be stored under your admin account."
             : "Employer selected. Type to search for a different one."}

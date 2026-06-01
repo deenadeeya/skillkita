@@ -8,6 +8,7 @@ import { RequiredMark } from "../../../shared/ui/RequiredMark";
 import { insertDocumentSubmission, listMyDocumentSubmissions } from "../submissionsApi";
 import { getSubmissionFileSignedUrl, uploadEmployerSubmissionFile } from "../submissionsStorage";
 import type { DocumentSubmissionRow, DocumentSubmissionType } from "../types";
+import { DashboardPageHeader } from "../../../shared/ui/DashboardPageHeader";
 import { Jd14TemplatesEmployerSection } from "./Jd14TemplatesEmployerSection";
 
 type Props = {
@@ -130,9 +131,8 @@ export function DocumentSubmissionEmployerPage({
         void signOutAndRedirectHome();
       }}
     >
-      <div className="mx-auto w-full max-w-3xl text-left">
-        <h1 className="text-2xl font-extrabold text-[#0001fc] md:text-3xl">{title}</h1>
-        <p className="mt-2 text-sm text-black/75">{subtitle}</p>
+      <div className="mx-auto w-full max-w-3xl">
+        <DashboardPageHeader title={title} subtitle={subtitle} />
 
         {errorMessage && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{errorMessage}</div>
@@ -140,23 +140,23 @@ export function DocumentSubmissionEmployerPage({
 
         {submissionType === "jd14" && <Jd14TemplatesEmployerSection />}
 
-        <form className="sk-card mt-6 space-y-4 p-6" onSubmit={(ev) => void onSubmit(ev)}>
+        <form className="sk-card mt-10 space-y-4 p-6 md:p-8" onSubmit={(ev) => void onSubmit(ev)}>
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            <span className="mb-1 block text-sm font-semibold text-primary">
               Course name
               <RequiredMark />
             </span>
             <input
               value={courseName}
               onChange={(e) => setCourseName(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
               required
               disabled={isSubmitting}
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            <span className="mb-1 block text-sm font-semibold text-primary">
               Proposed date
               <RequiredMark />
             </span>
@@ -164,14 +164,14 @@ export function DocumentSubmissionEmployerPage({
               type="date"
               value={proposedDate}
               onChange={(e) => setProposedDate(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
               required
               disabled={isSubmitting}
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+            <span className="mb-1 block text-sm font-semibold text-primary">
               {fileInputLabel}
               <RequiredMark />
             </span>
@@ -180,10 +180,10 @@ export function DocumentSubmissionEmployerPage({
               type="file"
               accept={fileAccept}
               onChange={(e) => setFile(e.currentTarget.files?.[0] ?? null)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
               disabled={isSubmitting}
             />
-            <p className="mt-1 text-xs text-black/60">{fileHelp}</p>
+            <p className="mt-1 text-xs text-ink-muted">{fileHelp}</p>
           </label>
 
           <button type="submit" className="sk-button-primary" disabled={isSubmitting || isLoading}>
@@ -192,20 +192,20 @@ export function DocumentSubmissionEmployerPage({
         </form>
 
         <section className="mt-10">
-          <h2 className="text-lg font-bold text-[#7A1F1F]">Your submissions</h2>
+          <h2 className="text-lg font-bold text-primary">Your submissions</h2>
           {isLoading ? (
-            <p className="mt-3 text-sm text-black/70">Loading…</p>
+            <p className="mt-3 text-sm text-ink-muted">Loading…</p>
           ) : rows.length === 0 ? (
-            <p className="mt-3 text-sm text-black/70">No submissions yet.</p>
+            <p className="mt-3 text-sm text-ink-muted">No submissions yet.</p>
           ) : (
             <ul className="mt-3 space-y-3">
               {rows.map((r) => (
-                <li key={r.id} className="rounded-xl border border-[#efe1db] bg-white p-4 shadow-sm">
+                <li key={r.id} className="rounded-xl border border-black/10 bg-white p-4 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
-                      <p className="text-sm text-black/70">Proposed date: {r.proposed_date}</p>
-                      <p className="mt-1 text-xs uppercase tracking-wide text-black/50">
+                      <p className="font-semibold text-ink">{r.course_name}</p>
+                      <p className="text-sm text-ink-muted">Proposed date: {r.proposed_date}</p>
+                      <p className="mt-1 text-xs uppercase tracking-wide text-ink-muted">
                         Status:{" "}
                         <span
                           className={

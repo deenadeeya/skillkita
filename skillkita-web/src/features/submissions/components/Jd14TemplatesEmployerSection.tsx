@@ -42,14 +42,14 @@ export function Jd14TemplatesEmployerSection() {
 
   return (
     <section className="sk-card mt-6 space-y-3 p-5 md:p-6">
-      <h2 className="text-lg font-bold text-[#7A1F1F]">Downloadable templates</h2>
-      <p className="text-sm text-black/70">
+      <h2 className="text-lg font-bold text-primary">Downloadable templates</h2>
+      <p className="text-sm text-ink-muted">
         Download a template (Word, PDF, or other formats), then submit your completed JD14 as a PDF below.
       </p>
       <ul className="space-y-2">
         {rows.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#efe1db] bg-white px-3 py-2">
-            <span className="text-sm font-medium text-[#0001fc]">{r.title}</span>
+          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 bg-white px-3 py-2">
+            <span className="text-sm font-medium text-ink">{r.title}</span>
             <button
               type="button"
               className="sk-button-secondary shrink-0 px-3 py-1.5 text-sm"

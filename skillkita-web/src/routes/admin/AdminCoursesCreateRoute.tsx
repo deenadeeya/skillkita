@@ -477,7 +477,7 @@ export default function AdminCreateCourse() {
       >
         <section className="sk-card p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">
+            <h2 className="text-2xl font-bold text-primary">
               {editingId ? "Update Course" : "Add New Course"}
             </h2>
             <button

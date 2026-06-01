@@ -64,8 +64,8 @@ export function AdminCoursesPanel({
       <section className="sk-card p-5 md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Course creation</h2>
-            <p className="mt-2 text-sm text-black">
+            <h2 className="text-2xl font-bold text-primary">Course creation</h2>
+            <p className="mt-2 text-sm text-ink">
               Create new courses and upload posters along with course documents
             </p>
           </div>
@@ -82,8 +82,8 @@ export function AdminCoursesPanel({
 
       <section className="sk-card p-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold text-[#7A1F1F]">All Courses</h2>
-          <p className="text-sm font-semibold text-[#7A1F1F]">
+          <h2 className="text-2xl font-bold text-primary">All Courses</h2>
+          <p className="text-sm font-semibold text-primary">
             {courses.length} total / {publicCount} public
           </p>
         </div>
@@ -93,16 +93,16 @@ export function AdminCoursesPanel({
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search courses by name or details..."
-            className="w-full rounded-xl border border-[#d8c9c2] bg-white px-4 py-2 text-sm text-black outline-none focus:border-[#7A1F1F]"
+            className="w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-sm text-ink outline-none focus:border-primary"
           />
-          <p className="mt-2 text-xs font-semibold text-black/60">
+          <p className="mt-2 text-xs font-semibold text-ink-muted">
             Showing {filteredCourses.length} of {courses.length}
           </p>
         </div>
 
         <div className="mt-5 space-y-4">
           {isLoading && (
-            <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+            <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
               Loading courses...
             </p>
           )}
@@ -111,7 +111,7 @@ export function AdminCoursesPanel({
               course.privateFiles && Object.values(course.privateFiles).some((v) => Boolean(v))
             );
             return (
-              <article key={course.id} className="rounded-xl border border-[#efe1db] p-4">
+              <article key={course.id} className="rounded-xl border border-black/10 p-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px,1fr]">
                   <CoursePosterMedia
                     url={course.posterUrl ?? PlaceholderPoster}
@@ -121,7 +121,7 @@ export function AdminCoursesPanel({
 
                   <div>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-xl font-semibold text-[#0001fc]">{course.name}</h3>
+                      <h3 className="text-xl font-semibold text-ink">{course.name}</h3>
                       <span
                         className={`sk-badge ${
                           course.isVisible
@@ -133,44 +133,44 @@ export function AdminCoursesPanel({
                       </span>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-black/80 md:grid-cols-2">
+                    <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-ink-muted md:grid-cols-2">
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">Date:</span> {course.date || "—"}
+                        <span className="font-semibold text-primary">Date:</span> {course.date || "—"}
                       </p>
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">Time:</span> {course.time || "—"}
+                        <span className="font-semibold text-primary">Time:</span> {course.time || "—"}
                       </p>
                       <p className="md:col-span-2">
-                        <span className="font-semibold text-[#7A1F1F]">Venue:</span> {course.venue || "—"}
+                        <span className="font-semibold text-primary">Venue:</span> {course.venue || "—"}
                       </p>
                       <p className="md:col-span-2">
-                        <span className="font-semibold text-[#7A1F1F]">Trainer:</span>{" "}
+                        <span className="font-semibold text-primary">Trainer:</span>{" "}
                         {course.trainerNames || "—"}
                       </p>
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">MyCOID:</span> {course.mycoid || "—"}
+                        <span className="font-semibold text-primary">MyCOID:</span> {course.mycoid || "—"}
                       </p>
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">Price:</span> {course.price || "—"}
+                        <span className="font-semibold text-primary">Price:</span> {course.price || "—"}
                       </p>
                       <p>
-                        <span className="font-semibold text-[#7A1F1F]">Contact:</span>{" "}
+                        <span className="font-semibold text-primary">Contact:</span>{" "}
                         {[course.contactPerson, course.contactPhone].filter(Boolean).join(" • ") || "—"}
                       </p>
                     </div>
 
-                    <p className="mt-2 text-sm text-black">{course.details}</p>
+                    <p className="mt-2 text-sm text-ink">{course.details}</p>
 
                     <div
                       className={[
                         "mt-4 rounded-lg border border-dashed p-3",
-                        hasAnyPrivateFile ? "border-[#c5b5ad] bg-[#faf7f2]" : "border-gray-300 bg-gray-100",
+                        hasAnyPrivateFile ? "border-primary/20 bg-primary/5" : "border-gray-300 bg-gray-100",
                       ].join(" ")}
                     >
                       <p
                         className={[
                           "text-xs font-semibold",
-                          hasAnyPrivateFile ? "text-[#7A1F1F]" : "text-gray-700",
+                          hasAnyPrivateFile ? "text-primary" : "text-gray-700",
                         ].join(" ")}
                       >
                         Files
@@ -188,7 +188,7 @@ export function AdminCoursesPanel({
                               className={[
                                 "rounded-md border bg-white px-2 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50",
                                 hasAnyPrivateFile
-                                  ? "border-[#7A1F1F] text-[#7A1F1F]"
+                                  ? "border-primary text-primary"
                                   : "border-gray-400 text-gray-700",
                               ].join(" ")}
                             >
@@ -204,7 +204,7 @@ export function AdminCoursesPanel({
                         type="button"
                         onClick={() => onEditCourse(course.id)}
                         disabled={isSaving}
-                        className="sk-button bg-[#0001fc] text-white hover:bg-[#0001fc]/90"
+                        className="sk-button bg-primary text-white hover:bg-primary-dark"
                       >
                         Update
                       </button>
@@ -231,7 +231,7 @@ export function AdminCoursesPanel({
             );
           })}
           {!isLoading && filteredCourses.length === 0 && (
-            <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+            <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
               No courses match your search.
             </p>
           )}

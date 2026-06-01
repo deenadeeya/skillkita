@@ -5,6 +5,7 @@ import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
 import { supabase } from "../../shared/api/supabaseClient";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
+import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 type UserProfileRow = {
   user_id: string;
@@ -163,15 +164,18 @@ const EmployerTalkToAdmin = () => {
         void signOutAndRedirectHome();
       }}
     >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Talk to Admin</h1>
-            <p className="mt-3 text-lg text-black md:text-xl">
-              {profile ? `Hi ${profile.full_name}.` : "Hi."} Choose an admin and start a chat.
-            </p>
-          </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <DashboardPageHeader
+            className="flex-1"
+            title="Talk to admin"
+            subtitle={
+              profile
+                ? `Hi ${profile.full_name}. Choose an admin and start a chat.`
+                : "Choose an admin and start a chat."
+            }
+          />
           {selectedAdmin && (
-            <button type="button" onClick={backToPicker} className="sk-button-secondary px-4 py-2">
+            <button type="button" onClick={backToPicker} className="sk-button-secondary shrink-0 px-4 py-2">
               Change admin
             </button>
           )}
@@ -184,15 +188,15 @@ const EmployerTalkToAdmin = () => {
         )}
 
         {isLoading && (
-          <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+          <div className="mt-6 rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
             Loading…
           </div>
         )}
 
         {!isLoading && !selectedAdmin && (
           <section className="sk-card mt-10 p-6">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Choose an admin</h2>
-            <p className="mt-2 text-sm text-black/80">
+            <h2 className="text-2xl font-bold text-primary">Choose an admin</h2>
+            <p className="mt-2 text-sm text-ink-muted">
               You can message an admin about quotations, documents, or any support request.
             </p>
 
@@ -204,14 +208,14 @@ const EmployerTalkToAdmin = () => {
                   onClick={() => {
                     window.location.href = `/employer/talk-to-admin?admin=${encodeURIComponent(a.user_id)}`;
                   }}
-                  className="rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
+                  className="rounded-xl border border-black/10 bg-white p-4 text-left shadow-sm hover:bg-primary/5"
                 >
-                  <p className="text-sm font-semibold text-[#0001fc]">{a.full_name}</p>
-                  <p className="mt-1 text-xs text-black/60">Click to open chat</p>
+                  <p className="text-sm font-semibold text-ink">{a.full_name}</p>
+                  <p className="mt-1 text-xs text-ink-muted">Click to open chat</p>
                 </button>
               ))}
               {admins.length === 0 && (
-                <div className="rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+                <div className="rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
                   No admins found yet.
                 </div>
               )}
@@ -226,8 +230,8 @@ const EmployerTalkToAdmin = () => {
               currentUserId={profile!.user_id}
               header={
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold text-[#7A1F1F]">Chatting with</p>
-                  <p className="text-xl font-bold text-[#0001fc]">{selectedAdmin.full_name}</p>
+                  <p className="text-sm font-semibold text-primary">Chatting with</p>
+                  <p className="text-xl font-bold text-ink">{selectedAdmin.full_name}</p>
                 </div>
               }
             />

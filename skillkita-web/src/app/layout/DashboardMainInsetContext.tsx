@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 /** Matches `DashboardLayout` desktop left nav width. */
-export const DASHBOARD_SIDEBAR_WIDTH_PX = 280;
+export const DASHBOARD_SIDEBAR_WIDTH_PX = 220;
 
 type Ctx = {
   desktopInsetPx: number;

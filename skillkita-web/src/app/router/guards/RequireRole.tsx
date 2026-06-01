@@ -27,23 +27,17 @@ export default function RequireRole({
 
   const defaultDenied = useMemo(() => {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F1E8] px-6 text-center">
-        <h1 className="text-3xl font-bold text-[#7A1F1F]">Access denied</h1>
-        <p className="mt-2 text-base text-black md:text-lg">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-paper px-6 text-center">
+        <h1 className="text-3xl font-bold text-primary">Access denied</h1>
+        <p className="mt-2 text-base text-ink md:text-lg">
           You don’t have permission to view this page.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href="/"
-            className="rounded-lg bg-[#7A1F1F] px-4 py-2 font-semibold text-white"
-          >
-            Back to Home
+          <a href="/" className="sk-button-primary no-underline">
+            Back to home
           </a>
-          <a
-            href={redirectTo}
-            className="rounded-lg border border-[#7A1F1F] px-4 py-2 font-semibold text-[#7A1F1F]"
-          >
-            Go to Log in
+          <a href={redirectTo} className="sk-button-secondary no-underline">
+            Go to log in
           </a>
         </div>
       </div>
@@ -105,22 +99,19 @@ export default function RequireRole({
 
   if (state.kind === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F1E8] px-6 text-center">
-        <p className="text-base font-semibold text-black/70">Checking access…</p>
+      <div className="flex min-h-screen items-center justify-center bg-paper px-6 text-center">
+        <p className="text-base font-semibold text-ink-muted">Checking access…</p>
       </div>
     );
   }
 
   if (state.kind === "error") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F1E8] px-6 text-center">
-        <h1 className="text-3xl font-bold text-[#7A1F1F]">Something went wrong</h1>
-        <p className="mt-2 max-w-lg text-sm text-black/70">{state.message}</p>
-        <a
-          href="/"
-          className="mt-6 rounded-lg bg-[#7A1F1F] px-4 py-2 font-semibold text-white"
-        >
-          Back to Home
+      <div className="flex min-h-screen flex-col items-center justify-center bg-paper px-6 text-center">
+        <h1 className="text-3xl font-bold text-primary">Something went wrong</h1>
+        <p className="mt-2 max-w-lg text-sm text-ink-muted">{state.message}</p>
+        <a href="/" className="sk-button-primary mt-6 no-underline">
+          Back to home
         </a>
       </div>
     );

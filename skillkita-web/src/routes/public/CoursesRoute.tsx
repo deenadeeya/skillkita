@@ -4,9 +4,10 @@ import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
 import { listVisibleCourses } from "../../features/courses/api/coursesApi";
-import { useViewer } from "../../shared/hooks/useViewer";
+import { compareCoursesUpcomingFirst } from "../../features/courses/courseDate";
 import { CoursesGrid } from "../../features/courses/components/CoursesGrid";
 import { CoursesSearchBar } from "../../features/courses/components/CoursesSearchBar";
+import { useViewer } from "../../shared/hooks/useViewer";
 
 type PublicCourse = {
   id: string;
@@ -73,69 +74,91 @@ const ViewCourses = () => {
     void loadCourses();
   }, []);
 
+  const sortedCourses = useMemo(
+    () => [...publicCourses].sort(compareCoursesUpcomingFirst),
+    [publicCourses]
+  );
+
   const filteredCourses = useMemo(() => {
     const q = courseSearch.trim().toLowerCase();
-    if (!q) return publicCourses;
-    return publicCourses.filter((c) => {
+    if (!q) return sortedCourses;
+    return sortedCourses.filter((c) => {
       const haystack = `${c.name}\n${c.details}\n${c.date ?? ""}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [courseSearch, publicCourses]);
+  }, [courseSearch, sortedCourses]);
 
   const body = (
-    <main className="sk-container py-12">
-      <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">
-        Available Courses
-      </h1>
-      <p className="mt-3 text-lg text-black md:text-xl">
-        Browse training programs that are currently available. Open a course to view details and
-        download syllabus, tentative schedule, and trainer documents.
-      </p>
+    <div className="w-full pb-8">
+      <section className="rounded-hero bg-primary px-6 py-12 text-center sm:px-10 sm:py-14">
+        <h1 className="sk-heading-1 text-white">Available Courses</h1>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 sm:text-lg">
+          Browse training programmes currently open for registration. Open a course to view
+          schedules, venue details, and download syllabus and trainer documents.
+        </p>
+      </section>
+
       {errorMessage && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 rounded-card border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {errorMessage}
         </div>
       )}
 
-      <CoursesSearchBar
-        value={courseSearch}
-        onChange={setCourseSearch}
-        filteredCount={filteredCourses.length}
-        totalCount={publicCourses.length}
-      />
+      <section className="mt-16 sm:mt-20">
+        <div className="text-center">
+          <h2 className="sk-heading-2 text-ink">Training programmes</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-ink-muted">
+            Upcoming courses are listed first. Use search to filter by name, date, or description.
+          </p>
+        </div>
 
-      <CoursesGrid
-        courses={filteredCourses}
-        isLoading={isLoading}
-        errorMessage={errorMessage}
-        totalPublicCount={publicCourses.length}
-        onOpenCourse={(courseId) => {
-          window.location.href = `/courses/view?id=${encodeURIComponent(courseId)}`;
-        }}
-      />
-    </main>
+        <div className="mx-auto mt-10 max-w-2xl">
+          <CoursesSearchBar
+            value={courseSearch}
+            onChange={setCourseSearch}
+            filteredCount={filteredCourses.length}
+            totalCount={publicCourses.length}
+          />
+        </div>
+
+        <CoursesGrid
+          courses={filteredCourses}
+          isLoading={isLoading}
+          errorMessage={errorMessage}
+          totalPublicCount={publicCourses.length}
+          onOpenCourse={(courseId) => {
+            window.location.href = `/courses/view?id=${encodeURIComponent(courseId)}`;
+          }}
+        />
+      </section>
+
+     
+    </div>
   );
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    window.localStorage.removeItem("skillkita-role");
+    window.location.href = "/";
+  };
+
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
         <DashboardLayout
           showHeader
+          fullWidth
           items={viewerRole === "admin" ? adminNavItems : employerNavItems}
           userName={viewerName}
           userEmail={viewerEmail}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            window.localStorage.removeItem("skillkita-role");
-            window.location.href = "/";
-          }}
+          onLogout={logout}
         >
           {body}
         </DashboardLayout>
       ) : (
         <>
           <SiteHeader />
-          {body}
+          <main className="sk-page-container">{body}</main>
         </>
       )}
     </div>

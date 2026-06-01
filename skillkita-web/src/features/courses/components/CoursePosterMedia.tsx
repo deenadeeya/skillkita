@@ -66,7 +66,7 @@ export function CoursePosterMedia({
             href={displayUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-semibold text-[#7A1F1F] underline"
+            className="text-sm font-semibold text-primary underline"
           >
             Open poster (PDF)
           </a>

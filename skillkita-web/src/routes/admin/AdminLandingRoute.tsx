@@ -6,14 +6,24 @@ import { adminNavItems } from "../../app/layout/navItems";
 import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
+import {
+  DEFAULT_HERO,
+  getHomepageHero,
+  upsertHomepageHero,
+  type HomepageHeroRow,
+} from "../../features/homepage/api/homepageApi";
 import { getLandingContent, upsertLandingContent, type LandingContentRow } from "../../features/landing/api/landingApi";
 import {
   uploadSiteAssetBankQr,
+  uploadSiteAssetHeroImage,
   uploadSiteAssetHomeFeatured,
   uploadSiteAssetWhoImage,
 } from "../../features/landing/api/landingStorage";
 import { AboutUsContentEditor } from "../../features/landing/components/AboutUsContentEditor";
-import { LandingCoverEditor } from "../../features/landing/components/LandingCoverEditor";
+import { LandingContentEditor } from "../../features/landing/components/LandingContentEditor";
+import { AdminLandingSectionNav } from "../../features/landing/components/admin/AdminLandingSectionNav";
+import { SiteMediaEditor } from "../../features/landing/components/admin/SiteMediaEditor";
+import { HomepageCmsEditors } from "../../features/homepage/components/admin/HomepageCmsEditors";
 
 const AdminLandingEditor = () => {
   const [adminName, setAdminName] = useState("Admin");
@@ -21,22 +31,19 @@ const AdminLandingEditor = () => {
   const viewerState = useViewer();
 
   const [landing, setLanding] = useState<LandingContentRow | null>(null);
-  const [coverDescription, setCoverDescription] = useState("");
+  const [hero, setHero] = useState<HomepageHeroRow | null>(null);
+  const [heroPreviewUrl, setHeroPreviewUrl] = useState<string>(PlaceholderPoster);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+
   const [whoDescription, setWhoDescription] = useState("");
   const [whoPreviewUrl, setWhoPreviewUrl] = useState<string>(PlaceholderPoster);
   const [whoFile, setWhoFile] = useState<File | null>(null);
 
-  const [featured1Preview, setFeatured1Preview] = useState<string>(PlaceholderPoster);
-  const [featured2Preview, setFeatured2Preview] = useState<string>(PlaceholderPoster);
-  const [featured3Preview, setFeatured3Preview] = useState<string>(PlaceholderPoster);
-  const [featured1File, setFeatured1File] = useState<File | null>(null);
-  const [featured2File, setFeatured2File] = useState<File | null>(null);
-  const [featured3File, setFeatured3File] = useState<File | null>(null);
+  const [locationBuildingPreview, setLocationBuildingPreview] = useState<string>(PlaceholderPoster);
+  const [locationBuildingFile, setLocationBuildingFile] = useState<File | null>(null);
 
   const [socialFacebookPageUrl, setSocialFacebookPageUrl] = useState("");
-  const [socialFacebookPostUrls, setSocialFacebookPostUrls] = useState("");
   const [socialInstagramProfileUrl, setSocialInstagramProfileUrl] = useState("");
-  const [socialInstagramPostUrls, setSocialInstagramPostUrls] = useState("");
 
   const [locationDescription, setLocationDescription] = useState("");
   const [locationMapEmbedUrl, setLocationMapEmbedUrl] = useState("");
@@ -62,27 +69,27 @@ const AdminLandingEditor = () => {
   }, [viewerState]);
 
   const loadLandingContent = useCallback(async () => {
-    const row = await getLandingContent(1);
+    const [row, heroRow] = await Promise.all([getLandingContent(1), getHomepageHero()]);
+
+    setHero(heroRow);
+    if (heroRow?.hero_image) {
+      setHeroPreviewUrl(heroRow.hero_image);
+    } else {
+      setHeroPreviewUrl(PlaceholderPoster);
+    }
+    setHeroFile(null);
+
     if (!row) {
       setLanding(null);
-      setCoverDescription("");
       setWhoDescription("");
       setWhoPreviewUrl(PlaceholderPoster);
-      setFeatured1Preview(PlaceholderPoster);
-      setFeatured2Preview(PlaceholderPoster);
-      setFeatured3Preview(PlaceholderPoster);
-      setFeatured1File(null);
-      setFeatured2File(null);
-      setFeatured3File(null);
+      setLocationBuildingPreview(PlaceholderPoster);
       setSocialFacebookPageUrl("");
-      setSocialFacebookPostUrls("");
       setSocialInstagramProfileUrl("");
-      setSocialInstagramPostUrls("");
       setLocationDescription("");
       setLocationMapEmbedUrl("");
       setBankAccountDetails("");
       setBankQrPreviewUrl(PlaceholderPoster);
-      setBankQrFile(null);
       setContact1Name("");
       setContact1Phone("");
       setContact1Email("");
@@ -94,19 +101,13 @@ const AdminLandingEditor = () => {
     }
 
     setLanding(row);
-    setCoverDescription(row.cover_description ?? "");
     setWhoDescription(row.who_description ?? "");
     setWhoPreviewUrl(row.who_image_url ?? PlaceholderPoster);
-    setFeatured1Preview(row.home_featured_1_url ?? PlaceholderPoster);
-    setFeatured2Preview(row.home_featured_2_url ?? PlaceholderPoster);
-    setFeatured3Preview(row.home_featured_3_url ?? PlaceholderPoster);
-    setFeatured1File(null);
-    setFeatured2File(null);
-    setFeatured3File(null);
+    setLocationBuildingPreview(row.home_featured_3_url ?? PlaceholderPoster);
+    setWhoFile(null);
+    setLocationBuildingFile(null);
     setSocialFacebookPageUrl(row.social_facebook_page_url ?? "");
-    setSocialFacebookPostUrls(row.social_facebook_post_urls ?? "");
     setSocialInstagramProfileUrl(row.social_instagram_profile_url ?? "");
-    setSocialInstagramPostUrls(row.social_instagram_post_url ?? "");
     setLocationDescription(row.location_description ?? "");
     setLocationMapEmbedUrl(row.location_map_embed_url ?? "");
     setBankAccountDetails(row.bank_account_details ?? "");
@@ -134,44 +135,26 @@ const AdminLandingEditor = () => {
     void loadAll();
   }, [loadAll]);
 
-  const onFeaturedImageChange = (slot: 1 | 2 | 3, event: ChangeEvent<HTMLInputElement>) => {
+  const onHeroImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0] ?? null;
-    const fallback1 = landing?.home_featured_1_url ?? PlaceholderPoster;
-    const fallback2 = landing?.home_featured_2_url ?? PlaceholderPoster;
-    const fallback3 = landing?.home_featured_3_url ?? PlaceholderPoster;
-
-    if (slot === 1) {
-      if (!file) {
-        setFeatured1File(null);
-        setFeatured1Preview(fallback1);
-        return;
-      }
-      setFeatured1File(file);
-      setFeatured1Preview(URL.createObjectURL(file));
-    } else if (slot === 2) {
-      if (!file) {
-        setFeatured2File(null);
-        setFeatured2Preview(fallback2);
-        return;
-      }
-      setFeatured2File(file);
-      setFeatured2Preview(URL.createObjectURL(file));
-    } else {
-      if (!file) {
-        setFeatured3File(null);
-        setFeatured3Preview(fallback3);
-        return;
-      }
-      setFeatured3File(file);
-      setFeatured3Preview(URL.createObjectURL(file));
+    if (!file) {
+      setHeroFile(null);
+      setHeroPreviewUrl(hero?.hero_image ?? PlaceholderPoster);
+      return;
     }
+    setHeroFile(file);
+    setHeroPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadFeaturedIfNeeded = async () => {
-    const u1 = featured1File ? await uploadSiteAssetHomeFeatured(featured1File, 1) : null;
-    const u2 = featured2File ? await uploadSiteAssetHomeFeatured(featured2File, 2) : null;
-    const u3 = featured3File ? await uploadSiteAssetHomeFeatured(featured3File, 3) : null;
-    return { u1, u2, u3 };
+  const onLocationBuildingImageChange = (_slot: 3, event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0] ?? null;
+    if (!file) {
+      setLocationBuildingFile(null);
+      setLocationBuildingPreview(landing?.home_featured_3_url ?? PlaceholderPoster);
+      return;
+    }
+    setLocationBuildingFile(file);
+    setLocationBuildingPreview(URL.createObjectURL(file));
   };
 
   const onWhoImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -185,11 +168,6 @@ const AdminLandingEditor = () => {
     setWhoPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadWhoImageIfNeeded = async (): Promise<string | null> => {
-    if (!whoFile) return null;
-    return await uploadSiteAssetWhoImage(whoFile);
-  };
-
   const onBankQrImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0] ?? null;
     if (!file) {
@@ -201,33 +179,31 @@ const AdminLandingEditor = () => {
     setBankQrPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadBankQrIfNeeded = async (): Promise<string | null> => {
-    if (!bankQrFile) return null;
-    return await uploadSiteAssetBankQr(bankQrFile);
-  };
-
   const saveLanding = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
     setIsSaving(true);
 
     try {
-      const whoUrl = await uploadWhoImageIfNeeded();
-      const bankQrUrl = await uploadBankQrIfNeeded();
-      const { u1, u2, u3 } = await uploadFeaturedIfNeeded();
+      const whoUrl = whoFile ? await uploadSiteAssetWhoImage(whoFile) : null;
+      const bankQrUrl = bankQrFile ? await uploadSiteAssetBankQr(bankQrFile) : null;
+      const locationUrl = locationBuildingFile
+        ? await uploadSiteAssetHomeFeatured(locationBuildingFile, 3)
+        : null;
+      const heroUrl = heroFile ? await uploadSiteAssetHeroImage(heroFile) : null;
 
       const payload = {
         id: 1,
-        cover_description: coverDescription.trim(),
+        cover_description: landing?.cover_description ?? "",
         who_description: whoDescription.trim(),
         who_image_url: whoUrl ?? landing?.who_image_url ?? null,
-        home_featured_1_url: u1 ?? landing?.home_featured_1_url ?? null,
-        home_featured_2_url: u2 ?? landing?.home_featured_2_url ?? null,
-        home_featured_3_url: u3 ?? landing?.home_featured_3_url ?? null,
+        home_featured_1_url: landing?.home_featured_1_url ?? null,
+        home_featured_2_url: landing?.home_featured_2_url ?? null,
+        home_featured_3_url: locationUrl ?? landing?.home_featured_3_url ?? null,
         social_facebook_page_url: socialFacebookPageUrl.trim() || null,
-        social_facebook_post_urls: socialFacebookPostUrls.trim() || null,
+        social_facebook_post_urls: null,
         social_instagram_profile_url: socialInstagramProfileUrl.trim() || null,
-        social_instagram_post_url: socialInstagramPostUrls.trim() || null,
+        social_instagram_post_url: null,
         location_description: locationDescription.trim() || null,
         location_map_embed_url: locationMapEmbedUrl.trim() || null,
         bank_account_details: bankAccountDetails.trim() || null,
@@ -244,11 +220,24 @@ const AdminLandingEditor = () => {
 
       await upsertLandingContent(payload);
 
+      if (heroUrl) {
+        await upsertHomepageHero({
+          id: 1,
+          title: hero?.title ?? DEFAULT_HERO.title,
+          subtitle: DEFAULT_HERO.subtitle,
+          hero_image: heroUrl,
+          button_1_text: DEFAULT_HERO.button_1_text,
+          button_1_link: DEFAULT_HERO.button_1_link,
+          button_2_text: DEFAULT_HERO.button_2_text,
+          button_2_link: DEFAULT_HERO.button_2_link,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
       setWhoFile(null);
       setBankQrFile(null);
-      setFeatured1File(null);
-      setFeatured2File(null);
-      setFeatured3File(null);
+      setLocationBuildingFile(null);
+      setHeroFile(null);
       await loadLandingContent();
       setIsSaving(false);
     } catch (err) {
@@ -262,6 +251,7 @@ const AdminLandingEditor = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
+      fullWidth
       onLogout={async () => {
         await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
@@ -270,45 +260,44 @@ const AdminLandingEditor = () => {
     >
       <AdminPageFrame
         title="Manage Landing Page"
-        subtitle="Update the home page, About Us sections (profile, location, bank, contacts), and social feeds. Company experiences are edited on the Company Experience page."
+        subtitle="Update site images, About Us content, social profile links, and the corporate homepage (hero headline, statistics, partners)."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn"}
         actions={
-          <a href="/" className="sk-button-secondary w-fit">
+          <a href="/" className="sk-button-secondary w-fit no-underline">
             View site
           </a>
         }
       >
-        <form className="max-w-3xl" onSubmit={saveLanding}>
-          <LandingCoverEditor
-            coverDescription={coverDescription}
-            whoDescription={whoDescription}
+        <AdminLandingSectionNav />
+
+        <form className="mt-6 max-w-4xl space-y-6" onSubmit={saveLanding}>
+          <SiteMediaEditor
+            heroPreviewUrl={heroPreviewUrl}
             whoPreviewUrl={whoPreviewUrl}
-            featuredPreview1={featured1Preview}
-            featuredPreview2={featured2Preview}
-            featuredPreview3={featured3Preview}
+            locationBuildingPreviewUrl={locationBuildingPreview}
+            bankQrPreviewUrl={bankQrPreviewUrl}
             isSaving={isSaving}
-            socialFacebookPageUrl={socialFacebookPageUrl}
-            socialFacebookPostUrls={socialFacebookPostUrls}
-            socialInstagramProfileUrl={socialInstagramProfileUrl}
-            socialInstagramPostUrls={socialInstagramPostUrls}
-            onChangeCover={setCoverDescription}
-            onChangeWhoDescription={setWhoDescription}
+            onHeroImageChange={onHeroImageChange}
             onWhoImageChange={onWhoImageChange}
-            onFeaturedImageChange={onFeaturedImageChange}
-            onChangeSocialFacebookPageUrl={setSocialFacebookPageUrl}
-            onChangeSocialFacebookPostUrls={setSocialFacebookPostUrls}
-            onChangeSocialInstagramProfileUrl={setSocialInstagramProfileUrl}
-            onChangeSocialInstagramPostUrls={setSocialInstagramPostUrls}
+            onLocationBuildingImageChange={onLocationBuildingImageChange}
+            onBankQrImageChange={onBankQrImageChange}
           />
+
+          <LandingContentEditor
+            socialFacebookPageUrl={socialFacebookPageUrl}
+            socialInstagramProfileUrl={socialInstagramProfileUrl}
+            isSaving={isSaving}
+            onChangeSocialFacebookPageUrl={setSocialFacebookPageUrl}
+            onChangeSocialInstagramProfileUrl={setSocialInstagramProfileUrl}
+          />
+
           <AboutUsContentEditor
-            whoPreviewUrl={whoPreviewUrl}
             whoDescription={whoDescription}
             locationDescription={locationDescription}
             locationMapEmbedUrl={locationMapEmbedUrl}
             bankAccountDetails={bankAccountDetails}
-            bankQrPreviewUrl={bankQrPreviewUrl}
             contact1Name={contact1Name}
             contact1Phone={contact1Phone}
             contact1Email={contact1Email}
@@ -317,12 +306,10 @@ const AdminLandingEditor = () => {
             contact2Email={contact2Email}
             companyHrEmail={companyHrEmail}
             isSaving={isSaving}
-            onWhoImageChange={onWhoImageChange}
             onWhoDescriptionChange={setWhoDescription}
             onLocationDescriptionChange={setLocationDescription}
             onLocationMapEmbedUrlChange={setLocationMapEmbedUrl}
             onBankAccountDetailsChange={setBankAccountDetails}
-            onBankQrImageChange={onBankQrImageChange}
             onContact1NameChange={setContact1Name}
             onContact1PhoneChange={setContact1Phone}
             onContact1EmailChange={setContact1Email}
@@ -331,12 +318,24 @@ const AdminLandingEditor = () => {
             onContact2EmailChange={setContact2Email}
             onCompanyHrEmailChange={setCompanyHrEmail}
           />
-          <div className="mt-6">
-            <button type="submit" disabled={isSaving} className="sk-button-primary">
-              {isSaving ? "Saving..." : "Save home & About Us"}
+
+          <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-card border border-black/10 bg-white/95 p-4 shadow-card backdrop-blur-sm">
+            <p className="text-sm text-ink-muted">
+              Saves site images, About Us text, and social profile links.
+            </p>
+            <button type="submit" disabled={isSaving} className="sk-button-primary min-w-[200px]">
+              {isSaving ? "Saving…" : "Save site content"}
             </button>
           </div>
         </form>
+
+        <div id="homepage-cms" className="scroll-mt-24">
+          <HomepageCmsEditors
+            isSaving={isSaving}
+            setIsSaving={setIsSaving}
+            onError={setErrorMessage}
+          />
+        </div>
       </AdminPageFrame>
     </DashboardLayout>
   );

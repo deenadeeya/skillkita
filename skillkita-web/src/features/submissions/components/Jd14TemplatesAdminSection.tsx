@@ -163,9 +163,9 @@ export function Jd14TemplatesAdminSection() {
   const templatesLocked = Boolean(deployMessage);
 
   return (
-    <section className="rounded-2xl border border-[#efe1db] bg-white p-5 shadow-sm ring-1 ring-black/5 md:p-6">
-      <h2 className="text-lg font-bold text-[#7A1F1F]">JD14 templates</h2>
-      <p className="mt-1 text-sm text-black/70">
+    <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm ring-1 ring-black/5 md:p-6">
+      <h2 className="text-lg font-bold text-primary">JD14 templates</h2>
+      <p className="mt-1 text-sm text-ink-muted">
         Employers can download these before submitting their own JD14 (submission is still PDF). Upload Word, PDF,
         Excel, PowerPoint, OpenDocument, RTF, text, or CSV — plus a short title for each row.
       </p>
@@ -182,29 +182,29 @@ export function Jd14TemplatesAdminSection() {
       )}
 
       <form
-        className="mt-5 space-y-3 border-t border-[#efe1db] pt-5"
+        className="mt-5 space-y-3 border-t border-black/10 pt-5"
         onSubmit={(ev) => void onCreate(ev)}
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-black/50">Add template</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Add template</p>
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <label className="block flex-1">
-            <span className="mb-1 block text-xs font-semibold text-[#7A1F1F]">Title</span>
+            <span className="mb-1 block text-xs font-semibold text-primary">Title</span>
             <input
               value={newTitle}
               onChange={(e) => setNewTitle(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
               placeholder="e.g. Blank JD14 form"
               disabled={isSaving || templatesLocked}
             />
           </label>
           <label className="block w-full md:w-64">
-            <span className="mb-1 block text-xs font-semibold text-[#7A1F1F]">File</span>
+            <span className="mb-1 block text-xs font-semibold text-primary">File</span>
             <input
               key={`new-${rows.length}`}
               type="file"
               accept={JD14_TEMPLATE_FILE_ACCEPT}
               onChange={(e) => setNewFile(e.currentTarget.files?.[0] ?? null)}
-              className="w-full text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-[#7A1F1F]/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7A1F1F]"
+              className="w-full text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary"
               disabled={isSaving || templatesLocked}
             />
           </label>
@@ -214,12 +214,12 @@ export function Jd14TemplatesAdminSection() {
         </div>
       </form>
 
-      <div className="mt-6 border-t border-[#efe1db] pt-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-black/50">Existing templates</p>
+      <div className="mt-6 border-t border-black/10 pt-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Existing templates</p>
         {isLoading ? (
-          <p className="mt-3 text-sm text-black/60">Loading…</p>
+          <p className="mt-3 text-sm text-ink-muted">Loading…</p>
         ) : rows.length === 0 ? (
-          <p className="mt-3 text-sm text-black/60">
+          <p className="mt-3 text-sm text-ink-muted">
             {deployMessage
               ? "Templates will appear here after the migration runs on this Supabase project."
               : "No templates yet. Create one above."}
@@ -227,25 +227,25 @@ export function Jd14TemplatesAdminSection() {
         ) : (
           <ul className="mt-3 space-y-3">
             {rows.map((r) => (
-              <li key={r.id} className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4">
+              <li key={r.id} className="rounded-xl border border-black/10 bg-primary/5 p-4">
                 {editingId === r.id ? (
                   <div className="space-y-3">
                     <label className="block">
-                      <span className="mb-1 block text-xs font-semibold text-[#7A1F1F]">Title</span>
+                      <span className="mb-1 block text-xs font-semibold text-primary">Title</span>
                       <input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.currentTarget.value)}
-                        className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
+                        className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
                         disabled={isSaving}
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-1 block text-xs font-semibold text-[#7A1F1F]">Replace file (optional)</span>
+                      <span className="mb-1 block text-xs font-semibold text-primary">Replace file (optional)</span>
                       <input
                         type="file"
                         accept={JD14_TEMPLATE_FILE_ACCEPT}
                         onChange={(e) => setEditFile(e.currentTarget.files?.[0] ?? null)}
-                        className="w-full text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-[#7A1F1F]/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#7A1F1F]"
+                        className="w-full text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary"
                         disabled={isSaving}
                       />
                     </label>
@@ -270,7 +270,7 @@ export function Jd14TemplatesAdminSection() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="font-semibold text-[#0001fc]">{r.title}</p>
+                    <p className="font-semibold text-ink">{r.title}</p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"

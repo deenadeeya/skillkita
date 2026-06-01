@@ -150,10 +150,10 @@ const EmployerDashboard = () => {
       }}
     >
         
-        <p className="mt-3 text-lg text-black md:text-xl">
+        <p className="mt-3 text-lg text-ink md:text-xl">
           {profile ? `Welcome, ${profile.full_name}.` : "Welcome."}
         </p>
-        <p className="mt-2 text-sm text-black/80">
+        <p className="mt-2 text-sm text-ink-muted">
           View your quotation requests and download your quotation PDF along with the invoice PDF.
         </p>
 

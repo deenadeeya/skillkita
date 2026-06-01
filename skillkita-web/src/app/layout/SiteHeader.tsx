@@ -10,6 +10,7 @@ const PRIMARY_NAV = [
   { label: "About Us", href: "/about-us" },
   { label: "Company Experience", href: "/company-experience" },
   { label: "Courses", href: "/courses" },
+  { label: "Contact", href: "/about-us" },
 ] as const;
 
 type Props = {
@@ -64,8 +65,8 @@ const SiteHeader = ({ onMenuClick }: Props) => {
   }, [employerStatus, hasAuthSession, isAdmin, isEmployer]);
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#7A1F1F] text-white shadow-sm">
-      <div className="relative flex h-16 w-full items-center justify-between gap-4 px-4 md:px-6">
+    <header className="sticky top-0 z-40 w-full bg-primary text-white shadow-md">
+      <div className="relative flex h-header min-h-[72px] w-full items-center justify-between gap-4 px-4 md:px-6">
         {/* Mobile: hamburger (left) + centered title + profile (right) */}
         <div className="flex w-full items-center justify-between md:hidden">
           <button
@@ -150,7 +151,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
             <>
               <a
                 href="/signup"
-                className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-white/90"
+                className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary hover:bg-white/90"
               >
                 Sign up
               </a>
@@ -174,65 +175,65 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Admin
               </button>
               {isAdminMenuOpen && (
-                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-14 z-[70] w-64 rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
                   <a
                     href="/about-us"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     About Us
                   </a>
                   <a
                     href="/company-experience"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Company Experience
                   </a>
                   <a
                     href="/admin/landing"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Manage Home
                   </a>
                   <a
                     href="/courses"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Browse Course
                   </a>
                   <a
                     href="/admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Manage Course
                   </a>
                   <a
                     href="/admin/quotations"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Quotation
                   </a>
                   <a
                     href="/admin/messages?role=admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Chat
                   </a>
                   <a
                     href="/admin/users"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Manage Users
                   </a>
                   <a
                     href="/admin/profile?role=admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Profile
                   </a>
                   <button
                     type="button"
                     onClick={() => void signOut()}
-                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-paper"
                   >
                     Logout
                   </button>
@@ -252,35 +253,35 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Employer
               </button>
               {isEmployerMenuOpen && (
-                <div className="absolute right-0 top-12 z-[70] w-64 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
+                <div className="absolute right-0 top-14 z-[70] w-64 rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
                   <a
                     href="/employer/quotation"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Quotation
                   </a>
                   <a
                     href="/employer"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Documents
                   </a>
                   <a
                     href="/employer/talk-to-admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Talk to Admin
                   </a>
                   <a
                     href="/employer/profile"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Profile
                   </a>
                   <button
                     type="button"
                     onClick={() => void signOut()}
-                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-paper"
                   >
                     Log Out
                   </button>
@@ -300,9 +301,9 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 {employerStatus === "rejected" ? "Employer (rejected)" : "Account"}
               </button>
               {isAccountMenuOpen && (
-                <div className="absolute right-0 top-12 z-[70] w-72 rounded-xl bg-white p-2 text-[#7A1F1F] shadow-lg ring-1 ring-black/5">
-                  <div className="px-3 py-2 text-xs text-black/70">
-                    <div className="font-semibold text-[#7A1F1F]">{viewerName}</div>
+                <div className="absolute right-0 top-12 z-[70] w-72 rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
+                  <div className="px-3 py-2 text-xs text-ink-muted">
+                    <div className="font-semibold text-primary">{viewerName}</div>
                     {viewerEmail && <div className="mt-1 break-all">{viewerEmail}</div>}
                     {employerStatus === "rejected" && (
                       <div className="mt-2 text-[11px] leading-snug text-red-700">
@@ -313,7 +314,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
 
                   <a
                     href="/courses"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Browse courses
                   </a>
@@ -321,7 +322,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                   {employerStatus === "rejected" && (
                     <a
                       href="/employer/profile"
-                      className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                     >
                       Profile
                     </a>
@@ -329,7 +330,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
 
                   <a
                     href="/login?stay=1"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
                   >
                     Account / sign-in status
                   </a>
@@ -337,7 +338,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                   <button
                     type="button"
                     onClick={() => void signOut()}
-                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-[#F5F1E8]"
+                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-paper"
                   >
                     Log out
                   </button>
@@ -363,7 +364,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
       </div>
 
       {useBuiltInMobileNav && isMobileNavOpen && (
-        <nav className="border-t border-white/20 bg-[#6a1a1a] px-4 py-3 md:hidden">
+        <nav className="border-t border-white/20 bg-primary-dark px-4 py-3 md:hidden">
           <ul className="flex flex-col gap-1">
             {PRIMARY_NAV.map((link) => (
               <li key={link.href}>

@@ -13,6 +13,7 @@ import {
   type QuotationFormValues,
 } from "../../features/quotation/components/QuotationRequestFormFields";
 import type { QuotationCourseOption } from "../../features/quotation/components/CourseSearchSelect";
+import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 const emptyFormValues = (): QuotationFormValues => ({
   toSource: "profile",
@@ -131,19 +132,17 @@ const EmployerQuotationRequest = () => {
         void signOutAndRedirectHome();
       }}
     >
-      <div className="flex flex-col items-center text-center">
-        <a
-          href="/employer"
-          className="sk-button-secondary rounded-xl px-5 py-2.5 text-sm font-semibold no-underline"
-        >
-          ← Back to employer dashboard
-        </a>
-        <h1 className="mt-6 text-4xl font-bold text-[#0001fc] md:text-5xl">Request a Quotation</h1>
-        <p className="mt-3 max-w-2xl text-lg leading-relaxed text-black">
-          Submit your quotation details below. An administrator will review your request and approve it.
-          When approved, you can download your quotation PDF from the employer dashboard.
-        </p>
-      </div>
+      <a
+        href="/employer"
+        className="inline-flex min-h-[44px] items-center text-sm font-semibold text-primary hover:underline"
+      >
+        ← Back to employer dashboard
+      </a>
+      <DashboardPageHeader
+        className="mt-4"
+        title="Request a quotation"
+        subtitle="Submit your quotation details below. An administrator will review your request. When approved, you can download your quotation PDF from the employer dashboard."
+      />
 
       {errorMessage && (
         <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
@@ -153,8 +152,8 @@ const EmployerQuotationRequest = () => {
 
       <section className="sk-card mx-auto mt-8 max-w-3xl overflow-hidden p-6 md:p-8">
         <div className="border-b border-black/5 pb-5">
-          <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">New Quotation Application</h2>
-          <p className="mt-2 text-sm leading-relaxed text-black/70">
+          <h2 className="text-xl font-bold text-primary md:text-2xl">New Quotation Application</h2>
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
             Fill in all required fields. Contact admin through Chat Support for any questions.
           </p>
         </div>

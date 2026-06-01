@@ -277,33 +277,33 @@ const AdminUsers = () => {
 
         <section className="sk-card mt-10 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Pending Employer</h2>
-            <p className="text-sm font-semibold text-[#7A1F1F]">{pendingEmployers.length} pending</p>
+            <h2 className="text-2xl font-bold text-primary">Pending Employer</h2>
+            <p className="text-sm font-semibold text-primary">{pendingEmployers.length} pending</p>
           </div>
-          <p className="mt-2 text-sm text-black">Admin can reject or approve the new users.</p>
+          <p className="mt-2 text-sm text-ink">Admin can reject or approve the new users.</p>
 
           <div className="mt-5 space-y-3">
             {isLoading && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 Loading users...
               </p>
             )}
 
             {!isLoading && pendingEmployers.length === 0 && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 No pending requests.
               </p>
             )}
 
             {pendingEmployers.map((p) => (
-              <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
+              <article key={p.user_id} className="rounded-xl border border-black/10 p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
-                    <p className="mt-1 text-sm text-black/80">
+                    <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
+                    <p className="mt-1 text-sm text-ink-muted">
                       Company: {p.company_name ?? "—"} · Phone: {p.phone ?? "—"}
                     </p>
-                    <p className="mt-1 text-xs font-semibold text-[#7A1F1F]">
+                    <p className="mt-1 text-xs font-semibold text-primary">
                       Requested: {new Date(p.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -334,12 +334,12 @@ const AdminUsers = () => {
 
         <section className="sk-card mt-8 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Employers</h2>
-            <p className="text-sm font-semibold text-[#7A1F1F]">
+            <h2 className="text-2xl font-bold text-primary">Employers</h2>
+            <p className="text-sm font-semibold text-primary">
               {existingEmployers.length} employers
             </p>
           </div>
-          <p className="mt-2 text-sm text-black">
+          <p className="mt-2 text-sm text-ink">
             Company contact details and profile photo. Use Edit to update an employer&apos;s profile.
           </p>
 
@@ -351,13 +351,13 @@ const AdminUsers = () => {
 
           <div className="mt-5 space-y-3">
             {isLoading && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 Loading users...
               </p>
             )}
 
             {!isLoading && existingEmployers.length === 0 && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 No approved employers found.
               </p>
             )}
@@ -368,10 +368,10 @@ const AdminUsers = () => {
                 const initials = profileInitials(p.full_name, p.short_name);
 
                 return (
-                  <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
+                  <article key={p.user_id} className="rounded-xl border border-black/10 p-4">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div className="flex min-w-0 flex-1 gap-4">
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-[#efe1db] bg-white shadow-sm">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-black/10 bg-white shadow-sm">
                           {p.profile_pic_url ? (
                             <img
                               src={p.profile_pic_url}
@@ -379,33 +379,33 @@ const AdminUsers = () => {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-lg font-bold text-[#7A1F1F]">
+                            <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary">
                               {initials}
                             </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
-                          <p className="mt-1 text-sm text-black/80">
+                          <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
+                          <p className="mt-1 text-sm text-ink-muted">
                             Company:{" "}
-                            <span className="font-semibold text-[#7A1F1F]">{p.company_name ?? "—"}</span>
+                            <span className="font-semibold text-primary">{p.company_name ?? "—"}</span>
                           </p>
-                          <p className="mt-1 text-sm text-black/80">
+                          <p className="mt-1 text-sm text-ink-muted">
                             Email:{" "}
-                            <span className="break-all font-medium text-black/90">
+                            <span className="break-all font-medium text-ink">
                               {p.email?.trim() ? p.email : "—"}
                             </span>
                           </p>
-                          <p className="mt-1 text-sm text-black/80">
+                          <p className="mt-1 text-sm text-ink-muted">
                             Company address:{" "}
-                            <span className="whitespace-pre-wrap text-black/90">
+                            <span className="whitespace-pre-wrap text-ink">
                               {p.company_address?.trim() ? p.company_address : "—"}
                             </span>
                           </p>
-                          <p className="mt-1 text-sm text-black/80">
+                          <p className="mt-1 text-sm text-ink-muted">
                             Phone: <span className="font-medium">{p.phone?.trim() ? p.phone : "—"}</span>
                           </p>
-                          <p className="mt-1 text-xs font-semibold text-black/70">
+                          <p className="mt-1 text-xs font-semibold text-ink-muted">
                             Approved: {p.approved_at ? new Date(p.approved_at).toLocaleString() : "—"}
                           </p>
                         </div>
@@ -436,7 +436,7 @@ const AdminUsers = () => {
 
                     {isEditing && employerEdit && (
                       <form
-                        className="mt-5 space-y-4 border-t border-[#efe1db] pt-5"
+                        className="mt-5 space-y-4 border-t border-black/10 pt-5"
                         onSubmit={(e) => {
                           e.preventDefault();
                           void saveEmployerEdit();
@@ -444,7 +444,7 @@ const AdminUsers = () => {
                       >
                         <div className="grid gap-4 md:grid-cols-2">
                           <label className="block md:col-span-2">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Full name
                             </span>
                             <input
@@ -452,13 +452,13 @@ const AdminUsers = () => {
                               onChange={(e) =>
                                 setEmployerEdit({ ...employerEdit, fullName: e.target.value })
                               }
-                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
                               required
                               disabled={isSaving}
                             />
                           </label>
                           <label className="block">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Short name
                             </span>
                             <input
@@ -466,13 +466,13 @@ const AdminUsers = () => {
                               onChange={(e) =>
                                 setEmployerEdit({ ...employerEdit, shortName: e.target.value })
                               }
-                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
                               placeholder="Optional"
                               disabled={isSaving}
                             />
                           </label>
                           <label className="block md:col-span-2">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Company name
                             </span>
                             <input
@@ -480,12 +480,12 @@ const AdminUsers = () => {
                               onChange={(e) =>
                                 setEmployerEdit({ ...employerEdit, companyName: e.target.value })
                               }
-                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
                               disabled={isSaving}
                             />
                           </label>
                           <label className="block md:col-span-2">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Company address
                             </span>
                             <textarea
@@ -494,12 +494,12 @@ const AdminUsers = () => {
                                 setEmployerEdit({ ...employerEdit, companyAddress: e.target.value })
                               }
                               rows={3}
-                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
                               disabled={isSaving}
                             />
                           </label>
                           <label className="block md:col-span-2">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Phone number
                             </span>
                             <input
@@ -507,12 +507,12 @@ const AdminUsers = () => {
                               onChange={(e) =>
                                 setEmployerEdit({ ...employerEdit, phone: e.target.value })
                               }
-                              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-black"
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
                               disabled={isSaving}
                             />
                           </label>
                           <label className="block md:col-span-2">
-                            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Profile picture
                             </span>
                             <input
@@ -524,11 +524,11 @@ const AdminUsers = () => {
                                   pendingPic: e.currentTarget.files?.[0] ?? null,
                                 })
                               }
-                              className="block w-full text-sm text-black"
+                              className="block w-full text-sm text-ink"
                               disabled={isSaving}
                             />
                             {employerEdit.pendingPic && (
-                              <p className="mt-1 text-xs text-black/70">
+                              <p className="mt-1 text-xs text-ink-muted">
                                 Selected:{" "}
                                 <span className="font-semibold">{employerEdit.pendingPic.name}</span>
                               </p>
@@ -548,18 +548,18 @@ const AdminUsers = () => {
 
         <section className="sk-card mt-8 p-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Admins</h2>
-            <p className="text-sm font-semibold text-[#7A1F1F]">{admins.length} admins</p>
+            <h2 className="text-2xl font-bold text-primary">Admins</h2>
+            <p className="text-sm font-semibold text-primary">{admins.length} admins</p>
           </div>
 
-          <p className="mt-2 text-sm text-black">
+          <p className="mt-2 text-sm text-ink">
             Deactivate another admin to revoke their access. At least one admin must stay active. You
             cannot deactivate yourself.
           </p>
 
-          <div className="mt-3 rounded-xl border border-[#efe1db] bg-white/60 p-5">
-            <h3 className="text-lg font-bold text-[#7A1F1F]">Create New Admin</h3>
-            <p className="mt-2 text-sm text-black">
+          <div className="mt-3 rounded-xl border border-black/10 bg-white/60 p-5">
+            <h3 className="text-lg font-bold text-primary">Create New Admin</h3>
+            <p className="mt-2 text-sm text-ink">
               Create a new admin by submitting Full Name, Email and Password.
             </p>
 
@@ -571,22 +571,22 @@ const AdminUsers = () => {
               }}
             >
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-black">Full Name</span>
+                <span className="text-sm font-semibold text-ink">Full Name</span>
                 <input
                   value={newAdminFullName}
                   onChange={(e) => setNewAdminFullName(e.target.value)}
-                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
                   placeholder="e.g. Jane Doe"
                   autoComplete="name"
                 />
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-black">Email</span>
+                <span className="text-sm font-semibold text-ink">Email</span>
                 <input
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
-                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
                   placeholder="admin@example.com"
                   type="email"
                   autoComplete="email"
@@ -594,11 +594,11 @@ const AdminUsers = () => {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-black">Password</span>
+                <span className="text-sm font-semibold text-ink">Password</span>
                 <input
                   value={newAdminPassword}
                   onChange={(e) => setNewAdminPassword(e.target.value)}
-                  className="w-full rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-black outline-none focus:border-[#0001fc]"
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
                   placeholder="Minimum 6 characters"
                   type="password"
                   autoComplete="new-password"
@@ -615,7 +615,7 @@ const AdminUsers = () => {
 
           <div className="mt-5 space-y-3">
             {!isLoading && admins.length === 0 && (
-              <p className="rounded-xl border border-dashed border-[#c5b5ad] p-6 text-sm text-black">
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 No admins found.
               </p>
             )}
@@ -627,13 +627,13 @@ const AdminUsers = () => {
                 const showDeactivate = canDeactivateAdmin(p, viewerId, admins);
 
                 return (
-                <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
+                <article key={p.user_id} className="rounded-xl border border-black/10 p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                        <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
                         {isSelf && (
-                          <span className="rounded-full bg-[#7A1F1F]/10 px-2 py-0.5 text-xs font-semibold text-[#7A1F1F]">
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                             You
                           </span>
                         )}
@@ -647,13 +647,13 @@ const AdminUsers = () => {
                           {isActive ? "Active" : "Deactivated"}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-black/80">
+                      <p className="mt-1 text-sm text-ink-muted">
                         Email:{" "}
-                        <span className="break-all font-medium text-black/90">
+                        <span className="break-all font-medium text-ink">
                           {p.email?.trim() ? p.email : "—"}
                         </span>
                       </p>
-                      <p className="mt-1 text-xs font-semibold text-black/70">
+                      <p className="mt-1 text-xs font-semibold text-ink-muted">
                         Created: {new Date(p.created_at).toLocaleString()}
                       </p>
                     </div>

@@ -66,7 +66,7 @@ function groupRowsByEmployer(
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
-      className={`h-5 w-5 shrink-0 text-[#7A1F1F] transition-transform duration-200 ${
+      className={`h-5 w-5 shrink-0 text-primary transition-transform duration-200 ${
         expanded ? "rotate-0" : "-rotate-90"
       }`}
       viewBox="0 0 20 20"
@@ -108,9 +108,9 @@ function QuotationRequestRowCells({
   onDeleteRequest: (row: QuotationRequestRow) => void;
 }) {
   return (
-    <tr className="border-t border-[#efe1db] transition hover:bg-[#faf7f2]/60">
-      <td className="px-4 py-3 align-top text-black/90">{row.course_name}</td>
-      <td className="px-4 py-3 align-top whitespace-nowrap text-black/80">{row.proposed_date}</td>
+    <tr className="border-t border-black/10 transition hover:bg-primary/5/60">
+      <td className="px-4 py-3 align-top text-ink">{row.course_name}</td>
+      <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">{row.proposed_date}</td>
       <td className="px-4 py-3 align-top">
         <StatusBadge status={row.status} />
       </td>
@@ -140,7 +140,7 @@ function QuotationRequestRowCells({
                   {invoiceDownloadId === row.id ? "Preparing…" : "Invoice"}
                 </QuotationActionButton>
               ) : (
-                <span className="self-center text-xs text-black/50">Invoice unavailable</span>
+                <span className="self-center text-xs text-ink-muted">Invoice unavailable</span>
               )}
             </>
           )}
@@ -193,11 +193,11 @@ export function AdminQuotationRequestsTable({
 
   return (
     <section className="sk-card mt-8 overflow-hidden p-0">
-      <div className="border-b border-[#efe1db] bg-[#faf7f2] px-6 py-4">
+      <div className="border-b border-black/10 bg-primary/5 px-6 py-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-[#7A1F1F]">All requests</h2>
-            <p className="mt-1 text-sm text-black/70">
+            <h2 className="text-xl font-bold text-primary">All requests</h2>
+            <p className="mt-1 text-sm text-ink-muted">
               {rows.length} request{rows.length === 1 ? "" : "s"}
               {!isLoading && rows.length > 0 && (
                 <>
@@ -213,9 +213,9 @@ export function AdminQuotationRequestsTable({
       </div>
 
       <div className="p-6">
-        {isLoading && <p className="text-sm text-black/70">Loading quotation requests…</p>}
+        {isLoading && <p className="text-sm text-ink-muted">Loading quotation requests…</p>}
         {!isLoading && rows.length === 0 && (
-          <p className="text-sm text-black/70">No quotation requests yet.</p>
+          <p className="text-sm text-ink-muted">No quotation requests yet.</p>
         )}
         {!isLoading && rows.length > 0 && (
           <div className="space-y-6">
@@ -225,20 +225,20 @@ export function AdminQuotationRequestsTable({
               return (
                 <div
                   key={group.employerId}
-                  className="overflow-hidden rounded-xl border border-[#efe1db]"
+                  className="overflow-hidden rounded-xl border border-black/10"
                 >
                   <button
                     type="button"
                     onClick={() => toggleEmployerGroup(group.employerId)}
                     aria-expanded={isExpanded}
-                    className={`flex w-full items-center gap-3 bg-[#faf7f2] px-4 py-3 text-left transition hover:bg-[#f3ebe3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7A1F1F]/30 focus-visible:ring-offset-2 ${
-                      isExpanded ? "border-b border-[#efe1db]" : ""
+                    className={`flex w-full items-center gap-3 bg-primary/5 px-4 py-3 text-left transition hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 ${
+                      isExpanded ? "border-b border-black/10" : ""
                     }`}
                   >
                     <ChevronIcon expanded={isExpanded} />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-[#7A1F1F]">{group.displayName}</h3>
-                      <p className="mt-0.5 text-xs text-black/60">
+                      <h3 className="font-bold text-primary">{group.displayName}</h3>
+                      <p className="mt-0.5 text-xs text-ink-muted">
                         {group.requests.length} quotation request
                         {group.requests.length === 1 ? "" : "s"}
                       </p>
@@ -248,7 +248,7 @@ export function AdminQuotationRequestsTable({
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                         <thead>
-                          <tr className="bg-white text-[#7A1F1F]">
+                          <tr className="bg-white text-primary">
                             <th className="px-4 py-2.5 font-semibold">Course</th>
                             <th className="px-4 py-2.5 font-semibold">Proposed</th>
                             <th className="px-4 py-2.5 font-semibold">Status</th>

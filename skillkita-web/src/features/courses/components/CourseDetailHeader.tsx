@@ -1,6 +1,8 @@
 import PlaceholderPoster from "../../../assets/placeholder.jpg";
-import { CoursePosterMedia } from "./CoursePosterMedia";
+import { formatCourseDisplayDate, isUpcomingCourseDate } from "../courseDate";
 import type { CourseDetailRow } from "../api/coursesApi";
+import { CoursePosterMedia } from "./CoursePosterMedia";
+import { CourseUpcomingMeta } from "./CourseUpcomingMeta";
 
 type Props = {
   course: CourseDetailRow;
@@ -8,43 +10,57 @@ type Props = {
 
 export function CourseDetailHeader({ course }: Props) {
   return (
-    <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[280px,1fr]">
-      <CoursePosterMedia
-        url={course.poster_url ?? PlaceholderPoster}
-        alt={`${course.name} poster`}
-        className="aspect-[210/297] w-full rounded-xl object-cover"
-      />
+    <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(240px,320px),1fr]">
+      <div className="sk-card flex items-center justify-center overflow-hidden bg-paper p-4">
+        <CoursePosterMedia
+          url={course.poster_url ?? PlaceholderPoster}
+          alt={`${course.name} poster`}
+          className="max-h-[420px] w-full object-contain"
+          optimizeWidth={640}
+        />
+      </div>
 
-      <section className="sk-card p-6">
-        <h1 className="text-3xl font-bold text-[#0001fc] md:text-4xl">{course.name}</h1>
-        <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-black/90 md:grid-cols-2">
-          <p>
-            <span className="font-semibold text-[#7A1F1F]">Date:</span> {course.date || "—"}
-          </p>
-          <p>
-            <span className="font-semibold text-[#7A1F1F]">Time:</span> {course.course_time || "—"}
-          </p>
-          <p className="md:col-span-2">
-            <span className="font-semibold text-[#7A1F1F]">Venue:</span> {course.venue || "—"}
-          </p>
-          <p className="md:col-span-2">
-            <span className="font-semibold text-[#7A1F1F]">Trainer:</span> {course.trainer_names || "—"}
-          </p>
-          <p>
-            <span className="font-semibold text-[#7A1F1F]">MyCOID:</span> {course.mycoid || "—"}
-          </p>
-          <p>
-            <span className="font-semibold text-[#7A1F1F]">Price:</span> {course.price || "—"}
-          </p>
-          <p className="md:col-span-2">
-            <span className="font-semibold text-[#7A1F1F]">Person to contact:</span>{" "}
-            {course.contact_person || "—"}
-          </p>
-          <p className="md:col-span-2">
-            <span className="font-semibold text-[#7A1F1F]">Phone number:</span>{" "}
-            {course.contact_phone || "—"}
-          </p>
-        </div>
+      <section className="sk-card p-6 md:p-8">
+        <CourseUpcomingMeta date={course.date} />
+        <h1 className="sk-heading-3 text-ink">{course.name}</h1>
+        <dl className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+          {!isUpcomingCourseDate(course.date) && (
+            <div>
+              <dt className="font-semibold text-primary">Date</dt>
+              <dd className="mt-0.5 text-ink-muted">
+                {formatCourseDisplayDate(course.date) ?? course.date ?? "—"}
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt className="font-semibold text-primary">Time</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.course_time || "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-primary">Venue</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.venue || "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-primary">Trainer</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.trainer_names || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-primary">MyCOID</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.mycoid || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-primary">Price</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.price || "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-primary">Person to contact</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.contact_person || "—"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-primary">Phone number</dt>
+            <dd className="mt-0.5 text-ink-muted">{course.contact_phone || "—"}</dd>
+          </div>
+        </dl>
       </section>
     </div>
   );

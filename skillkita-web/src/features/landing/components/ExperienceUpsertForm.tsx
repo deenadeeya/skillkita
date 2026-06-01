@@ -10,9 +10,7 @@ export type ExperienceFormState = {
 
 type Props = {
   experienceForm: ExperienceFormState;
-  /** When set, form is in edit mode and existing photos may be shown. */
   editingExperience: ExperienceRow | null;
-  /** Remount file input when opening a fresh add/edit flow. */
   formResetKey?: string | number;
   isSaving: boolean;
   onFieldChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -21,6 +19,9 @@ type Props = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel?: () => void;
 };
+
+const fieldClass =
+  "w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink focus:border-primary/40";
 
 export function ExperienceUpsertForm({
   experienceForm,
@@ -39,7 +40,7 @@ export function ExperienceUpsertForm({
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Title
             <RequiredMark />
           </span>
@@ -47,12 +48,12 @@ export function ExperienceUpsertForm({
             name="name"
             value={experienceForm.name}
             onChange={onFieldChange}
-            className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+            className={fieldClass}
             required
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Date
             <RequiredMark />
           </span>
@@ -61,46 +62,46 @@ export function ExperienceUpsertForm({
             name="date"
             value={experienceForm.date}
             onChange={onFieldChange}
-            className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+            className={fieldClass}
             required
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Photos (Accepts Multiple Images)</span>
+          <span className="mb-1 block text-sm font-semibold text-primary">Photos (multiple)</span>
           <input
             key={formResetKey}
             type="file"
             accept="image/*"
             multiple
             onChange={onPhotosChange}
-            className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+            className={fieldClass}
             disabled={isSaving}
           />
         </label>
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Details </span>
+          <span className="mb-1 block text-sm font-semibold text-primary">Details</span>
           <textarea
             name="details"
             value={experienceForm.details}
             onChange={onFieldChange}
             rows={5}
-            className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+            className={fieldClass}
             placeholder="Optional description…"
           />
         </label>
       </div>
 
       {editingExperience?.photo_urls?.length ? (
-        <div className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4">
-          <p className="text-sm font-semibold text-[#7A1F1F]">Existing photos</p>
+        <div className="rounded-card border border-black/5 bg-paper p-4">
+          <p className="text-sm font-semibold text-primary">Existing photos</p>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {(editingExperience.photo_urls ?? []).map((url) => (
-              <div key={url} className="rounded-xl border border-[#efe1db] bg-white p-2">
+              <div key={url} className="rounded-card border border-black/5 bg-white p-2">
                 <img src={url} alt="Experience" className="aspect-square w-full rounded-lg object-cover" />
                 <button
                   type="button"
                   onClick={() => onRemoveExistingPhoto(url)}
-                  className="mt-2 w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-800 hover:bg-red-50"
+                  className="mt-2 w-full rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
                   disabled={isSaving}
                 >
                   Remove
@@ -116,7 +117,7 @@ export function ExperienceUpsertForm({
           {isSaving ? "Saving..." : isEdit ? "Update experience" : "Add experience"}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="sk-button-secondary px-3 py-2" disabled={isSaving}>
+          <button type="button" onClick={onCancel} className="sk-button-secondary" disabled={isSaving}>
             Cancel
           </button>
         )}

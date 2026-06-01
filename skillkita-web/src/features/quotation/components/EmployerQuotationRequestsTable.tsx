@@ -31,11 +31,11 @@ export function EmployerQuotationRequestsTable({
 
   return (
     <section className="sk-card mt-6 overflow-hidden p-0">
-      <div className="border-b border-[#efe1db] bg-[#faf7f2] px-6 py-4">
+      <div className="border-b border-black/10 bg-primary/5 px-6 py-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-[#7A1F1F]">Quotation Application History</h2>
-            <p className="mt-1 text-sm text-black/70">
+            <h2 className="text-xl font-bold text-primary">Quotation Application History</h2>
+            <p className="mt-1 text-sm text-ink-muted">
               {rows.length} request{rows.length === 1 ? "" : "s"}
               {!isLoading && rows.length > 0 && (
                 <>
@@ -44,7 +44,7 @@ export function EmployerQuotationRequestsTable({
                 </>
               )}
             </p>
-            <p className="mt-1 text-sm text-black/60">
+            <p className="mt-1 text-sm text-ink-muted">
               After admin approves your request, download your quotation or invoice PDF from the actions
               column.
             </p>
@@ -56,16 +56,16 @@ export function EmployerQuotationRequestsTable({
       </div>
 
       <div className="p-6">
-        {isLoading && <p className="text-sm text-black/70">Loading quotation history…</p>}
+        {isLoading && <p className="text-sm text-ink-muted">Loading quotation history…</p>}
         {!isLoading && rows.length === 0 && (
-          <p className="text-sm text-black/70">No quotation requests yet.</p>
+          <p className="text-sm text-ink-muted">No quotation requests yet.</p>
         )}
         {!isLoading && rows.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-[#efe1db]">
+          <div className="overflow-hidden rounded-xl border border-black/10">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-left text-sm">
                 <thead>
-                  <tr className="bg-[#faf7f2] text-[#7A1F1F]">
+                  <tr className="bg-primary/5 text-primary">
                     <th className="px-4 py-2.5 font-semibold">Course</th>
                     <th className="px-4 py-2.5 font-semibold">Proposed</th>
                     <th className="px-4 py-2.5 font-semibold">Status</th>
@@ -82,20 +82,20 @@ export function EmployerQuotationRequestsTable({
                     return (
                       <tr
                         key={row.id}
-                        className="border-t border-[#efe1db] bg-white transition hover:bg-[#faf7f2]/60"
+                        className="border-t border-black/10 bg-white transition hover:bg-primary/5/60"
                       >
                         <td className="px-4 py-3 align-top">
-                          <p className="font-medium text-black/90">{row.course_name}</p>
+                          <p className="font-medium text-ink">{row.course_name}</p>
                           {row.quotation_no != null ? (
-                            <p className="mt-0.5 text-xs text-black/55">
+                            <p className="mt-0.5 text-xs text-ink/55">
                               Quotation #{String(row.quotation_no).padStart(4, "0")}
                             </p>
                           ) : null}
-                          <p className="mt-0.5 text-xs text-black/55">
+                          <p className="mt-0.5 text-xs text-ink/55">
                             Submitted {formatSubmitted(row.created_at)}
                           </p>
                         </td>
-                        <td className="px-4 py-3 align-top whitespace-nowrap text-black/80">
+                        <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">
                           {row.proposed_date}
                         </td>
                         <td className="px-4 py-3 align-top">
@@ -115,9 +115,9 @@ export function EmployerQuotationRequestsTable({
                                 Quotation PDF not ready yet
                               </span>
                             ) : row.status === "pending" ? (
-                              <span className="self-center text-xs text-black/50">Awaiting review</span>
+                              <span className="self-center text-xs text-ink-muted">Awaiting review</span>
                             ) : (
-                              <span className="self-center text-xs text-black/50">—</span>
+                              <span className="self-center text-xs text-ink-muted">—</span>
                             )}
 
                             {canDownloadInvoice ? (
@@ -129,7 +129,7 @@ export function EmployerQuotationRequestsTable({
                                 {invoiceDownloadId === row.id ? "Preparing…" : "Invoice"}
                               </QuotationActionButton>
                             ) : row.status === "approved" && !canDownloadQuotation ? (
-                              <span className="self-center text-xs text-black/50">Invoice unavailable</span>
+                              <span className="self-center text-xs text-ink-muted">Invoice unavailable</span>
                             ) : null}
                           </div>
                         </td>
