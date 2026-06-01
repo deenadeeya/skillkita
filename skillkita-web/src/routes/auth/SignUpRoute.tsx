@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
+import { PasswordInput } from "../../shared/ui/PasswordInput";
 
 function RequiredStar() {
   return (
@@ -239,13 +240,11 @@ const SignUp = () => {
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
                   Password <RequiredStar />
                 </span>
-                <input
-                  type="password"
+                <PasswordInput
                   name="new-password"
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
                   required
                 />
               </label>

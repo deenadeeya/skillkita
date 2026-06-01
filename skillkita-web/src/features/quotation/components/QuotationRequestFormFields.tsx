@@ -1,6 +1,10 @@
 import type { FormEvent, ReactNode } from "react";
+import { useMemo } from "react";
+import PlaceholderPoster from "../../../assets/placeholder.jpg";
+import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
+import { CourseSearchSelect, type QuotationCourseOption } from "./CourseSearchSelect";
 
 export type ToSource = "profile" | "manual";
 
@@ -9,6 +13,7 @@ export type QuotationFormValues = {
   manualCompanyName: string;
   manualCompanyAddress: string;
   courseName: string;
+  selectedCourseId: string;
   courseMode: string;
   pricePerPax: string;
   courseLocationAddress: string;
@@ -16,21 +21,18 @@ export type QuotationFormValues = {
   additionalDescription: string;
 };
 
-type CourseSuggestion = { id: string; name: string };
-
 type Props = {
   values: QuotationFormValues;
   onChange: (patch: Partial<QuotationFormValues>) => void;
   profileCompanyName: string;
   profileCompanyAddress: string;
-  courseNameSuggestions: CourseSuggestion[];
+  courseOptions: QuotationCourseOption[];
   disabled?: boolean;
   isSubmitting?: boolean;
   submitLabel?: string;
   onSubmit: (ev: FormEvent<HTMLFormElement>) => void;
   /** Rendered above the To fieldset (e.g. admin employer picker). */
   prefix?: ReactNode;
-  datalistId?: string;
 };
 
 export function QuotationRequestFormFields({
@@ -38,15 +40,19 @@ export function QuotationRequestFormFields({
   onChange,
   profileCompanyName,
   profileCompanyAddress,
-  courseNameSuggestions,
+  courseOptions,
   disabled = false,
   isSubmitting = false,
   submitLabel = "Submit",
   onSubmit,
   prefix,
-  datalistId = "quotation-course-name-options",
 }: Props) {
   const canUseProfile = Boolean(profileCompanyName || profileCompanyAddress);
+
+  const selectedCourse = useMemo(
+    () => courseOptions.find((c) => c.id === values.selectedCourseId) ?? null,
+    [courseOptions, values.selectedCourseId]
+  );
 
   return (
     <form className="space-y-6" onSubmit={onSubmit}>
@@ -132,29 +138,50 @@ export function QuotationRequestFormFields({
         )}
       </fieldset>
 
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
-          Course name / Tajuk
-          <RequiredMark />
-        </span>
-        <input
-          value={values.courseName}
-          onChange={(e) => onChange({ courseName: e.target.value })}
-          disabled={disabled}
-          className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
-          placeholder="e.g. Leadership & Team Building Workshop"
-          list={datalistId}
-          required
-        />
-        <datalist id={datalistId}>
-          {courseNameSuggestions.map((c) => (
-            <option key={c.id} value={c.name} />
-          ))}
-        </datalist>
-        <p className="mt-1 text-xs text-black/60">
-          Type freely or pick a suggestion from published courses.
-        </p>
-      </label>
+      <div className="grid gap-4 md:grid-cols-[1fr,min(200px,38%)] md:items-start">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+            Course name / Tajuk
+            <RequiredMark />
+          </span>
+          <CourseSearchSelect
+            selectedCourseId={values.selectedCourseId}
+            courseName={values.courseName}
+            options={courseOptions}
+            disabled={disabled}
+            required
+            onChange={(patch) => onChange(patch)}
+          />
+        </label>
+
+        <aside
+          className={`rounded-xl border border-[#efe1db] bg-[#faf7f2] p-3 transition-opacity ${
+            selectedCourse ? "opacity-100" : "opacity-60"
+          }`}
+          aria-live="polite"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#7A1F1F]">
+            Course poster
+          </p>
+          {selectedCourse ? (
+            <>
+              <CoursePosterMedia
+                url={selectedCourse.poster_url ?? PlaceholderPoster}
+                alt={`${selectedCourse.name} poster`}
+                className="mt-2 aspect-[210/297] w-full rounded-lg object-cover shadow-sm"
+                optimizeWidth={400}
+              />
+              <p className="mt-2 line-clamp-3 text-xs font-medium text-black/80">
+                {selectedCourse.name}
+              </p>
+            </>
+          ) : (
+            <div className="mt-2 flex aspect-[210/297] w-full items-center justify-center rounded-lg border border-dashed border-black/15 bg-white/80 px-3 text-center text-xs text-black/50">
+              Select a course from the list to preview its poster
+            </div>
+          )}
+        </aside>
+      </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         <label className="block">

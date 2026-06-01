@@ -6,6 +6,7 @@ import {
   createAdminAuthUser,
   listUserProfiles,
   promoteProfileToAdmin,
+  setAdminActiveStatus,
   setEmployerApproval,
   updateEmployerProfile,
   type ProfileRow,
@@ -20,6 +21,16 @@ function profileInitials(fullName: string, shortName: string | null) {
   const a = parts[0]?.[0] ?? "—";
   const b = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
   return (a + b).toUpperCase();
+}
+
+function countActiveAdmins(admins: ProfileRow[]) {
+  return admins.filter((a) => a.status === "approved").length;
+}
+
+function canDeactivateAdmin(target: ProfileRow, viewerId: string | null, admins: ProfileRow[]) {
+  if (!viewerId || target.user_id === viewerId) return false;
+  if (target.status !== "approved") return false;
+  return countActiveAdmins(admins) > 1;
 }
 
 type EmployerEditDraft = {
@@ -57,6 +68,9 @@ const AdminUsers = () => {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminSuccess, setNewAdminSuccess] = useState<string | null>(null);
+  const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(null);
+
+  const viewerId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
 
   const [employerEdit, setEmployerEdit] = useState<EmployerEditDraft | null>(null);
   const [employerEditSuccess, setEmployerEditSuccess] = useState<string | null>(null);
@@ -91,6 +105,7 @@ const AdminUsers = () => {
     setIsSaving(true);
     setErrorMessage(null);
     setNewAdminSuccess(null);
+    setAdminActionSuccess(null);
 
     try {
       const adminId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
@@ -107,6 +122,7 @@ const AdminUsers = () => {
     setIsSaving(true);
     setErrorMessage(null);
     setNewAdminSuccess(null);
+    setAdminActionSuccess(null);
 
     const fullName = newAdminFullName.trim();
     const email = newAdminEmail.trim();
@@ -135,6 +151,51 @@ const AdminUsers = () => {
       setErrorMessage(e instanceof Error ? e.message : "Failed to create admin.");
       setIsSaving(false);
       await load();
+    }
+  };
+
+  const setAdminStatus = async (userId: string, active: boolean) => {
+    const target = profiles.find((p) => p.user_id === userId);
+    if (!target || target.role !== "admin") return;
+
+    if (!active && !canDeactivateAdmin(target, viewerId, admins)) {
+      if (target.user_id === viewerId) {
+        setErrorMessage("You cannot deactivate your own admin account.");
+      } else {
+        setErrorMessage("At least one active admin must remain.");
+      }
+      return;
+    }
+
+    const label = active ? "reactivate" : "deactivate";
+    const ok = window.confirm(
+      active
+        ? `Reactivate admin access for ${target.full_name}?`
+        : `Deactivate admin access for ${target.full_name}? They will not be able to use admin tools.`
+    );
+    if (!ok) return;
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    setNewAdminSuccess(null);
+    setAdminActionSuccess(null);
+
+    try {
+      await setAdminActiveStatus({
+        userId,
+        active,
+        approvedBy: viewerId,
+      });
+      setAdminActionSuccess(
+        active
+          ? `${target.full_name} can access admin tools again.`
+          : `${target.full_name} has been deactivated.`
+      );
+      await load();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : `Failed to ${label} admin.`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -197,11 +258,17 @@ const AdminUsers = () => {
     >
       <AdminPageFrame
         title="Manage Users"
-        subtitle="Approve employers or create new admin."
+        subtitle="Approve employers, manage admins, or create new admin accounts."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn"}
       >
+        {adminActionSuccess && (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            {adminActionSuccess}
+          </div>
+        )}
+
         {newAdminSuccess && (
           <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             {newAdminSuccess}
@@ -485,6 +552,11 @@ const AdminUsers = () => {
             <p className="text-sm font-semibold text-[#7A1F1F]">{admins.length} admins</p>
           </div>
 
+          <p className="mt-2 text-sm text-black">
+            Deactivate another admin to revoke their access. At least one admin must stay active. You
+            cannot deactivate yourself.
+          </p>
+
           <div className="mt-3 rounded-xl border border-[#efe1db] bg-white/60 p-5">
             <h3 className="text-lg font-bold text-[#7A1F1F]">Create New Admin</h3>
             <p className="mt-2 text-sm text-black">
@@ -549,20 +621,69 @@ const AdminUsers = () => {
             )}
 
             {!isLoading &&
-              admins.map((p) => (
+              admins.map((p) => {
+                const isSelf = p.user_id === viewerId;
+                const isActive = p.status === "approved";
+                const showDeactivate = canDeactivateAdmin(p, viewerId, admins);
+
+                return (
                 <article key={p.user_id} className="rounded-xl border border-[#efe1db] p-4">
-                  <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
-                  <p className="mt-1 text-sm text-black/80">
-                    Email:{" "}
-                    <span className="break-all font-medium text-black/90">
-                      {p.email?.trim() ? p.email : "—"}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-black/70">
-                    Created: {new Date(p.created_at).toLocaleString()}
-                  </p>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-[#0001fc]">{p.full_name}</h3>
+                        {isSelf && (
+                          <span className="rounded-full bg-[#7A1F1F]/10 px-2 py-0.5 text-xs font-semibold text-[#7A1F1F]">
+                            You
+                          </span>
+                        )}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            isActive
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-900"
+                          }`}
+                        >
+                          {isActive ? "Active" : "Deactivated"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-black/80">
+                        Email:{" "}
+                        <span className="break-all font-medium text-black/90">
+                          {p.email?.trim() ? p.email : "—"}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-black/70">
+                        Created: {new Date(p.created_at).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {isActive && showDeactivate && (
+                        <button
+                          type="button"
+                          disabled={isSaving}
+                          onClick={() => void setAdminStatus(p.user_id, false)}
+                          className="sk-button-secondary px-3 py-2 text-red-800 border-red-200 hover:bg-red-50"
+                        >
+                          Deactivate
+                        </button>
+                      )}
+                      {!isActive && (
+                        <button
+                          type="button"
+                          disabled={isSaving}
+                          onClick={() => void setAdminStatus(p.user_id, true)}
+                          className="sk-button-primary px-3 py-2"
+                        >
+                          Reactivate
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </article>
-              ))}
+              );
+              })}
           </div>
         </section>
       </AdminPageFrame>

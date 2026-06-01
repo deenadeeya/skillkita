@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import SiteHeader from "../../app/layout/SiteHeader";
 import { formatSupabaseNetworkError, supabase } from "../../shared/api/supabaseClient";
+import { PasswordInput } from "../../shared/ui/PasswordInput";
 
 type UserProfileRow = {
   user_id: string;
@@ -17,6 +18,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
+  const passwordResetSuccess =
+    new URLSearchParams(window.location.search).get("reset") === "success";
 
   useEffect(() => {
     const check = async () => {
@@ -42,7 +45,7 @@ const Login = () => {
       if (error || !profile) return;
 
       const row = profile as Pick<UserProfileRow, "role" | "status">;
-      if (row.role === "admin") {
+      if (row.role === "admin" && row.status !== "rejected") {
         window.location.href = "/admin";
         return;
       }
@@ -88,6 +91,11 @@ const Login = () => {
       const row = profile as UserProfileRow;
 
       if (row.role === "admin") {
+        if (row.status === "rejected") {
+          await supabase.auth.signOut();
+          window.localStorage.removeItem("skillkita-role");
+          throw new Error("Your admin account has been deactivated. Contact another administrator.");
+        }
         window.localStorage.setItem("skillkita-role", "admin");
         window.location.href = "/admin";
         return;
@@ -119,6 +127,12 @@ const Login = () => {
             <p className="mt-2 text-sm text-black">
               Log in to access employer or admin tools based on your role.
             </p>
+
+            {passwordResetSuccess && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                Your password was updated. Log in with your new password.
+              </div>
+            )}
 
             {errorMessage && (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -164,13 +178,17 @@ const Login = () => {
                 <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
                   Password
                 </span>
-                <input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  autoComplete="current-password"
                   required
                 />
+                <p className="mt-1.5 text-right text-sm">
+                  <a href="/forgot-password" className="font-semibold text-[#7A1F1F] underline">
+                    Forgot password?
+                  </a>
+                </p>
               </label>
 
               <button type="submit" disabled={isLoading} className="sk-button-primary w-full">

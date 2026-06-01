@@ -44,11 +44,14 @@ as $$
     from public.user_profiles p
     where p.user_id = auth.uid()
       and p.role = 'admin'
+      and p.status = 'approved'
   )
   or exists (
     select 1
     from public.admin_users au
+    inner join public.user_profiles p on p.user_id = au.user_id
     where au.user_id = auth.uid()
+      and p.status = 'approved'
   );
 $$;
 

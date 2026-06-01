@@ -2,11 +2,12 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
-import { listVisibleCourses, type PublicCourseRow } from "../../features/courses/api/coursesApi";
+import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { AdminCreateQuotationForm } from "../../features/quotation/components/AdminCreateQuotationForm";
+import type { QuotationCourseOption } from "../../features/quotation/components/CourseSearchSelect";
 import {
   resolveQuotationTo,
   type QuotationFormValues,
@@ -22,13 +23,12 @@ import {
   type ApprovedEmployerOption,
 } from "../../features/quotation/api/quotationRequestsApi";
 
-type CourseLabel = Pick<PublicCourseRow, "id" | "name">;
-
 const emptyFormValues = (): QuotationFormValues => ({
   toSource: "profile",
   manualCompanyName: "",
   manualCompanyAddress: "",
   courseName: "",
+  selectedCourseId: "",
   courseMode: "",
   pricePerPax: "",
   courseLocationAddress: "",
@@ -38,7 +38,7 @@ const emptyFormValues = (): QuotationFormValues => ({
 
 const AdminCreateQuotation = () => {
   const [approvedEmployers, setApprovedEmployers] = useState<ApprovedEmployerOption[]>([]);
-  const [courseOptions, setCourseOptions] = useState<CourseLabel[]>([]);
+  const [courseOptions, setCourseOptions] = useState<QuotationCourseOption[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
@@ -63,7 +63,14 @@ const AdminCreateQuotation = () => {
   const loadCourses = useCallback(async () => {
     try {
       const rows = await listVisibleCourses();
-      setCourseOptions(rows.map((c) => ({ id: c.id, name: c.name })));
+      setCourseOptions(
+        rows.map((c) => ({
+          id: c.id,
+          name: c.name,
+          date: c.date,
+          poster_url: c.poster_url,
+        }))
+      );
     } catch (e) {
       setCourseOptions([]);
       setErrorMessage(e instanceof Error ? e.message : "Failed to load courses.");
@@ -105,14 +112,8 @@ const AdminCreateQuotation = () => {
     ? ""
     : (selectedEmployer?.company_address?.trim() ?? "");
 
-  const courseNameSuggestions = useMemo(() => {
-    const uniq = new Map<string, CourseLabel>();
-    for (const c of courseOptions) {
-      const key = c.name.trim().toLowerCase();
-      if (!key) continue;
-      if (!uniq.has(key)) uniq.set(key, c);
-    }
-    return Array.from(uniq.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const sortedCourseOptions = useMemo(() => {
+    return [...courseOptions].sort((a, b) => a.name.localeCompare(b.name));
   }, [courseOptions]);
 
   const handleEmployerChange = (employerUserId: string) => {
@@ -259,7 +260,7 @@ const AdminCreateQuotation = () => {
           profileCompanyName={profileCompanyName}
           profileCompanyAddress={profileCompanyAddress}
           formValues={formValues}
-          courseNameSuggestions={courseNameSuggestions}
+          courseOptions={sortedCourseOptions}
           onEmployerChange={handleEmployerChange}
           onManualEmployerNameChange={setCreateManualEmployerName}
           onFormChange={(patch) => setFormValues((prev) => ({ ...prev, ...patch }))}

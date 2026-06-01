@@ -25,6 +25,8 @@ const AdminPaymentReceiptsRoute = lazy(() => import("./admin/AdminPaymentReceipt
 
 const Login = lazy(() => import("./auth/LoginRoute"));
 const SignUp = lazy(() => import("./auth/SignUpRoute"));
+const ForgotPassword = lazy(() => import("./auth/ForgotPasswordRoute"));
+const ResetPassword = lazy(() => import("./auth/ResetPasswordRoute"));
 
 const EmployerDashboard = lazy(() => import("./employer/EmployerIndexRoute"));
 const EmployerProfile = lazy(() => import("./employer/EmployerProfileRoute"));
@@ -49,6 +51,8 @@ export default function AppRouter() {
 
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route
               path="/admin"
