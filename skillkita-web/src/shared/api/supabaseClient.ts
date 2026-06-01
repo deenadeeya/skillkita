@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
-const envSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
+const envSupabaseUrl = ((import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "").trim();
 
 /** Real project URL from env — use for persisted storage links, not the dev proxy origin. */
 export function getSupabaseProjectUrl(): string {
@@ -9,14 +9,13 @@ export function getSupabaseProjectUrl(): string {
 }
 
 export function getSupabaseUrl(): string {
+  const base = envSupabaseUrl.replace(/\/$/, "");
+  if (base) return base;
+  // Fallback when VITE_* were missing at build time (misconfigured Vercel env).
   if (typeof window !== "undefined") {
-    // Production: call Supabase directly (env baked at build). Dev: same-origin Vite proxy.
-    if (import.meta.env.PROD && envSupabaseUrl) {
-      return envSupabaseUrl;
-    }
     return `${window.location.origin}/supabase-api`;
   }
-  return envSupabaseUrl ?? "";
+  return "";
 }
 
 /** Public object URL that works in production (avoids localhost dev-proxy URLs in the DB). */
@@ -80,6 +79,17 @@ export function formatSupabaseNetworkError(err: unknown): string {
         ].join(" ");
   }
 
+  if (/not valid json/i.test(message) || /unexpected token/i.test(message)) {
+    return import.meta.env.DEV
+      ? "Supabase returned HTML instead of JSON (often a bad proxy or stale cached JS). Hard-refresh (Ctrl+Shift+R) and check DevTools → Network."
+      : [
+          "Supabase returned HTML instead of JSON (e.g. a Vercel 404 page).",
+          "Redeploy after setting VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY on Vercel (Production), then hard-refresh.",
+          "Unregister the service worker: DevTools → Application → Service Workers → Unregister.",
+          "Login should call https://YOUR-REF.supabase.co, not /supabase-api — if Network still shows /supabase-api, the build had no env vars.",
+        ].join(" ");
+  }
+
   if (/unexpected end of json input/i.test(message)) {
     const hints = import.meta.env.DEV
       ? [
@@ -110,11 +120,10 @@ export function formatSupabaseNetworkError(err: unknown): string {
   return [
     "Cannot reach Supabase (network error).",
     import.meta.env.DEV
-      ? "Requests go through /supabase-api on localhost (Vite proxy)."
-      : "Production calls your Supabase project URL directly; dev uses /supabase-api on localhost.",
+      ? "Requests go through /supabase-api on localhost (Vite proxy) when .env is missing; otherwise your project URL from .env."
+      : "Production calls your Supabase project URL directly when VITE_SUPABASE_URL was set at build time.",
     ...devHints,
     "If you disabled legacy API keys in Supabase, use the Publishable key (`sb_publishable_...`) or re-enable legacy anon.",
     "If it still fails: allow your app domain and *.supabase.co in firewall/VPN/ad-block.",
   ].join(" ");
 }
-

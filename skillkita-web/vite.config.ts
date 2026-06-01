@@ -6,6 +6,15 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const supabaseTarget = env.VITE_SUPABASE_URL?.trim() ?? "";
+  const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY?.trim() ?? "";
+
+  if (mode === "production" && (!supabaseTarget || !supabaseAnonKey)) {
+    throw new Error(
+      "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY for production build. " +
+        "Set them in skillkita-web/.env locally, or in Vercel → Settings → Environment Variables before deploy."
+    );
+  }
+
   const supabaseProxy = supabaseTarget
     ? {
         "/supabase-api": {
@@ -19,11 +28,10 @@ export default defineConfig(({ mode }) => {
 
   return {
   server: {
-    // Browser calls same-origin /supabase-api; Vite forwards to VITE_SUPABASE_URL.
+    // Fallback when VITE_* are unset. Normal dev calls the project URL from .env directly.
     proxy: supabaseProxy,
   },
   preview: {
-    // `npm run preview` uses the same proxy as dev (matches production /supabase-api behavior).
     proxy: supabaseProxy,
   },
   plugins: [
@@ -69,6 +77,7 @@ export default defineConfig(({ mode }) => {
       },
       workbox: {
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/supabase-api/, /^\/api\//],
         // Precache app shell only; large photos load on demand (faster first visit on mobile).
         globPatterns: ["**/*.{js,css,html,ico,svg,webmanifest}"],
         globIgnores: ["**/TRSCGroupPhoto*.png", "**/pdf.worker*.mjs"],
