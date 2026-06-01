@@ -18,12 +18,19 @@ const PASSTHROUGH_HEADERS = [
   "if-modified-since",
 ];
 
+function invalidSupabaseBase(base) {
+  if (!base) return "Missing VITE_SUPABASE_URL on the server. Add it in Vercel → Settings → Environment Variables.";
+  if (/your-project-id/i.test(base)) {
+    return "VITE_SUPABASE_URL is still the .env.example placeholder. Set your real Supabase project URL in Vercel env vars and redeploy.";
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   const base = (process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
-  if (!base) {
-    res.status(500).json({
-      message: "Missing VITE_SUPABASE_URL on the server. Add it in Vercel → Settings → Environment Variables.",
-    });
+  const configError = invalidSupabaseBase(base);
+  if (configError) {
+    res.status(500).json({ message: configError });
     return;
   }
 

@@ -10,7 +10,10 @@ export function getSupabaseProjectUrl(): string {
 
 export function getSupabaseUrl(): string {
   if (typeof window !== "undefined") {
-    // Same-origin proxy: Vite dev server (vite.config.ts) and Vercel (api/supabase-proxy).
+    // Production: call Supabase directly (env baked at build). Dev: same-origin Vite proxy.
+    if (import.meta.env.PROD && envSupabaseUrl) {
+      return envSupabaseUrl;
+    }
     return `${window.location.origin}/supabase-api`;
   }
   return envSupabaseUrl ?? "";
@@ -67,12 +70,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export function formatSupabaseNetworkError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
 
+  if (/method not allowed/i.test(message) || /\b405\b/.test(message)) {
+    return import.meta.env.DEV
+      ? "Supabase proxy returned 405. Restart `npm run dev` and ensure VITE_SUPABASE_URL in .env is correct."
+      : [
+          "Login hit HTTP 405 on /supabase-api — the Vercel proxy is serving the app shell instead of the API.",
+          "Redeploy the latest code (vercel.json must exclude /api/ from the SPA fallback).",
+          "Latest builds also call Supabase directly in production, so a fresh deploy fixes login even if the proxy is misconfigured.",
+        ].join(" ");
+  }
+
   if (/unexpected end of json input/i.test(message)) {
-    return [
-      "Supabase returned an empty response (often a bad dev proxy target).",
-      "Check skillkita-web/.env.local — it overrides .env. VITE_SUPABASE_URL must be your real project URL, not your-project-id.supabase.co.",
-      "Restart `npm run dev` after fixing, then hard-refresh (Ctrl+Shift+R).",
-    ].join(" ");
+    const hints = import.meta.env.DEV
+      ? [
+          "Supabase returned an empty response (often a bad dev proxy target).",
+          "Check skillkita-web/.env.local — it overrides .env. VITE_SUPABASE_URL must be your real project URL, not your-project-id.supabase.co.",
+          "Restart `npm run dev` after fixing, then hard-refresh (Ctrl+Shift+R).",
+        ]
+      : [
+          "Supabase returned an empty response from /supabase-api on your deployed site.",
+          "In Vercel → Project → Settings → Environment Variables, set VITE_SUPABASE_URL (https://YOUR-REF.supabase.co) and VITE_SUPABASE_ANON_KEY for Production — same values as skillkita-web/.env, not the .env.example placeholders.",
+          "Redeploy after changing env vars. In DevTools → Network, open the failed /supabase-api/auth/... request: 404/HTML means the proxy is missing (check Root Directory is skillkita-web or use the repo-root vercel.json); 500 JSON explains a server config issue.",
+        ];
+    return hints.join(" ");
   }
 
   if (!/failed to fetch/i.test(message)) return message;
@@ -89,7 +109,9 @@ export function formatSupabaseNetworkError(err: unknown): string {
 
   return [
     "Cannot reach Supabase (network error).",
-    "Requests go through your app origin at /supabase-api (same in dev and production).",
+    import.meta.env.DEV
+      ? "Requests go through /supabase-api on localhost (Vite proxy)."
+      : "Production calls your Supabase project URL directly; dev uses /supabase-api on localhost.",
     ...devHints,
     "If you disabled legacy API keys in Supabase, use the Publishable key (`sb_publishable_...`) or re-enable legacy anon.",
     "If it still fails: allow your app domain and *.supabase.co in firewall/VPN/ad-block.",
