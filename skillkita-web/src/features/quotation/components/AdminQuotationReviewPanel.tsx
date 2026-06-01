@@ -49,15 +49,15 @@ export function AdminQuotationReviewPanel({
   return (
     <section className="sk-card mt-8 p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-xl font-bold text-[#7A1F1F]">Review &amp; price</h2>
-        <button type="button" onClick={onClose} className="text-sm font-semibold text-[#7A1F1F] underline">
+        <h2 className="text-xl font-bold text-primary">Review &amp; price</h2>
+        <button type="button" onClick={onClose} className="text-sm font-semibold text-primary underline">
           Close
         </button>
       </div>
 
-      <div className="mt-4 rounded-lg border border-[#efe1db] bg-[#faf7f2] p-4 text-sm">
+      <div className="mt-4 rounded-lg border border-black/10 bg-primary/5 p-4 text-sm">
         <p>
-          <span className="font-semibold text-[#7A1F1F]">Employer:</span>{" "}
+          <span className="font-semibold text-primary">Employer:</span>{" "}
           {employer?.full_name ?? "—"}
           {employer?.company_name ? ` (${employer.company_name})` : ""}
         </p>
@@ -96,53 +96,53 @@ export function AdminQuotationReviewPanel({
           <span className="font-semibold">Participants:</span> {activeReview.number_of_employers}
         </p>
         {activeReview.additional_description && (
-          <p className="mt-2 text-black/80">{activeReview.additional_description}</p>
+          <p className="mt-2 text-ink-muted">{activeReview.additional_description}</p>
         )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <p className="text-sm text-black/70 md:col-span-2">
+        <p className="text-sm text-ink-muted md:col-span-2">
           Required fields are marked with <RequiredMark />.
         </p>
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Company name (on quotation PDF)
             <RequiredMark />
           </span>
           <input
             value={companyName}
             onChange={(e) => onChangeCompanyName(e.target.value)}
-            className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+            className="w-full rounded-lg border border-black/10 px-3 py-2"
           />
         </label>
 
         <label className="block md:col-span-2">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Company address (on quotation PDF)
           </span>
           <textarea
             value={companyAddress}
             onChange={(e) => onChangeCompanyAddress(e.target.value)}
             rows={3}
-            className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+            className="w-full rounded-lg border border-black/10 px-3 py-2"
             placeholder="Optional"
           />
           {employer?.company_address?.trim() ? (
-            <p className="mt-1 text-xs text-black/60">
+            <p className="mt-1 text-xs text-ink-muted">
               Prefilled from employer profile. You can edit it for this quotation.
             </p>
           ) : null}
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Course mode
             <RequiredMark />
           </span>
           <select
             value={courseMode}
             onChange={(e) => onChangeCourseMode(e.target.value)}
-            className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+            className="w-full rounded-lg border border-black/10 px-3 py-2"
             required
           >
             <option value="" disabled>
@@ -157,7 +157,7 @@ export function AdminQuotationReviewPanel({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Unit price (RM)
             <RequiredMark />
           </span>
@@ -167,12 +167,12 @@ export function AdminQuotationReviewPanel({
             step="0.01"
             value={unitPrice}
             onChange={(e) => onChangeUnitPrice(e.target.value)}
-            className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+            className="w-full rounded-lg border border-black/10 px-3 py-2"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1 block text-sm font-semibold text-primary">
             Amount (RM)
             <RequiredMark />
           </span>
@@ -182,7 +182,7 @@ export function AdminQuotationReviewPanel({
             step="0.01"
             value={amountRm}
             onChange={(e) => onChangeAmountRm(e.target.value)}
-            className="w-full rounded-lg border border-[#d8c9c2] px-3 py-2"
+            className="w-full rounded-lg border border-black/10 px-3 py-2"
           />
         </label>
       </div>

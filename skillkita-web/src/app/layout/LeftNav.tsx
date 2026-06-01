@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useMemo, useState } from "react";
 
 export type NavItem = {
@@ -12,8 +12,11 @@ type Props = {
   items: NavItem[];
   currentPath: string;
   userName: string;
+  userRole?: string;
   userEmail?: string | null;
+  profilePicUrl?: string | null;
   onLogout: () => void | Promise<void>;
+  onNavigate?: () => void;
 };
 
 function isItemActive(item: NavItem, currentPath: string): boolean {
@@ -27,57 +30,59 @@ function isLinkActive(href: string | undefined, currentPath: string): boolean {
   return currentPath === path || currentPath.startsWith(path + "/");
 }
 
-const navTransition = "transition-colors duration-150";
+const navTransition = "transition-all duration-200 ease-out";
 
-/** Top-level section (Home, Course, Documents, …) */
 const categoryBtnClass = (active: boolean) =>
   [
-    "group flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+    "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium",
     navTransition,
     active
-      ? "bg-[#7A1F1F]/12 text-[#7A1F1F] hover:bg-[#7A1F1F]/20"
-      : "text-black/80 hover:bg-[#7A1F1F]/10 hover:text-[#7A1F1F]",
+      ? "bg-primary/10 text-primary"
+      : "text-ink-muted hover:bg-primary/5 hover:text-primary",
   ].join(" ");
 
-/** Subsection with nested children (e.g. Quotation under Documents) */
 const subsectionToggleClass = (hasActiveDescendant: boolean) =>
   [
-    "group flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+    "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium",
     navTransition,
     hasActiveDescendant
-      ? "bg-[#7A1F1F]/12 text-[#7A1F1F] hover:bg-[#7A1F1F]/20"
-      : "text-black/70 hover:bg-[#7A1F1F]/14 hover:text-[#7A1F1F]",
+      ? "bg-primary/10 text-primary"
+      : "text-ink-muted hover:bg-primary/5 hover:text-primary",
   ].join(" ");
 
-/** Leaf link (direct child or grandchild) */
 const linkClass = (active: boolean) =>
   [
-    "group flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold",
+    "group flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium",
     navTransition,
     active
-      ? "bg-[#7A1F1F] text-white hover:bg-[#651919]"
-      : "text-black/70 hover:bg-[#7A1F1F]/14 hover:text-[#7A1F1F]",
+      ? "bg-primary text-white shadow-sm"
+      : "text-ink-muted hover:bg-primary/5 hover:text-primary",
   ].join(" ");
 
 const categoryIconClass =
-  "h-5 w-5 shrink-0 text-[#7A1F1F] transition-colors duration-150 group-hover:text-[#651919]";
-
-const subsectionIconClass =
-  "h-5 w-5 shrink-0 text-[#7A1F1F] transition-colors duration-150 group-hover:text-[#651919]";
+  "h-5 w-5 shrink-0 text-primary/80 transition-colors duration-200 group-hover:text-primary";
 
 const linkIconClass = (active: boolean) =>
   [
-    "h-5 w-5 shrink-0 transition-colors duration-150",
-    active ? "text-white group-hover:text-white" : "text-[#7A1F1F] group-hover:text-[#651919]",
+    "h-5 w-5 shrink-0 transition-colors duration-200",
+    active ? "text-white" : "text-primary/70 group-hover:text-primary",
   ].join(" ");
 
 const chevronClass = (open: boolean) =>
-  [
-    "h-4 w-4 shrink-0 text-[#7A1F1F] transition duration-150 group-hover:text-[#651919]",
-    open ? "rotate-180" : "",
-  ].join(" ");
+  ["h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200", open ? "rotate-180" : ""].join(
+    " "
+  );
 
-const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) => {
+const LeftNav = ({
+  items,
+  currentPath,
+  userName,
+  userRole,
+  userEmail,
+  profilePicUrl,
+  onLogout,
+  onNavigate,
+}: Props) => {
   const initialOpen = useMemo(() => {
     const open: Record<string, boolean> = {};
     items.forEach((cat) => {
@@ -89,22 +94,26 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
   const [openByLabel, setOpenByLabel] = useState<Record<string, boolean>>(initialOpen);
   const [openChildByKey, setOpenChildByKey] = useState<Record<string, boolean>>({});
 
+  const initials = (userName.trim()[0] ?? "U").toUpperCase();
+  const roleLabel =
+    userRole === "admin" ? "Administrator" : userRole === "employer" ? "Employer" : "User";
+
   return (
-    <aside className="flex h-full w-full flex-col border-r border-black/10 bg-white md:w-[280px] md:shrink-0">
-      <nav className="flex-1 overflow-auto p-3">
+    <aside className="flex h-full w-full flex-col bg-white">
+      <nav className="flex-1 overflow-auto px-3 py-4">
         {items.map((cat) => {
           const open = openByLabel[cat.label] ?? false;
           const active = isItemActive(cat, currentPath);
           const CatIcon = cat.icon;
 
           return (
-            <div key={cat.label} className="mb-2">
+            <div key={cat.label} className="mb-1">
               <button
                 type="button"
                 onClick={() => setOpenByLabel((p) => ({ ...p, [cat.label]: !open }))}
                 className={categoryBtnClass(active)}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5">
                   {CatIcon && <CatIcon className={categoryIconClass} />}
                   {cat.label}
                 </span>
@@ -112,7 +121,7 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
               </button>
 
               {open && (cat.children?.length ?? 0) > 0 && (
-                <div className="mt-1 space-y-1 pl-2">
+                <div className="mt-1 space-y-0.5 border-l-2 border-primary/10 pl-3">
                   {(cat.children ?? []).map((child) => {
                     const childHrefActive = isLinkActive(child.href, currentPath);
                     const hasActiveGrandchild = (child.children ?? []).some((g) =>
@@ -135,14 +144,14 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
                               }
                               className={subsectionToggleClass(childActive)}
                             >
-                              <span className="flex items-center gap-2">
-                                {ChildIcon && <ChildIcon className={subsectionIconClass} />}
+                              <span className="flex items-center gap-2.5">
+                                {ChildIcon && <ChildIcon className={categoryIconClass} />}
                                 {child.label}
                               </span>
                               <ChevronDownIcon className={chevronClass(childOpen)} />
                             </button>
                             {childOpen && (
-                              <div className="mt-1 space-y-1 pl-4">
+                              <div className="mt-0.5 space-y-0.5 pl-2">
                                 {(child.children ?? []).map((g) => {
                                   const grandActive = isLinkActive(g.href, currentPath);
                                   const GrandIcon = g.icon;
@@ -151,6 +160,7 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
                                       key={g.label}
                                       href={g.href ?? "#"}
                                       className={linkClass(grandActive)}
+                                      onClick={onNavigate}
                                     >
                                       {GrandIcon && (
                                         <GrandIcon className={linkIconClass(grandActive)} />
@@ -163,7 +173,11 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
                             )}
                           </>
                         ) : (
-                          <a href={child.href ?? "#"} className={linkClass(childActive)}>
+                          <a
+                            href={child.href ?? "#"}
+                            className={linkClass(childActive)}
+                            onClick={onNavigate}
+                          >
                             {ChildIcon && <ChildIcon className={linkIconClass(childActive)} />}
                             {child.label}
                           </a>
@@ -178,23 +192,32 @@ const LeftNav = ({ items, currentPath, userName, userEmail, onLogout }: Props) =
         })}
       </nav>
 
-      <div className="border-t border-black/10 p-4">
+      <div className="border-t border-black/5 p-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-[#7A1F1F]/10 text-[#7A1F1F] ring-1 ring-black/5">
-            <div className="flex h-full w-full items-center justify-center text-sm font-bold">
-              {(userName.trim()[0] ?? "U").toUpperCase()}
+          {profilePicUrl ? (
+            <img
+              src={profilePicUrl}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
+            />
+          ) : (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/15">
+              {initials}
             </div>
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-black">{userName}</p>
-            {userEmail && <p className="truncate text-xs text-black/60">{userEmail}</p>}
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink">{userName}</p>
+            <p className="truncate text-xs text-ink-muted">{roleLabel}</p>
+            {userEmail && (
+              <p className="mt-0.5 truncate text-[11px] text-ink-muted/80">{userEmail}</p>
+            )}
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => void onLogout()}
-          className="mt-3 w-full rounded-xl border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] transition-colors duration-150 hover:bg-[#7A1F1F]/12"
+          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border border-primary/30 px-3 py-2 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-white"
         >
           Logout
         </button>

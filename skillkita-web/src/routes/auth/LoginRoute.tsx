@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import SiteHeader from "../../app/layout/SiteHeader";
 import { formatSupabaseNetworkError, supabase } from "../../shared/api/supabaseClient";
+import { AuthPageShell } from "../../shared/ui/AuthPageShell";
 import { PasswordInput } from "../../shared/ui/PasswordInput";
 
 type UserProfileRow = {
@@ -117,17 +117,10 @@ const Login = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container py-12">
-        <div className="mx-auto max-w-md">
-          <div className="sk-card p-6">
-            <h1 className="text-3xl font-bold text-[#0001fc]">Log in</h1>
-            <p className="mt-2 text-sm text-black">
-              Log in to access employer or admin tools based on your role.
-            </p>
-
+    <AuthPageShell
+      title="Log in"
+      subtitle="Access employer or admin tools based on your account role."
+    >
             {passwordResetSuccess && (
               <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                 Your password was updated. Log in with your new password.
@@ -141,14 +134,14 @@ const Login = () => {
             )}
 
             {hasSession && (
-              <div className="mt-4 rounded-xl border border-black/10 bg-white p-4 text-sm text-black">
-                <p className="font-semibold text-[#7A1F1F]">You’re already signed in</p>
-                <p className="mt-1 text-black/70">
+              <div className="mt-4 rounded-xl border border-black/10 bg-white p-4 text-sm text-ink">
+                <p className="font-semibold text-primary">You’re already signed in</p>
+                <p className="mt-1 text-ink-muted">
                   If you want to log in as a different account, sign out first.
                 </p>
                 <button
                   type="button"
-                  className="mt-3 w-full rounded-lg border border-[#7A1F1F] px-3 py-2 text-sm font-semibold text-[#7A1F1F] hover:bg-[#7A1F1F]/5"
+                  className="mt-3 w-full rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/5"
                   onClick={async () => {
                     await supabase.auth.signOut();
                     window.localStorage.removeItem("skillkita-role");
@@ -162,20 +155,20 @@ const Login = () => {
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Email
                 </span>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  className="sk-input"
                   required
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Password
                 </span>
                 <PasswordInput
@@ -185,7 +178,7 @@ const Login = () => {
                   required
                 />
                 <p className="mt-1.5 text-right text-sm">
-                  <a href="/forgot-password" className="font-semibold text-[#7A1F1F] underline">
+                  <a href="/forgot-password" className="font-semibold text-primary underline">
                     Forgot password?
                   </a>
                 </p>
@@ -195,17 +188,14 @@ const Login = () => {
                 {isLoading ? "Signing in..." : "Log in"}
               </button>
 
-              <p className="text-center text-sm text-black/70">
+              <p className="text-center text-sm text-ink-muted">
                 New here?{" "}
-                <a href="/signup" className="font-semibold text-[#7A1F1F] underline">
+                <a href="/signup" className="font-semibold text-primary underline">
                   Create an account
                 </a>
               </p>
             </form>
-          </div>
-        </div>
-      </main>
-    </div>
+    </AuthPageShell>
   );
 };
 

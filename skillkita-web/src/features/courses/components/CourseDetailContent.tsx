@@ -10,17 +10,21 @@ export function CourseDetailContent({ course }: Props) {
   if (!syllabus && !details) return null;
 
   return (
-    <section className="sk-card mt-6 p-6">
+    <section className="sk-card mt-8 p-6 md:p-8">
       {syllabus && (
         <div>
-          <h2 className="text-xl font-bold text-[#7A1F1F]">Syllabus</h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-black">{course.syllabus}</p>
+          <h2 className="sk-heading-3 text-primary">Syllabus</h2>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-muted">
+            {course.syllabus}
+          </p>
         </div>
       )}
       {details && (
-        <div className={syllabus ? "mt-6" : ""}>
-          <h2 className="text-xl font-bold text-[#7A1F1F]">Other information</h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-black">{course.details}</p>
+        <div className={syllabus ? "mt-8 border-t border-black/5 pt-8" : ""}>
+          <h2 className="sk-heading-3 text-primary">Other information</h2>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-muted">
+            {course.details}
+          </p>
         </div>
       )}
     </section>

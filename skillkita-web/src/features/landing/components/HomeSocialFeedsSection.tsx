@@ -176,21 +176,21 @@ export function HomeSocialFeedsSection({
       className="mt-10 w-full max-w-4xl text-left md:mt-14"
       aria-labelledby={`${embedId}-social-heading`}
     >
-      <h2 id={`${embedId}-social-heading`} className="text-center text-xl font-bold text-[#0001fc] md:text-2xl">
+      <h2 id={`${embedId}-social-heading`} className="text-center text-xl font-bold text-ink md:text-2xl">
         Follow us online
       </h2>
-      <p className="mx-auto mt-2 max-w-lg text-center text-xs text-black/75 md:text-sm">
+      <p className="mx-auto mt-2 max-w-lg text-center text-xs text-ink-muted md:text-sm">
         We are on Instagram and Facebook. Follow us to stay updated with our latest news and events.
       </p>
 
       <div className="mx-auto mt-6 flex w-full max-w-lg flex-col gap-5 md:max-w-2xl">
         {(fbPageIframeSrc || fbPostHrefs.length > 0) && (
           <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:p-4">
-            <h3 className="text-base font-bold text-[#7A1F1F] md:text-lg">Facebook</h3>
+            <h3 className="text-base font-bold text-primary md:text-lg">Facebook</h3>
 
             {fbPageIframeSrc && (
               <div className="mt-3">
-                <p className="mb-2 text-xs font-semibold text-black/60">Page timeline</p>
+                <p className="mb-2 text-xs font-semibold text-ink-muted">Page timeline</p>
                 <div className="flex justify-center overflow-x-auto">
                   <iframe
                     title="Facebook page"
@@ -204,10 +204,10 @@ export function HomeSocialFeedsSection({
                     loading="lazy"
                   />
                 </div>
-                <p className="mt-2 text-center text-xs text-black/60">
+                <p className="mt-2 text-center text-xs text-ink-muted">
                   <a
                     href={fbPageHref ?? "#"}
-                    className="font-semibold text-[#7A1F1F] underline"
+                    className="font-semibold text-primary underline"
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -218,8 +218,8 @@ export function HomeSocialFeedsSection({
             )}
 
             {fbPostHrefs.length > 0 && (
-              <div className={fbPageIframeSrc ? "mt-5 border-t border-[#efe1db] pt-5" : "mt-3"}>
-                <p className="mb-2 text-xs font-semibold text-black/60">Selected posts</p>
+              <div className={fbPageIframeSrc ? "mt-5 border-t border-black/10 pt-5" : "mt-3"}>
+                <p className="mb-2 text-xs font-semibold text-ink-muted">Selected posts</p>
                 <div className="-mx-1 flex flex-col items-center gap-4 overflow-x-auto px-1 sm:mx-0 sm:px-0">
                   {fbPostHrefs.map((href, i) => (
                     <iframe
@@ -243,7 +243,7 @@ export function HomeSocialFeedsSection({
 
         {(igPostHrefs.length > 0 || igProfile) && (
           <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5 md:p-4">
-            <h3 className="text-base font-bold text-[#7A1F1F] md:text-lg">Instagram</h3>
+            <h3 className="text-base font-bold text-primary md:text-lg">Instagram</h3>
 
             {igPostHrefs.length > 0 ? (
               <div ref={igContainerRef} className="mt-3 flex flex-col items-center gap-5">
@@ -269,7 +269,7 @@ export function HomeSocialFeedsSection({
             ) : (
               <div className="mt-3 rounded-xl bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#515bd4] p-[2px]">
                 <div className="rounded-[12px] bg-white px-4 py-6 text-center md:px-5 md:py-8">
-                  <p className="text-sm font-semibold text-black/80">See photos and reels on our profile.</p>
+                  <p className="text-sm font-semibold text-ink-muted">See photos and reels on our profile.</p>
                   <a
                     href={igProfile!}
                     className="sk-button-primary mt-5 inline-block rounded-xl px-6 py-3"
@@ -283,14 +283,14 @@ export function HomeSocialFeedsSection({
             )}
 
             {igPostHrefs.length > 0 && igProfile && (
-              <p className="mt-4 text-center text-xs text-black/60">
-                <a href={igProfile} className="font-semibold text-[#7A1F1F] underline" target="_blank" rel="noreferrer">
+              <p className="mt-4 text-center text-xs text-ink-muted">
+                <a href={igProfile} className="font-semibold text-primary underline" target="_blank" rel="noreferrer">
                   Open full profile on Instagram
                 </a>
               </p>
             )}
             {!igPostHrefs.length && igProfile && (
-              <p className="mt-3 text-center text-xs text-black/60">
+              <p className="mt-3 text-center text-xs text-ink-muted">
                 Add one Instagram post or reel URL per line in Manage Home to embed highlights here.
               </p>
             )}

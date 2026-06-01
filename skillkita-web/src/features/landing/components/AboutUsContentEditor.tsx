@@ -1,12 +1,8 @@
-import type { ChangeEvent } from "react";
-
 type Props = {
-  whoPreviewUrl: string;
   whoDescription: string;
   locationDescription: string;
   locationMapEmbedUrl: string;
   bankAccountDetails: string;
-  bankQrPreviewUrl: string;
   contact1Name: string;
   contact1Phone: string;
   contact1Email: string;
@@ -15,12 +11,10 @@ type Props = {
   contact2Email: string;
   companyHrEmail: string;
   isSaving: boolean;
-  onWhoImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onWhoDescriptionChange: (value: string) => void;
   onLocationDescriptionChange: (value: string) => void;
   onLocationMapEmbedUrlChange: (value: string) => void;
   onBankAccountDetailsChange: (value: string) => void;
-  onBankQrImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onContact1NameChange: (value: string) => void;
   onContact1PhoneChange: (value: string) => void;
   onContact1EmailChange: (value: string) => void;
@@ -31,12 +25,10 @@ type Props = {
 };
 
 export function AboutUsContentEditor({
-  whoPreviewUrl,
   whoDescription,
   locationDescription,
   locationMapEmbedUrl,
   bankAccountDetails,
-  bankQrPreviewUrl,
   contact1Name,
   contact1Phone,
   contact1Email,
@@ -45,12 +37,10 @@ export function AboutUsContentEditor({
   contact2Email,
   companyHrEmail,
   isSaving,
-  onWhoImageChange,
   onWhoDescriptionChange,
   onLocationDescriptionChange,
   onLocationMapEmbedUrlChange,
   onBankAccountDetailsChange,
-  onBankQrImageChange,
   onContact1NameChange,
   onContact1PhoneChange,
   onContact1EmailChange,
@@ -60,188 +50,176 @@ export function AboutUsContentEditor({
   onCompanyHrEmailChange,
 }: Props) {
   return (
-    <section className="sk-card mt-8 p-6">
-      <h2 className="text-2xl font-bold text-[#7A1F1F]">About Us page</h2>
-      <p className="mt-2 text-sm text-black/80">
-        Content shown on the public <a href="/about-us" className="font-semibold text-[#7A1F1F] underline">About Us</a> page.
-        Save using the button at the bottom of this form (shared with home page settings).
-      </p>
+    <section id="about-us-content" className="sk-card scroll-mt-24 p-6 md:p-8">
+      <div className="border-b border-black/5 pb-5">
+        <h2 className="sk-section-title">About Us content</h2>
+        <p className="mt-2 text-sm text-ink-muted">
+          Text for the public{" "}
+          <a href="/about-us" className="font-semibold text-primary underline">
+            About Us
+          </a>{" "}
+          page. Photos are in{" "}
+          <a href="#site-media" className="font-semibold text-primary underline">
+            Site images
+          </a>
+          .
+        </p>
+      </div>
 
-      <div className="mt-6 space-y-8">
-        <div>
-          <h3 className="text-lg font-bold text-[#7A1F1F]">1. Company Profile</h3>
-          <label className="mt-3 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Company photo</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={onWhoImageChange}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              disabled={isSaving}
-            />
-            <img
-              src={whoPreviewUrl}
-              alt="Company profile preview"
-              className="mx-auto mt-3 block max-h-48 w-full max-w-sm rounded-xl object-cover"
-            />
-          </label>
-          <label className="mt-4 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Description</span>
+      <div className="mt-8 space-y-10">
+        <fieldset className="space-y-4">
+          <legend className="font-heading text-lg font-semibold text-ink">Company profile</legend>
+          <label className="block">
+            <span className="sk-label">Description</span>
             <textarea
               value={whoDescription}
               onChange={(e) => onWhoDescriptionChange(e.currentTarget.value)}
               rows={5}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              placeholder="Company introduction..."
+              className="sk-input"
+              placeholder="Company introduction…"
               disabled={isSaving}
             />
           </label>
-        </div>
+        </fieldset>
 
-        <div>
-          <h3 className="text-lg font-bold text-[#7A1F1F]">2. Location</h3>
-          <label className="mt-3 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Location details</span>
+        <fieldset className="space-y-4">
+          <legend className="font-heading text-lg font-semibold text-ink">Location</legend>
+          <label className="block">
+            <span className="sk-label">Location details</span>
             <textarea
               value={locationDescription}
               onChange={(e) => onLocationDescriptionChange(e.currentTarget.value)}
               rows={4}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              placeholder="Address, directions, office hours..."
+              className="sk-input"
+              placeholder={"Short intro (optional)\n\nTB 15095, Lot 3715…"}
               disabled={isSaving}
             />
+            <p className="mt-2 text-xs text-ink-muted">
+              First paragraph = short line on the location hero; following paragraphs = full address.
+            </p>
           </label>
-          <label className="mt-4 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Google Maps embed URL</span>
+          <label className="block">
+            <span className="sk-label">Google Maps link</span>
             <input
               type="url"
               value={locationMapEmbedUrl}
               onChange={(e) => onLocationMapEmbedUrlChange(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 font-mono text-sm"
-              placeholder="https://www.google.com/maps/embed?pb=..."
+              className="sk-input font-mono text-sm"
+              placeholder="https://maps.app.goo.gl/…"
               disabled={isSaving}
             />
-            <p className="mt-2 text-xs text-black/70">
-              In Google Maps: Share → Embed a map → copy the <strong>src</strong> URL from the iframe code.
-            </p>
           </label>
-        </div>
+        </fieldset>
 
-        <div>
-          <h3 className="text-lg font-bold text-[#7A1F1F]">3. Bank Account Details</h3>
-          <label className="mt-3 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Account details</span>
+        <fieldset className="space-y-4">
+          <legend className="font-heading text-lg font-semibold text-ink">Bank account</legend>
+          <label className="block">
+            <span className="sk-label">Account details</span>
             <textarea
               value={bankAccountDetails}
               onChange={(e) => onBankAccountDetailsChange(e.currentTarget.value)}
               rows={4}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              placeholder="Account name, bank, account number (one per line or comma-separated)"
+              className="sk-input"
+              placeholder="Account name, bank, account number…"
               disabled={isSaving}
             />
           </label>
-          <label className="mt-4 block">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Payment QR image</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={onBankQrImageChange}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-              disabled={isSaving}
-            />
-            <img
-              src={bankQrPreviewUrl}
-              alt="Bank QR preview"
-              className="mx-auto mt-3 block max-h-48 max-w-[200px] rounded-xl border border-[#efe1db] bg-white p-2 object-contain"
-            />
-          </label>
-        </div>
+        </fieldset>
 
-        <div>
-          <h3 className="text-lg font-bold text-[#7A1F1F]">4. Contact Details</h3>
-          <label className="mt-3 block max-w-xl">
-            <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Company email</span>
+        <fieldset className="space-y-4">
+          <legend className="font-heading text-lg font-semibold text-ink">Contact details</legend>
+          <label className="block max-w-xl">
+            <span className="sk-label">Company email</span>
             <input
               type="email"
               value={companyHrEmail}
               onChange={(e) => onCompanyHrEmailChange(e.currentTarget.value)}
-              className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+              className="sk-input"
               placeholder="hr@company.com"
               disabled={isSaving}
             />
           </label>
-          <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 space-y-3">
-              <p className="text-sm font-bold text-[#7A1F1F]">Contact person 1</p>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Name</span>
-                <input
-                  type="text"
-                  value={contact1Name}
-                  onChange={(e) => onContact1NameChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  disabled={isSaving}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Phone</span>
-                <input
-                  type="tel"
-                  value={contact1Phone}
-                  onChange={(e) => onContact1PhoneChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  disabled={isSaving}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Email</span>
-                <input
-                  type="email"
-                  value={contact1Email}
-                  onChange={(e) => onContact1EmailChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  placeholder="name@company.com"
-                  disabled={isSaving}
-                />
-              </label>
-            </div>
-            <div className="rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4 space-y-3">
-              <p className="text-sm font-bold text-[#7A1F1F]">Contact person 2</p>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Name</span>
-                <input
-                  type="text"
-                  value={contact2Name}
-                  onChange={(e) => onContact2NameChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  disabled={isSaving}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Phone</span>
-                <input
-                  type="tel"
-                  value={contact2Phone}
-                  onChange={(e) => onContact2PhoneChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  disabled={isSaving}
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">Email</span>
-                <input
-                  type="email"
-                  value={contact2Email}
-                  onChange={(e) => onContact2EmailChange(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
-                  placeholder="name@company.com"
-                  disabled={isSaving}
-                />
-              </label>
-            </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ContactPersonFields
+              title="Contact person 1"
+              name={contact1Name}
+              phone={contact1Phone}
+              email={contact1Email}
+              isSaving={isSaving}
+              onNameChange={onContact1NameChange}
+              onPhoneChange={onContact1PhoneChange}
+              onEmailChange={onContact1EmailChange}
+            />
+            <ContactPersonFields
+              title="Contact person 2"
+              name={contact2Name}
+              phone={contact2Phone}
+              email={contact2Email}
+              isSaving={isSaving}
+              onNameChange={onContact2NameChange}
+              onPhoneChange={onContact2PhoneChange}
+              onEmailChange={onContact2EmailChange}
+            />
           </div>
-        </div>
+        </fieldset>
       </div>
     </section>
+  );
+}
+
+function ContactPersonFields({
+  title,
+  name,
+  phone,
+  email,
+  isSaving,
+  onNameChange,
+  onPhoneChange,
+  onEmailChange,
+}: {
+  title: string;
+  name: string;
+  phone: string;
+  email: string;
+  isSaving: boolean;
+  onNameChange: (v: string) => void;
+  onPhoneChange: (v: string) => void;
+  onEmailChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-card border border-black/10 bg-primary/5 p-4">
+      <p className="text-sm font-bold text-primary">{title}</p>
+      <label className="block">
+        <span className="sk-label">Name</span>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => onNameChange(e.currentTarget.value)}
+          className="sk-input"
+          disabled={isSaving}
+        />
+      </label>
+      <label className="block">
+        <span className="sk-label">Phone</span>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => onPhoneChange(e.currentTarget.value)}
+          className="sk-input"
+          disabled={isSaving}
+        />
+      </label>
+      <label className="block">
+        <span className="sk-label">Email</span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => onEmailChange(e.currentTarget.value)}
+          className="sk-input"
+          placeholder="name@company.com"
+          disabled={isSaving}
+        />
+      </label>
+    </div>
   );
 }

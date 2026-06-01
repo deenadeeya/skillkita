@@ -4,6 +4,7 @@ import { adminNavItems } from "../../app/layout/navItems";
 import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
 import { supabase } from "../../shared/api/supabaseClient";
+import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 type ProfileRow = {
   user_id: string;
@@ -175,18 +176,18 @@ const AdminMessages = () => {
         window.location.href = "/";
       }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Messages</h1>
-          <p className="mt-3 text-lg text-black md:text-xl">
-            {adminProfile ? `Welcome, ${adminProfile.full_name}.` : "Welcome."}{" "}
-            {inChatView
-              ? "You’re in a chat with an employer."
-              : "Pick a conversation from your inbox to reply."}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <DashboardPageHeader
+          className="flex-1"
+          title="Messages"
+          subtitle={`${adminProfile ? `Welcome, ${adminProfile.full_name}. ` : ""}${
+            inChatView
+              ? "You're in a chat with an employer."
+              : "Pick a conversation from your inbox to reply."
+          }`}
+        />
         {inChatView && (
-          <button type="button" onClick={backToInbox} className="sk-button-secondary px-4 py-2">
+          <button type="button" onClick={backToInbox} className="sk-button-secondary shrink-0 px-4 py-2">
             Back to inbox
           </button>
         )}
@@ -199,13 +200,13 @@ const AdminMessages = () => {
       )}
 
       {isAuthChecking && (
-        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+        <div className="mt-6 rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
           Checking admin access…
         </div>
       )}
 
       {!isAuthChecking && isLoading && (
-        <div className="mt-6 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+        <div className="mt-6 rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
           Loading…
         </div>
       )}
@@ -213,15 +214,15 @@ const AdminMessages = () => {
       {!isAuthChecking && !isLoading && !selectedConversationId && (
         <section className="sk-card mt-10 p-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-2xl font-bold text-[#7A1F1F]">Inbox</h2>
-            <span className="text-sm font-semibold text-[#7A1F1F]">{conversations.length}</span>
+            <h2 className="text-2xl font-bold text-primary">Inbox</h2>
+            <span className="text-sm font-semibold text-primary">{conversations.length}</span>
           </div>
-          <p className="mt-2 text-sm text-black/80">
+          <p className="mt-2 text-sm text-ink-muted">
             Choose a conversation to read and send messages.
           </p>
 
           {conversations.length === 0 && (
-            <p className="mt-5 rounded-xl border border-dashed border-[#c5b5ad] bg-white/60 p-6 text-sm text-black">
+            <p className="mt-5 rounded-xl border border-dashed border-primary/20 bg-white/60 p-6 text-sm text-ink">
               No employer conversations yet.
             </p>
           )}
@@ -234,21 +235,21 @@ const AdminMessages = () => {
                   key={c.id}
                   type="button"
                   onClick={() => openConversation(c.id)}
-                  className="rounded-xl border border-[#efe1db] bg-white p-4 text-left shadow-sm hover:bg-[#faf7f2]"
+                  className="rounded-xl border border-black/10 bg-white p-4 text-left shadow-sm hover:bg-primary/5"
                 >
-                  <p className="text-sm font-semibold text-[#0001fc]">
+                  <p className="text-sm font-semibold text-ink">
                     {emp?.full_name ?? "Employer"}
                     {emp?.email ? (
-                      <span className="mt-0.5 block break-all text-xs font-normal text-black/70">
+                      <span className="mt-0.5 block break-all text-xs font-normal text-ink-muted">
                         {emp.email}
                       </span>
                     ) : null}
                   </p>
-                  <p className="mt-1 text-xs text-black/60">
+                  <p className="mt-1 text-xs text-ink-muted">
                     {emp?.company_name ? `Company: ${emp.company_name} · ` : ""}
                     Started: {new Date(c.created_at).toLocaleDateString()}
                   </p>
-                  <p className="mt-2 text-xs font-semibold text-[#7A1F1F]">Click to open chat</p>
+                  <p className="mt-2 text-xs font-semibold text-primary">Click to open chat</p>
                 </button>
               );
             })}
@@ -275,11 +276,11 @@ const AdminMessages = () => {
             currentUserId={adminProfile.user_id}
             header={
               <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-[#7A1F1F]">Chatting with</p>
-                <p className="text-xl font-bold text-[#0001fc]">
+                <p className="text-sm font-semibold text-primary">Chatting with</p>
+                <p className="text-xl font-bold text-ink">
                   <span className="inline">{activeEmployer?.full_name ?? "Employer"}</span>
                   {activeEmployer?.email ? (
-                    <span className="mt-1 block break-all text-sm font-normal text-black/75 md:mt-0 md:inline md:before:mx-2 md:before:text-black/40 md:before:content-['·']">
+                    <span className="mt-1 block break-all text-sm font-normal text-ink-muted md:mt-0 md:inline md:before:mx-2 md:before:text-ink-muted md:before:content-['·']">
                       {activeEmployer.email}
                     </span>
                   ) : null}

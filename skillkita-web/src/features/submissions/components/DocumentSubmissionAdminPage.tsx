@@ -128,13 +128,13 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
           </div>
         )}
         {isLoading ? (
-          <p className="text-sm text-black/70">Loading…</p>
+          <p className="text-sm text-ink-muted">Loading…</p>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr,380px]">
             <div>
-              <h2 className="text-lg font-bold text-[#7A1F1F]">Pending</h2>
+              <h2 className="text-lg font-bold text-primary">Pending</h2>
               {pending.length === 0 ? (
-                <p className="mt-2 text-sm text-black/60">No pending submissions.</p>
+                <p className="mt-2 text-sm text-ink-muted">No pending submissions.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {pending.map((r) => {
@@ -146,16 +146,16 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
                           onClick={() => setActive(r)}
                           className={`w-full rounded-xl border px-4 py-3 text-left transition ${
                             active?.id === r.id
-                              ? "border-[#7A1F1F] bg-[#7A1F1F]/5"
-                              : "border-[#efe1db] bg-white hover:bg-[#faf7f2]"
+                              ? "border-primary bg-primary/5"
+                              : "border-black/10 bg-white hover:bg-primary/5"
                           }`}
                         >
-                          <p className="font-semibold text-[#0001fc]">{r.course_name}</p>
-                          <p className="text-xs text-black/60">
+                          <p className="font-semibold text-ink">{r.course_name}</p>
+                          <p className="text-xs text-ink-muted">
                             {lb?.full_name ?? r.employer_user_id}
                             {lb?.company_name ? ` · ${lb.company_name}` : ""}
                           </p>
-                          <p className="text-xs text-black/50">Date: {r.proposed_date}</p>
+                          <p className="text-xs text-ink-muted">Date: {r.proposed_date}</p>
                         </button>
                       </li>
                     );
@@ -163,9 +163,9 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
                 </ul>
               )}
 
-              <h2 className="mt-8 text-lg font-bold text-[#7A1F1F]">Reviewed</h2>
+              <h2 className="mt-8 text-lg font-bold text-primary">Reviewed</h2>
               {done.length === 0 ? (
-                <p className="mt-2 text-sm text-black/60">None yet.</p>
+                <p className="mt-2 text-sm text-ink-muted">None yet.</p>
               ) : (
                 <ul className="mt-3 max-h-80 space-y-2 overflow-auto">
                   {done.map((r) => {
@@ -173,11 +173,11 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
                     return (
                       <li
                         key={r.id}
-                        className="rounded-xl border border-[#efe1db] bg-white px-3 py-2 text-sm"
+                        className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
                       >
-                        <span className="font-semibold text-[#0001fc]">{r.course_name}</span>{" "}
-                        <span className="text-black/50">· {r.status}</span>
-                        <div className="text-xs text-black/50">
+                        <span className="font-semibold text-ink">{r.course_name}</span>{" "}
+                        <span className="text-ink-muted">· {r.status}</span>
+                        <div className="text-xs text-ink-muted">
                           {lb?.full_name ?? r.employer_user_id} · {r.proposed_date}
                         </div>
                       </li>
@@ -189,24 +189,24 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
 
             <div className="sk-card p-5">
               {!active ? (
-                <p className="text-sm text-black/60">Select a pending submission to approve or reject.</p>
+                <p className="text-sm text-ink-muted">Select a pending submission to approve or reject.</p>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-black/50">Employer</p>
-                    <p className="font-semibold text-[#0001fc]">
+                    <p className="text-xs font-semibold uppercase text-ink-muted">Employer</p>
+                    <p className="font-semibold text-ink">
                       {labels[active.employer_user_id]?.full_name ?? active.employer_user_id}
                     </p>
                     {labels[active.employer_user_id]?.company_name && (
-                      <p className="text-sm text-black/70">{labels[active.employer_user_id]?.company_name}</p>
+                      <p className="text-sm text-ink-muted">{labels[active.employer_user_id]?.company_name}</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase text-black/50">Course</p>
+                    <p className="text-xs font-semibold uppercase text-ink-muted">Course</p>
                     <p className="text-sm">{active.course_name}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase text-black/50">Proposed date</p>
+                    <p className="text-xs font-semibold uppercase text-ink-muted">Proposed date</p>
                     <p className="text-sm">{active.proposed_date}</p>
                   </div>
                   <button
@@ -219,12 +219,12 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
                   </button>
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-[#7A1F1F]">Rejection reason (required if reject)</span>
+                    <span className="mb-1 block text-xs font-semibold text-primary">Rejection reason (required if reject)</span>
                     <textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.currentTarget.value)}
                       rows={3}
-                      className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
                       placeholder="Explain what needs to change…"
                       disabled={isSaving}
                     />

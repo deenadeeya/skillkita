@@ -128,7 +128,7 @@ export function CourseSearchSelect({
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoComplete="off"
-        className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+        className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
       />
 
       {open && !disabled && (
@@ -141,12 +141,12 @@ export function CourseSearchSelect({
             <li role="option" aria-selected={isCustom && Boolean(courseName)}>
               <button
                 type="button"
-                className="w-full px-3.5 py-2 text-left hover:bg-[#faf7f2]"
+                className="w-full px-3.5 py-2 text-left hover:bg-primary/5"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={selectCustom}
               >
-                <span className="font-semibold text-[#7A1F1F]">{CUSTOM_LABEL}</span>
-                <span className="mt-0.5 block text-xs text-black/55">
+                <span className="font-semibold text-primary">{CUSTOM_LABEL}</span>
+                <span className="mt-0.5 block text-xs text-ink/55">
                   Type a course title not listed below
                 </span>
               </button>
@@ -154,7 +154,7 @@ export function CourseSearchSelect({
           )}
 
           {filteredOptions.courses.length === 0 && !filteredOptions.showCustom && (
-            <li className="px-3.5 py-3 text-black/60">No courses match your search.</li>
+            <li className="px-3.5 py-3 text-ink-muted">No courses match your search.</li>
           )}
 
           {filteredOptions.courses.map((opt) => {
@@ -163,13 +163,13 @@ export function CourseSearchSelect({
               <li key={opt.id} role="option" aria-selected={selectedCourseId === opt.id}>
                 <button
                   type="button"
-                  className="w-full px-3.5 py-2 text-left hover:bg-[#faf7f2]"
+                  className="w-full px-3.5 py-2 text-left hover:bg-primary/5"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => selectCourse(opt)}
                 >
-                  <span className="block font-medium text-black/90">{opt.name}</span>
+                  <span className="block font-medium text-ink">{opt.name}</span>
                   {dateLabel ? (
-                    <span className="mt-0.5 block text-xs text-black/55">{dateLabel}</span>
+                    <span className="mt-0.5 block text-xs text-ink/55">{dateLabel}</span>
                   ) : null}
                 </button>
               </li>
@@ -179,7 +179,7 @@ export function CourseSearchSelect({
       )}
 
       {!open && (
-        <p className="mt-1 text-xs text-black/55">
+        <p className="mt-1 text-xs text-ink/55">
           {selectedCourse
             ? "Course selected from catalog. Search again to pick a different one."
             : courseName.trim()

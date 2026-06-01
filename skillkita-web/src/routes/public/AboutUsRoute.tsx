@@ -2,16 +2,23 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
-import { getLandingContent, type LandingContentRow } from "../../features/landing/api/landingApi";
+import { normalizeSupabaseStorageUrl, supabase } from "../../shared/api/supabaseClient";
+import {
+  getLandingContent,
+  listExperiences,
+  type ExperienceRow,
+  type LandingContentRow,
+} from "../../features/landing/api/landingApi";
 import { AboutUsPublicSections } from "../../features/landing/components/AboutUsPublicSections";
 
 const AboutUs = () => {
   const [viewerRole, setViewerRole] = useState<"admin" | "employer" | null>(null);
   const [viewerName, setViewerName] = useState<string>("User");
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
 
   const [landing, setLanding] = useState<LandingContentRow | null>(null);
+  const [experiences, setExperiences] = useState<ExperienceRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -28,12 +35,18 @@ const AboutUs = () => {
           setViewerEmail(user.email ?? null);
           const { data: profileRow } = await supabase
             .from("user_profiles")
-            .select("role,status,full_name")
+            .select("role,status,full_name,profile_pic_url")
             .eq("user_id", user.id)
             .maybeSingle();
 
           if (profileRow) {
-            const r = profileRow as { role: "admin" | "employer"; status: string; full_name?: string };
+            const r = profileRow as {
+              role: "admin" | "employer";
+              status: string;
+              full_name?: string;
+              profile_pic_url?: string | null;
+            };
+            setProfilePicUrl(normalizeSupabaseStorageUrl(r.profile_pic_url ?? null));
             if (r.role === "admin") {
               setViewerRole("admin");
               setViewerName(r.full_name ?? "Admin");
@@ -49,10 +62,12 @@ const AboutUs = () => {
         } else {
           setViewerRole(null);
           setViewerEmail(null);
+          setProfilePicUrl(null);
         }
 
-        const row = await getLandingContent(1);
+        const [row, experienceRows] = await Promise.all([getLandingContent(1), listExperiences()]);
         setLanding(row);
+        setExperiences(experienceRows);
         setIsLoading(false);
       } catch (err) {
         setIsLoading(false);
@@ -65,45 +80,40 @@ const AboutUs = () => {
 
   const body = (
     <div className="w-full">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0001fc] md:text-5xl">About Us</h1>
-          <p className="mt-2 text-sm font-semibold text-black/70 md:text-base">
-            Company profile, location, payment details, and contacts.
-          </p>
-        </div>
-      </div>
-
       {errorMessage && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-left text-sm text-red-700">
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {errorMessage}
         </div>
       )}
-
-      <AboutUsPublicSections landing={landing} isLoading={isLoading} />
+      <AboutUsPublicSections landing={landing} experiences={experiences} isLoading={isLoading} />
     </div>
   );
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    window.localStorage.removeItem("skillkita-role");
+    window.location.href = "/";
+  };
+
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
         <DashboardLayout
           showHeader
+          fullWidth
           items={viewerRole === "admin" ? adminNavItems : employerNavItems}
           userName={viewerName}
+          userRole={viewerRole}
           userEmail={viewerEmail}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            window.localStorage.removeItem("skillkita-role");
-            window.location.href = "/";
-          }}
+          profilePicUrl={profilePicUrl}
+          onLogout={logout}
         >
           {body}
         </DashboardLayout>
       ) : (
         <>
           <SiteHeader />
-          <main className="sk-container py-10">{body}</main>
+          <main className="sk-page-container">{body}</main>
         </>
       )}
     </div>

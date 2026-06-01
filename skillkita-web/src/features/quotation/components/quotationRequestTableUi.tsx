@@ -39,15 +39,15 @@ export function QuotationActionButton({
     variant === "danger"
       ? "border-red-300 bg-white text-red-700 hover:border-red-700 hover:bg-red-700 hover:text-white"
       : variant === "secondary"
-        ? "border-[#d8c9c2] bg-white text-[#7A1F1F] hover:border-[#8B6914] hover:bg-[#8B6914] hover:text-white"
-        : "border-[#0001fc]/30 bg-[#0001fc]/5 text-[#0001fc] hover:border-[#0001fc] hover:bg-[#0001fc] hover:text-white";
+        ? "border-black/10 bg-white text-primary hover:border-secondary hover:bg-secondary hover:text-white"
+        : "border-primary/30 bg-primary/5 text-ink hover:border-primary hover:bg-primary-dark hover:text-white";
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0001fc] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>

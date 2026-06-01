@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import SiteHeader from "../../app/layout/SiteHeader";
 import { supabase } from "../../shared/api/supabaseClient";
+import { AuthPageShell } from "../../shared/ui/AuthPageShell";
 import { PasswordInput } from "../../shared/ui/PasswordInput";
 
 function RequiredStar() {
@@ -117,17 +117,11 @@ const SignUp = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container py-12">
-        <div className="mx-auto max-w-xl">
-          <div className="sk-card p-6">
-            <h1 className="text-3xl font-bold text-[#0001fc]">Create Account</h1>
-            <p className="mt-2 text-sm text-black">
-              Sign up as an employer. You can access the employer dashboard right after creating your account.
-            </p>
-
+    <AuthPageShell
+      wide
+      title="Create account"
+      subtitle="Sign up as an employer. You can access the employer dashboard after creating your account."
+    >
             {errorMessage && (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {errorMessage}
@@ -146,7 +140,7 @@ const SignUp = () => {
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                  <span className="mb-1 block text-sm font-semibold text-primary">
                     Full name <RequiredStar />
                   </span>
                   <input
@@ -154,13 +148,13 @@ const SignUp = () => {
                     autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.currentTarget.value)}
-                    className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                    className="sk-input"
                     required
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                  <span className="mb-1 block text-sm font-semibold text-primary">
                     Phone number <RequiredStar />
                   </span>
                   <input
@@ -169,14 +163,14 @@ const SignUp = () => {
                     autoComplete="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.currentTarget.value)}
-                    className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                    className="sk-input"
                     required
                   />
                 </label>
               </div>
 
               <fieldset className="block space-y-3">
-                <legend className="mb-1 text-sm font-semibold text-[#7A1F1F]">Company affiliation</legend>
+                <legend className="mb-1 text-sm font-semibold text-primary">Company affiliation</legend>
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
                     <input
@@ -202,7 +196,7 @@ const SignUp = () => {
                 </div>
                 {companyAffiliation === "company" ? (
                   <label className="block">
-                    <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                    <span className="mb-1 block text-sm font-semibold text-primary">
                       Company name <RequiredStar />
                     </span>
                     <input
@@ -210,19 +204,19 @@ const SignUp = () => {
                       autoComplete="organization"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.currentTarget.value)}
-                      className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                      className="sk-input"
                       required
                     />
                   </label>
                 ) : (
-                  <p className="text-sm text-black/70">
+                  <p className="text-sm text-ink-muted">
                     You are signing up as an independent employer. No company name is required.
                   </p>
                 )}
               </fieldset>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Email <RequiredStar />
                 </span>
                 <input
@@ -231,13 +225,13 @@ const SignUp = () => {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.currentTarget.value)}
-                  className="w-full rounded-lg border border-[#d8c9c2] bg-white px-3 py-2"
+                  className="sk-input"
                   required
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                <span className="mb-1 block text-sm font-semibold text-primary">
                   Password <RequiredStar />
                 </span>
                 <PasswordInput
@@ -253,17 +247,14 @@ const SignUp = () => {
                 {isLoading ? "Creating..." : "Sign up"}
               </button>
 
-              <p className="text-center text-sm text-black/70">
+              <p className="text-center text-sm text-ink-muted">
                 Already have an account?{" "}
-                <a href="/login" className="font-semibold text-[#7A1F1F] underline">
+                <a href="/login" className="font-semibold text-primary underline">
                   Log in
                 </a>
               </p>
             </form>
-          </div>
-        </div>
-      </main>
-    </div>
+    </AuthPageShell>
   );
 };
 

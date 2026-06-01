@@ -52,20 +52,20 @@ export function AdminCreateQuotationForm({
     (!isManualEmployer || Boolean(createManualEmployerName.trim()));
 
   const employerPrefix = (
-    <div className="space-y-4 rounded-xl border border-[#efe1db] bg-[#faf7f2] p-4">
+    <div className="space-y-4 rounded-xl border border-black/10 bg-primary/5 p-4">
       <div>
-        <p className="text-sm font-semibold text-[#7A1F1F]">
+        <p className="text-sm font-semibold text-primary">
           Employer
           <RequiredMark />
         </p>
-        <p className="mt-1.5 text-xs leading-relaxed text-black/70">
-          <span className="font-semibold text-[#7A1F1F]">Start here:</span> search and select an
+        <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
+          <span className="font-semibold text-primary">Start here:</span> search and select an
           employer first. If you choose Manual / not listed, enter the employer name below before
           filling in course details and other fields.
         </p>
       </div>
       <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">Search employer</span>
+        <span className="mb-1.5 block text-sm font-semibold text-primary">Search employer</span>
         <EmployerSearchSelect
           value={createEmployerUserId}
           options={createEmployerOptions}
@@ -77,7 +77,7 @@ export function AdminCreateQuotationForm({
 
       {isManualEmployer && (
         <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold text-[#7A1F1F]">
+          <span className="mb-1.5 block text-sm font-semibold text-primary">
             Employer name
             <RequiredMark />
           </span>
@@ -85,11 +85,11 @@ export function AdminCreateQuotationForm({
             value={createManualEmployerName}
             onChange={(e) => onManualEmployerNameChange(e.target.value)}
             disabled={isSaving || isLoading}
-            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-[#7A1F1F]/35 focus:outline-none focus:ring-2 focus:ring-[#7A1F1F]/20"
+            className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
             placeholder="Type employer name"
             required
           />
-          <p className="mt-1 text-xs text-black/60">
+          <p className="mt-1 text-xs text-ink-muted">
             Manual quotations are stored under the admin account; employers will not see them unless
             they have an account.
           </p>
@@ -101,8 +101,8 @@ export function AdminCreateQuotationForm({
   return (
     <section className="sk-card mx-auto max-w-3xl overflow-hidden p-6 md:p-8">
       <div className="border-b border-black/5 pb-5">
-        <h2 className="text-xl font-bold text-[#7A1F1F] md:text-2xl">New Quotation Application</h2>
-        <p className="mt-2 text-sm leading-relaxed text-black/70">
+        <h2 className="text-xl font-bold text-primary md:text-2xl">New Quotation Application</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           Same fields as the employer quotation form. The quotation is created as approved and a PDF
           is generated immediately.
         </p>

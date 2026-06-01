@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import SiteHeader from "../../app/layout/SiteHeader";
 import { formatSupabaseNetworkError, supabase } from "../../shared/api/supabaseClient";
+import { AuthPageShell } from "../../shared/ui/AuthPageShell";
 import { PasswordInput } from "../../shared/ui/PasswordInput";
 
 type PageState = "loading" | "ready" | "invalid";
@@ -81,17 +81,9 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F5F1E8]">
-      <SiteHeader />
-
-      <main className="sk-container py-12">
-        <div className="mx-auto max-w-md">
-          <div className="sk-card p-6">
-            <h1 className="text-3xl font-bold text-[#0001fc]">Set new password</h1>
-            <p className="mt-2 text-sm text-black">Choose a new password for your account.</p>
-
+    <AuthPageShell title="Set new password" subtitle="Choose a new password for your account.">
             {pageState === "loading" && (
-              <p className="mt-6 text-sm text-black/70">Verifying reset link…</p>
+              <p className="mt-6 text-sm text-ink-muted">Verifying reset link…</p>
             )}
 
             {pageState === "invalid" && (
@@ -103,8 +95,8 @@ const ResetPassword = () => {
                 <a href="/forgot-password" className="sk-button-primary block w-full text-center no-underline">
                   Request new reset link
                 </a>
-                <p className="text-center text-sm text-black/70">
-                  <a href="/login" className="font-semibold text-[#7A1F1F] underline">
+                <p className="text-center text-sm text-ink-muted">
+                  <a href="/login" className="font-semibold text-primary underline">
                     Back to log in
                   </a>
                 </p>
@@ -120,7 +112,7 @@ const ResetPassword = () => {
                 )}
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">New password</span>
+                  <span className="mb-1 block text-sm font-semibold text-primary">New password</span>
                   <PasswordInput
                     value={password}
                     onChange={(e) => setPassword(e.currentTarget.value)}
@@ -131,7 +123,7 @@ const ResetPassword = () => {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-semibold text-[#7A1F1F]">
+                  <span className="mb-1 block text-sm font-semibold text-primary">
                     Confirm new password
                   </span>
                   <PasswordInput
@@ -147,17 +139,14 @@ const ResetPassword = () => {
                   {isLoading ? "Saving…" : "Update password"}
                 </button>
 
-                <p className="text-center text-sm text-black/70">
-                  <a href="/login" className="font-semibold text-[#7A1F1F] underline">
+                <p className="text-center text-sm text-ink-muted">
+                  <a href="/login" className="font-semibold text-primary underline">
                     Back to log in
                   </a>
                 </p>
               </form>
             )}
-          </div>
-        </div>
-      </main>
-    </div>
+    </AuthPageShell>
   );
 };
 

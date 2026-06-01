@@ -40,6 +40,58 @@ export async function uploadSiteAssetBankQr(file: File) {
   return getStoragePublicUrl("site-assets", filePath) || null;
 }
 
+export async function uploadSiteAssetHeroImage(file: File) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filePath = `homepage/hero/${crypto.randomUUID()}.${ext || "jpg"}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("site-assets")
+    .upload(filePath, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  return getStoragePublicUrl("site-assets", filePath) || null;
+}
+
+export async function uploadSiteAssetGalleryImage(file: File) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filePath = `homepage/gallery/${crypto.randomUUID()}.${ext || "jpg"}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("site-assets")
+    .upload(filePath, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  return getStoragePublicUrl("site-assets", filePath) || null;
+}
+
+export async function uploadSiteAssetTestimonialPhoto(file: File) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filePath = `homepage/testimonials/${crypto.randomUUID()}.${ext || "jpg"}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("site-assets")
+    .upload(filePath, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  return getStoragePublicUrl("site-assets", filePath) || null;
+}
+
+export async function uploadSiteAssetPartnerLogo(file: File) {
+  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filePath = `homepage/partners/${crypto.randomUUID()}.${ext || "png"}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("site-assets")
+    .upload(filePath, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  return getStoragePublicUrl("site-assets", filePath) || null;
+}
+
 export async function uploadExperiencePhotos(files: File[]) {
   if (files.length === 0) return [] as string[];
 

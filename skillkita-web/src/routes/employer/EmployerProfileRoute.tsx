@@ -4,6 +4,7 @@ import { employerNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
 import { supabase } from "../../shared/api/supabaseClient";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
+import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 const EmployerProfile = () => {
   const [name, setName] = useState("Employer");
@@ -39,10 +40,10 @@ const EmployerProfile = () => {
         void signOutAndRedirectHome();
       }}
     >
-      <h1 className="text-4xl font-bold text-[#0001fc] md:text-5xl">Profile</h1>
-      <p className="mt-3 text-lg text-black md:text-xl">Update your employer profile details.</p>
-
-      <ProfileEditor expectedRole="employer" />
+      <DashboardPageHeader title="Profile" subtitle="Update your employer profile details." />
+      <div className="mt-10">
+        <ProfileEditor expectedRole="employer" />
+      </div>
     </DashboardLayout>
   );
 };
