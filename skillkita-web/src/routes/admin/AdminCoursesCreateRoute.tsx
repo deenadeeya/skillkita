@@ -11,16 +11,10 @@ import {
   type PrivateDocKind,
 } from "../../features/courses/storage/coursePrivateStorage";
 import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
-import {
-  createOcrWorker,
-  extractPosterFields,
-  isImagePoster,
-  isPdfPoster,
-  normalizeWhitespace,
-  ocrImagePoster,
-  ocrPdfPoster,
-  type OcrState,
-} from "./OCRCourses";
+import { extractPosterFieldsFromImage } from "../../features/courses/api/extractPosterApi";
+import { mergePosterExtractionIntoForm } from "../../features/courses/utils/applyPosterExtraction";
+import { posterFileToExtractPayload } from "../../features/courses/utils/posterImageForExtract";
+import { isImagePoster, isPdfPoster, type OcrState } from "./OCRCourses";
 import { CoursePosterOcrPanel } from "../../features/courses/components/admin/CoursePosterOcrPanel";
 import { CoursePrivateDocumentsPicker } from "../../features/courses/components/admin/CoursePrivateDocumentsPicker";
 import { CourseDetailsForm } from "../../features/courses/components/admin/CourseDetailsForm";
@@ -348,46 +342,26 @@ export default function AdminCreateCourse() {
     const pdf = isPdfPoster(file);
     const img = isImagePoster(file);
     if (!pdf && !img) {
-      setOcrState({ status: "error", message: "Unsupported poster file type for OCR." });
+      setOcrState({ status: "error", message: "Unsupported poster file type." });
       return;
     }
 
     try {
-      let combinedText = "";
-      const worker = await createOcrWorker(setOcrState);
-      try {
-        if (pdf) combinedText = await ocrPdfPoster(file, worker, setOcrState);
-        else combinedText = await ocrImagePoster(file, worker, setOcrState);
-      } finally {
-        await worker.terminate();
-      }
+      setOcrState({
+        status: "running",
+        progressLabel: pdf ? "Rendering PDF page…" : "Preparing image…",
+      });
 
-      const extractedText = normalizeWhitespace(combinedText);
-      setOcrState({ status: "done", extractedText });
+      const imagePayload = await posterFileToExtractPayload(file);
 
-      const extracted = extractPosterFields(extractedText);
-      setForm((prev) => ({
-        ...prev,
-        name: prev.name.trim() ? prev.name : extracted.name ?? prev.name,
-        date: prev.date.trim() ? prev.date : extracted.date ?? prev.date,
-        trainerNames: prev.trainerNames.trim()
-          ? prev.trainerNames
-          : extracted.trainerNames ?? prev.trainerNames,
-        time: prev.time.trim() ? prev.time : extracted.time ?? prev.time,
-        venue: prev.venue.trim() ? prev.venue : extracted.venue ?? prev.venue,
-        mycoid: prev.mycoid.trim() ? prev.mycoid : extracted.mycoid ?? prev.mycoid,
-        price: prev.price.trim() ? prev.price : extracted.price ?? prev.price,
-        contactPerson: prev.contactPerson.trim()
-          ? prev.contactPerson
-          : extracted.contactPerson ?? prev.contactPerson,
-        contactPhone: prev.contactPhone.trim()
-          ? prev.contactPhone
-          : extracted.contactPhone ?? prev.contactPhone,
-        syllabus: prev.syllabus.trim() ? prev.syllabus : extracted.syllabus ?? prev.syllabus,
-        details: prev.details.trim()
-          ? `${prev.details.trim()}\n\n${extracted.detailsTemplate}\n\n${extracted.summary}`
-          : `${extracted.detailsTemplate}\n\n${extracted.summary}`,
-      }));
+      setOcrState({
+        status: "running",
+        progressLabel: "Analyzing poster with AI…",
+      });
+
+      const extracted = await extractPosterFieldsFromImage(imagePayload);
+      setOcrState({ status: "done", extractedText: "" });
+      setForm((prev) => mergePosterExtractionIntoForm(prev, extracted));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setOcrState({ status: "error", message: msg });

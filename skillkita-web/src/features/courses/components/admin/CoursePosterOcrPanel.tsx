@@ -77,12 +77,10 @@ export function CoursePosterOcrPanel({
 
           <div className="border-t border-black/10 pt-3">
             <div>
-              <p className="text-sm font-semibold text-primary">Poster OCR
-              
-              </p>
-              
+              <p className="text-sm font-semibold text-primary">Auto-fill from poster</p>
+
               <p className="mt-1 text-xs text-ink-muted">
-                Extract text from poster and suggested input will auto-fill fields. May be incorrect, please verify.
+                Uses Gemini to read the poster and suggest form values. May be incorrect — please verify before saving.
               </p>
             </div>
 
@@ -93,7 +91,7 @@ export function CoursePosterOcrPanel({
                 onClick={onRunOcr}
                 className="sk-button-secondary px-3 py-2 text-sm"
               >
-                {ocrState.status === "running" ? "Extracting…" : "Extract Text"}
+                {ocrState.status === "running" ? "Analyzing…" : "Auto-fill from poster"}
               </button>
               <button
                 type="button"
@@ -119,7 +117,7 @@ export function CoursePosterOcrPanel({
               )}
               {ocrState.status === "done" && (
                 <p className="text-xs font-semibold text-emerald-700">
-                  OCR done. Fields updated from extracted text.
+                  Done. Form fields updated from the poster.
                 </p>
               )}
             </div>
