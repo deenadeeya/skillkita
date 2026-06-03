@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { CourseAssistantWidget } from "../../features/course-assistant/components/CourseAssistantWidget";
 import { DashboardMainInsetProvider } from "./DashboardMainInsetContext";
 import SiteFooter from "./SiteFooter";
 
@@ -11,6 +12,7 @@ const AppShell = () => {
           <Outlet />
         </div>
         <SiteFooter />
+        <CourseAssistantWidget />
       </div>
     </DashboardMainInsetProvider>
   );
