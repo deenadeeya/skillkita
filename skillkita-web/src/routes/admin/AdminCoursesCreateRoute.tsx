@@ -14,7 +14,9 @@ import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
 import { extractPosterFieldsFromImage } from "../../features/courses/api/extractPosterApi";
 import { mergePosterExtractionIntoForm } from "../../features/courses/utils/applyPosterExtraction";
 import { posterFileToExtractPayload } from "../../features/courses/utils/posterImageForExtract";
-import { isImagePoster, isPdfPoster, type OcrState } from "./OCRCourses";
+import type { PosterExtractState } from "../../features/courses/utils/posterExtractState";
+import { startProgressTicker } from "../../features/courses/utils/posterExtractProgress";
+import { isImagePoster, isPdfPoster } from "../../features/courses/utils/posterFileTypes";
 import { CoursePosterOcrPanel } from "../../features/courses/components/admin/CoursePosterOcrPanel";
 import { CoursePrivateDocumentsPicker } from "../../features/courses/components/admin/CoursePrivateDocumentsPicker";
 import { CourseDetailsForm } from "../../features/courses/components/admin/CourseDetailsForm";
@@ -126,7 +128,7 @@ export default function AdminCreateCourse() {
   const [form, setForm] = useState<CourseFormState>(initialFormState);
   const [selectedPosterFile, setSelectedPosterFile] = useState<File | null>(null);
   const [existingPosterUrl, setExistingPosterUrl] = useState<string | null>(null);
-  const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
+  const [extractState, setExtractState] = useState<PosterExtractState>({ status: "idle" });
   const [privateSelections, setPrivateSelections] =
     useState<Record<PrivateDocKind, File | null>>(emptyPrivateSelections);
   const [existingPrivatePaths, setExistingPrivatePaths] =
@@ -265,7 +267,7 @@ export default function AdminCreateCourse() {
   const handlePosterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setSelectedPosterFile(file);
-    setOcrState({ status: "idle" });
+    setExtractState({ status: "idle" });
   };
 
   const handlePrivateFileChange = (kind: PrivateDocKind, event: ChangeEvent<HTMLInputElement>) => {
@@ -335,36 +337,71 @@ export default function AdminCreateCourse() {
     return merged;
   };
 
-  const runPosterOcr = useCallback(async () => {
+  const runPosterAutoFill = useCallback(async () => {
     const file = selectedPosterFile;
     if (!file) return;
 
     const pdf = isPdfPoster(file);
     const img = isImagePoster(file);
     if (!pdf && !img) {
-      setOcrState({ status: "error", message: "Unsupported poster file type." });
+      setExtractState({ status: "error", message: "Unsupported poster file type." });
       return;
     }
 
+    let stopTicker: (() => void) | null = null;
+
     try {
-      setOcrState({
+      setExtractState({
+        status: "running",
+        progressLabel: "Starting…",
+        progressPct: 5,
+      });
+
+      setExtractState({
         status: "running",
         progressLabel: pdf ? "Rendering PDF page…" : "Preparing image…",
+        progressPct: 20,
       });
 
       const imagePayload = await posterFileToExtractPayload(file);
 
-      setOcrState({
+      setExtractState({
         status: "running",
-        progressLabel: "Analyzing poster with AI…",
+        progressLabel: "Sending poster to AI…",
+        progressPct: 40,
       });
 
+      stopTicker = startProgressTicker(
+        (pct) => {
+          setExtractState({
+            status: "running",
+            progressLabel: "Analyzing poster with AI…",
+            progressPct: pct,
+          });
+        },
+        42,
+        88
+      );
+
       const extracted = await extractPosterFieldsFromImage(imagePayload);
-      setOcrState({ status: "done", extractedText: "" });
+      stopTicker();
+      stopTicker = null;
+
+      setExtractState({
+        status: "running",
+        progressLabel: "Applying fields to form…",
+        progressPct: 95,
+      });
+
       setForm((prev) => mergePosterExtractionIntoForm(prev, extracted));
+
+      setExtractState({
+        status: "done",
+      });
     } catch (e) {
+      stopTicker?.();
       const msg = e instanceof Error ? e.message : String(e);
-      setOcrState({ status: "error", message: msg });
+      setExtractState({ status: "error", message: msg });
     }
   }, [selectedPosterFile]);
 
@@ -471,13 +508,7 @@ export default function AdminCreateCourse() {
                   selectedPosterFile={selectedPosterFile}
                   existingPosterUrl={existingPosterUrl}
                   isSaving={isSaving}
-                  ocrState={
-                    ocrState as unknown as
-                      | { status: "idle" }
-                      | { status: "running"; progressLabel?: string; progressPct?: number }
-                      | { status: "error"; message: string }
-                      | { status: "done" }
-                  }
+                  extractState={extractState}
                   onPosterChange={(file) => {
                     if (!file) {
                       setSelectedPosterFile(null);
@@ -487,12 +518,12 @@ export default function AdminCreateCourse() {
                       target: { files: [file] },
                     } as unknown as ChangeEvent<HTMLInputElement>);
                   }}
-                  canRunOcr={Boolean(
+                  canRunAutoFill={Boolean(
                     selectedPosterFile &&
                       (isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile))
                   )}
-                  onRunOcr={() => void runPosterOcr()}
-                  onClearOcr={() => setOcrState({ status: "idle" })}
+                  onRunAutoFill={() => void runPosterAutoFill()}
+                  onClearExtract={() => setExtractState({ status: "idle" })}
                 />
               }
               form={form}

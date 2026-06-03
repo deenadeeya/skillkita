@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { extractPosterDevPlugin } from "./vite-plugin-extract-poster-dev";
+import { vercelApiDevPlugin } from "./vite-plugin-vercel-api-dev";
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
     proxy: supabaseProxy,
   },
   plugins: [
-    ...(mode === "development" ? [extractPosterDevPlugin(env)] : []),
+    ...(mode === "development" ? [vercelApiDevPlugin(env)] : []),
     react({
       babel: {
         plugins: [["babel-plugin-react-compiler"]],

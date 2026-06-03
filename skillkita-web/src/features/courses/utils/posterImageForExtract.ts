@@ -1,4 +1,4 @@
-import { isImagePoster, isPdfPoster } from "../../../routes/admin/OCRCourses";
+import { isImagePoster, isPdfPoster } from "./posterFileTypes";
 
 const MAX_EDGE = 1200;
 const JPEG_QUALITY = 0.85;
