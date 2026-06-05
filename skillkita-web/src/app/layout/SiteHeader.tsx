@@ -1,16 +1,17 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 const TRSC_LOGO_SRC = "/TRSCLogo.png";
 import NotificationBell from "../../features/notifications/NotificationBell";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
+import { adminNavItems, employerNavItems, flattenNavLinks } from "./navItems";
 
 const PRIMARY_NAV = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about-us" },
   { label: "Company Experience", href: "/company-experience" },
   { label: "Courses", href: "/courses" },
-  { label: "Contact", href: "/about-us" },
+  
 ] as const;
 
 type Props = {
@@ -18,9 +19,80 @@ type Props = {
   onMenuClick?: () => void;
 };
 
+const dropdownLinkClass =
+  "block rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-paper";
+
+type UserNavMenuProps = {
+  links: { label: string; href: string }[];
+  buttonClassName: string;
+  iconClassName: string;
+  title?: string | null;
+  onLogout: () => void;
+};
+
+function HeaderUserNavMenu({
+  links,
+  buttonClassName,
+  iconClassName,
+  title,
+  onLogout,
+}: UserNavMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [isOpen]);
+
+  return (
+    <div ref={menuRef} className={["relative", isOpen ? "z-[80]" : "z-0"].join(" ")}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label="Open navigation menu"
+        aria-expanded={isOpen}
+        className={buttonClassName}
+        title={title ?? undefined}
+      >
+        <UserCircleIcon className={iconClassName} />
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 top-14 z-[70] max-h-[70vh] w-64 overflow-y-auto rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
+          {links.map((link) => (
+            <a
+              key={`${link.href}-${link.label}`}
+              href={link.href}
+              className={dropdownLinkClass}
+              onClick={() => setIsOpen(false)}
+            >
+              {link.label}
+            </a>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onLogout();
+            }}
+            className={`mt-1 w-full text-left ${dropdownLinkClass}`}
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SiteHeader = ({ onMenuClick }: Props) => {
-  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-  const [isEmployerMenuOpen, setIsEmployerMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const viewerState = useViewer();
@@ -57,12 +129,11 @@ const SiteHeader = ({ onMenuClick }: Props) => {
     void signOutAndRedirectHome();
   };
 
-  const profileHref = useMemo(() => {
-    if (isAdmin) return "/admin/profile?role=admin";
-    if (isEmployer) return "/employer/profile";
-    if (employerStatus === "rejected") return "/employer/profile";
-    return hasAuthSession ? "/login?stay=1" : "/login";
-  }, [employerStatus, hasAuthSession, isAdmin, isEmployer]);
+  const userNavLinks = useMemo(() => {
+    if (isAdmin) return flattenNavLinks(adminNavItems);
+    if (isEmployer) return flattenNavLinks(employerNavItems);
+    return [];
+  }, [isAdmin, isEmployer]);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-primary text-white shadow-md">
@@ -107,14 +178,24 @@ const SiteHeader = ({ onMenuClick }: Props) => {
             {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
               <NotificationBell viewer={viewerState.viewer} />
             )}
-            <a
-              href={profileHref}
-              aria-label={isAdmin || isEmployer ? "Open profile" : "Log in"}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
-              title={viewerEmail ?? viewerName}
-            >
-              <UserCircleIcon className="h-7 w-7 text-white" />
-            </a>
+            {isAdmin || isEmployer ? (
+              <HeaderUserNavMenu
+                links={userNavLinks}
+                title={viewerEmail ?? viewerName}
+                onLogout={signOut}
+                buttonClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+                iconClassName="h-7 w-7 text-white"
+              />
+            ) : (
+              <a
+                href={hasAuthSession ? "/login?stay=1" : "/login"}
+                aria-label="Log in"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+                title={viewerEmail ?? viewerName}
+              >
+                <UserCircleIcon className="h-7 w-7 text-white" />
+              </a>
+            )}
           </div>
         </div>
 
@@ -162,132 +243,6 @@ const SiteHeader = ({ onMenuClick }: Props) => {
                 Log in
               </a>
             </>
-          )}
-
-          {isAdmin && (
-            <div className={["relative", isAdminMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
-              <button
-                type="button"
-                onClick={() => setIsAdminMenuOpen((p) => !p)}
-                className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-                aria-expanded={isAdminMenuOpen}
-              >
-                Admin
-              </button>
-              {isAdminMenuOpen && (
-                <div className="absolute right-0 top-14 z-[70] w-64 rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
-                  <a
-                    href="/about-us"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    About Us
-                  </a>
-                  <a
-                    href="/company-experience"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Company Experience
-                  </a>
-                  <a
-                    href="/admin/landing"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Manage Home
-                  </a>
-                  <a
-                    href="/courses"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Browse Course
-                  </a>
-                  <a
-                    href="/admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Manage Course
-                  </a>
-                  <a
-                    href="/admin/quotations"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Quotation
-                  </a>
-                  <a
-                    href="/admin/messages?role=admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Chat
-                  </a>
-                  <a
-                    href="/admin/users"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Manage Users
-                  </a>
-                  <a
-                    href="/admin/profile?role=admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Profile
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => void signOut()}
-                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-paper"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isEmployer && (
-            <div className={["relative", isEmployerMenuOpen ? "z-[80]" : "z-0"].join(" ")}>
-              <button
-                type="button"
-                onClick={() => setIsEmployerMenuOpen((p) => !p)}
-                className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-                aria-expanded={isEmployerMenuOpen}
-              >
-                Employer
-              </button>
-              {isEmployerMenuOpen && (
-                <div className="absolute right-0 top-14 z-[70] w-64 rounded-xl bg-white p-2 text-primary shadow-lg ring-1 ring-black/5">
-                  <a
-                    href="/employer/quotation"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Quotation
-                  </a>
-                  <a
-                    href="/employer"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Documents
-                  </a>
-                  <a
-                    href="/employer/talk-to-admin"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Talk to Admin
-                  </a>
-                  <a
-                    href="/employer/profile"
-                    className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-paper"
-                  >
-                    Profile
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => void signOut()}
-                    className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-paper"
-                  >
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
           )}
 
           {hasAuthSession && !isAdmin && !isEmployer && (
@@ -350,14 +305,13 @@ const SiteHeader = ({ onMenuClick }: Props) => {
           {viewerState.kind === "signedIn" && (isAdmin || isEmployer) && (
             <div className="relative z-10 flex items-center gap-2">
               <NotificationBell viewer={viewerState.viewer} />
-              <a
-                href={profileHref}
-                aria-label="Open profile"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+              <HeaderUserNavMenu
+                links={userNavLinks}
                 title={viewerEmail ?? viewerName}
-              >
-                <UserCircleIcon className="h-8 w-8 text-white" />
-              </a>
+                onLogout={signOut}
+                buttonClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10"
+                iconClassName="h-8 w-8 text-white"
+              />
             </div>
           )}
         </div>

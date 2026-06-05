@@ -239,13 +239,17 @@ const AdminCreateQuotation = () => {
       }}
     >
       <AdminPageFrame
-        title="Create quotation"
+        title="Create Quotation"
+        headerVariant="hero"
         subtitle="Use the same quotation application form as employers. The quotation is created as approved and a PDF is generated immediately."
         errorMessage={errorMessage}
         isAuthChecking={false}
         isAuthorized
         actions={
-          <a href="/admin/quotations" className="sk-button-secondary px-3 py-2">
+          <a
+            href="/admin/quotations"
+            className="inline-flex items-center rounded-xl border border-white/50 bg-white/10 px-4 py-2 text-sm font-semibold text-white no-underline transition hover:bg-white/20"
+          >
             Back to quotation requests
           </a>
         }

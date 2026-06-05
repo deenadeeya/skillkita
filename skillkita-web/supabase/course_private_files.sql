@@ -11,6 +11,10 @@ create table if not exists public.course_private_files (
   tentative_storage_path text,
   trainer_hrd_storage_path text,
   trainer_cv_storage_path text,
+  syllabus_file_name text,
+  tentative_file_name text,
+  trainer_hrd_file_name text,
+  trainer_cv_file_name text,
   updated_at timestamptz not null default now()
 );
 

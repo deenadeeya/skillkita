@@ -1,4 +1,4 @@
-import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from "@heroicons/react/24/solid";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 import { useState } from "react";
 import type { HomepageTestimonialRow } from "../api/homepageApi";
 
@@ -29,6 +29,7 @@ export function HomeTestimonialsSection({ items }: Props) {
               src={current.photo}
               alt=""
               className="mx-auto h-20 w-20 rounded-full object-cover ring-4 ring-primary/10"
+              onError={hideImageOnError}
             />
           ) : (
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">

@@ -59,15 +59,21 @@ export function CoursePrivateDocumentsPicker({
           {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => {
             const col = columnForKind(kind) as keyof CoursePrivatePaths;
             const path = existingPrivatePaths[col];
+            const hasFile = Boolean(path);
             return (
               <button
                 key={kind}
                 type="button"
-                disabled={!path}
+                disabled={!hasFile}
                 onClick={() => onOpenExisting(path)}
-                className="rounded-md border border-primary bg-white px-2 py-1 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className={[
+                  "rounded-md border px-2 py-1 text-xs font-semibold disabled:cursor-not-allowed",
+                  hasFile
+                    ? "border-secondary bg-secondary/25 text-ink hover:bg-secondary/40 disabled:opacity-100"
+                    : "border-gray-300 bg-gray-100 text-gray-600 disabled:opacity-100",
+                ].join(" ")}
               >
-                {path ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
+                {hasFile ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
               </button>
             );
           })}

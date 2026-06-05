@@ -4,14 +4,8 @@ import { adminNavItems } from "../../app/layout/navItems";
 import { AdminCoursesPanel } from "../../features/courses/components/AdminCoursesPanel";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
+import type { CoursePrivatePaths } from "../../features/courses/api/privateFilesApi";
 import { supabase } from "../../shared/api/supabaseClient";
-
-type CoursePrivatePaths = {
-  syllabus_storage_path: string | null;
-  tentative_storage_path: string | null;
-  trainer_hrd_storage_path: string | null;
-  trainer_cv_storage_path: string | null;
-};
 
 type Course = {
   id: string;
@@ -58,9 +52,13 @@ function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePr
   if (!row) return null;
   return {
     syllabus_storage_path: row.syllabus_storage_path ?? null,
+    syllabus_file_name: row.syllabus_file_name ?? null,
     tentative_storage_path: row.tentative_storage_path ?? null,
+    tentative_file_name: row.tentative_file_name ?? null,
     trainer_hrd_storage_path: row.trainer_hrd_storage_path ?? null,
+    trainer_hrd_file_name: row.trainer_hrd_file_name ?? null,
     trainer_cv_storage_path: row.trainer_cv_storage_path ?? null,
+    trainer_cv_file_name: row.trainer_cv_file_name ?? null,
   };
 }
 
@@ -176,7 +174,7 @@ const AdminManageCourses = () => {
     const { data, error } = await supabase
       .from("courses")
       .select(
-        "id,name,date,details,trainer_names,course_time,venue,mycoid,price,contact_person,contact_phone,syllabus,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,tentative_storage_path,trainer_hrd_storage_path,trainer_cv_storage_path)"
+        "id,name,date,details,trainer_names,course_time,venue,mycoid,price,contact_person,contact_phone,syllabus,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,syllabus_file_name,tentative_storage_path,tentative_file_name,trainer_hrd_storage_path,trainer_hrd_file_name,trainer_cv_storage_path,trainer_cv_file_name)"
       )
       .order("created_at", { ascending: false });
 
@@ -267,8 +265,9 @@ const AdminManageCourses = () => {
       }}
     >
       <AdminPageFrame
-        title="Manage Courses"
-        subtitle="Manage courses with add, update, delete, and public visibility controls."
+        title="Manage Course"
+        headerVariant="hero"
+        subtitle="Add, update, delete, and control public visibility for courses in the catalog."
         errorMessage={errorMessage}
         isAuthChecking={isAuthChecking}
         isAuthorized={isAuthorized}

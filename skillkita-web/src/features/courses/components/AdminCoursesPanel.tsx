@@ -1,4 +1,3 @@
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "./CoursePosterMedia";
 import {
   PRIVATE_DOC_LABELS,
@@ -107,14 +106,11 @@ export function AdminCoursesPanel({
             </p>
           )}
           {filteredCourses.map((course) => {
-            const hasAnyPrivateFile = Boolean(
-              course.privateFiles && Object.values(course.privateFiles).some((v) => Boolean(v))
-            );
             return (
               <article key={course.id} className="rounded-xl border border-black/10 p-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px,1fr]">
                   <CoursePosterMedia
-                    url={course.posterUrl ?? PlaceholderPoster}
+                    url={course.posterUrl}
                     alt={`${course.name} poster`}
                     className="aspect-[210/297] w-full rounded-lg object-cover"
                   />
@@ -161,38 +157,27 @@ export function AdminCoursesPanel({
 
                     <p className="mt-2 text-sm text-ink">{course.details}</p>
 
-                    <div
-                      className={[
-                        "mt-4 rounded-lg border border-dashed p-3",
-                        hasAnyPrivateFile ? "border-primary/20 bg-primary/5" : "border-gray-300 bg-gray-100",
-                      ].join(" ")}
-                    >
-                      <p
-                        className={[
-                          "text-xs font-semibold",
-                          hasAnyPrivateFile ? "text-primary" : "text-gray-700",
-                        ].join(" ")}
-                      >
-                        Files
-                      </p>
+                    <div className="mt-4 rounded-lg border border-dashed border-black/10 bg-paper p-3">
+                      <p className="text-xs font-semibold text-primary">Files</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {(Object.keys(PRIVATE_DOC_LABELS) as PrivateDocKind[]).map((kind) => {
                           const col = columnForKind(kind) as keyof CoursePrivatePaths;
                           const path = course.privateFiles?.[col];
+                          const hasFile = Boolean(path);
                           return (
                             <button
                               key={kind}
                               type="button"
-                              disabled={isSaving || !path}
+                              disabled={isSaving || !hasFile}
                               onClick={() => onOpenPrivateDoc(path)}
                               className={[
-                                "rounded-md border bg-white px-2 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50",
-                                hasAnyPrivateFile
-                                  ? "border-primary text-primary"
-                                  : "border-gray-400 text-gray-700",
+                                "rounded-md border px-2 py-1 text-xs font-semibold disabled:cursor-not-allowed",
+                                hasFile
+                                  ? "border-secondary bg-secondary/25 text-ink hover:bg-secondary/40 disabled:opacity-100"
+                                  : "border-gray-300 bg-gray-100 text-gray-600 disabled:opacity-100",
                               ].join(" ")}
                             >
-                              {path ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
+                              {hasFile ? `Open ${PRIVATE_DOC_LABELS[kind]}` : `${PRIVATE_DOC_LABELS[kind]} (none)`}
                             </button>
                           );
                         })}

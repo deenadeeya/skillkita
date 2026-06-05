@@ -1,5 +1,7 @@
 import type { ChangeEvent } from "react";
 
+import type { AdminLandingTabId } from "./AdminLandingSectionNav";
+import { AdminLandingTabLink } from "./AdminLandingSectionNav";
 import { MediaUploadField } from "./MediaUploadField";
 
 type FeaturedSlot = 3;
@@ -9,7 +11,12 @@ type Props = {
   whoPreviewUrl: string;
   locationBuildingPreviewUrl: string;
   bankQrPreviewUrl: string;
+  heroFileName: string | null;
+  whoFileName: string | null;
+  locationBuildingFileName: string | null;
+  bankQrFileName: string | null;
   isSaving: boolean;
+  onNavigateToTab: (tab: AdminLandingTabId) => void;
   onHeroImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onWhoImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onLocationBuildingImageChange: (slot: FeaturedSlot, event: ChangeEvent<HTMLInputElement>) => void;
@@ -21,20 +28,25 @@ export function SiteMediaEditor({
   whoPreviewUrl,
   locationBuildingPreviewUrl,
   bankQrPreviewUrl,
+  heroFileName,
+  whoFileName,
+  locationBuildingFileName,
+  bankQrFileName,
   isSaving,
+  onNavigateToTab,
   onHeroImageChange,
   onWhoImageChange,
   onLocationBuildingImageChange,
   onBankQrImageChange,
 }: Props) {
   return (
-    <section id="site-media" className="sk-card scroll-mt-24 p-6 md:p-8">
+    <section className="sk-card p-6 md:p-8">
       <div className="border-b border-black/5 pb-5">
         <h2 className="sk-section-title">Site images</h2>
         <p className="mt-2 max-w-3xl text-sm text-ink-muted">
           Photos used on the public <strong className="font-medium text-ink">Home</strong> and{" "}
-          <strong className="font-medium text-ink">About Us</strong> pages. Partner logos are managed
-          in Homepage CMS below.
+          <strong className="font-medium text-ink">About Us</strong> pages. 
+          <AdminLandingTabLink tab="homepage-cms" onNavigate={onNavigateToTab} />.
         </p>
       </div>
 
@@ -48,6 +60,7 @@ export function SiteMediaEditor({
             previewUrl={heroPreviewUrl}
             previewAlt="Homepage hero preview"
             previewClassName="mt-3 max-h-48 w-full rounded-hero object-cover"
+            fileName={heroFileName}
             isSaving={isSaving}
             onImageChange={onHeroImageChange}
           />
@@ -57,6 +70,7 @@ export function SiteMediaEditor({
             hint="Shown in the “Why choose TRSC SkillKita” section on the home page and as the company profile on About Us."
             previewUrl={whoPreviewUrl}
             previewAlt="Why choose us preview"
+            fileName={whoFileName}
             isSaving={isSaving}
             onImageChange={onWhoImageChange}
           />
@@ -69,10 +83,11 @@ export function SiteMediaEditor({
           <MediaUploadField
             id="media-location-building"
             label="Location — building photo"
-            hint="Wide image on the About Us location section. Falls back to the company profile photo if empty."
+            hint="Wide image on the About Us location section."
             previewUrl={locationBuildingPreviewUrl}
             previewAlt="Location building preview"
             previewClassName="mt-3 aspect-[16/7] w-full rounded-hero object-cover"
+            fileName={locationBuildingFileName}
             isSaving={isSaving}
             onImageChange={(e) => onLocationBuildingImageChange(3, e)}
           />
@@ -83,6 +98,7 @@ export function SiteMediaEditor({
             previewUrl={bankQrPreviewUrl}
             previewAlt="Bank QR preview"
             previewClassName="mt-3 mx-auto max-h-44 max-w-[200px] rounded-card border border-black/10 bg-white p-2 object-contain"
+            fileName={bankQrFileName}
             isSaving={isSaving}
             onImageChange={onBankQrImageChange}
           />

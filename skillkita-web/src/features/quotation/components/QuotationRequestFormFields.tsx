@@ -1,6 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
 import { useMemo } from "react";
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
@@ -166,7 +165,7 @@ export function QuotationRequestFormFields({
           {selectedCourse ? (
             <>
               <CoursePosterMedia
-                url={selectedCourse.poster_url ?? PlaceholderPoster}
+                url={selectedCourse.poster_url}
                 alt={`${selectedCourse.name} poster`}
                 className="mt-2 aspect-[210/297] w-full rounded-lg object-cover shadow-sm"
                 optimizeWidth={400}

@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "../../shared/api/supabaseClient";
+import { hideImageOnError } from "../../shared/ui/hideImageOnError";
 import { uploadProfilePic } from "./profilePicStorage";
 import type { UserProfileRow } from "./types";
 
@@ -173,7 +173,7 @@ const ProfileEditor = ({ expectedRole }: Props) => {
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 overflow-hidden rounded-full border border-black/10 bg-white shadow-sm">
             {profile?.profile_pic_url ? (
-              <img src={profile.profile_pic_url} alt="Profile" className="h-full w-full object-cover" />
+              <img src={profile.profile_pic_url} alt="Profile" className="h-full w-full object-cover" onError={hideImageOnError} />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary">
                 {initials}

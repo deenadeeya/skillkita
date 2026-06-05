@@ -1,3 +1,8 @@
+import {
+  AdminLandingTabLink,
+  type AdminLandingTabId,
+} from "./admin/AdminLandingSectionNav";
+
 type Props = {
   whoDescription: string;
   locationDescription: string;
@@ -11,6 +16,7 @@ type Props = {
   contact2Email: string;
   companyHrEmail: string;
   isSaving: boolean;
+  onNavigateToTab: (tab: AdminLandingTabId) => void;
   onWhoDescriptionChange: (value: string) => void;
   onLocationDescriptionChange: (value: string) => void;
   onLocationMapEmbedUrlChange: (value: string) => void;
@@ -37,6 +43,7 @@ export function AboutUsContentEditor({
   contact2Email,
   companyHrEmail,
   isSaving,
+  onNavigateToTab,
   onWhoDescriptionChange,
   onLocationDescriptionChange,
   onLocationMapEmbedUrlChange,
@@ -50,19 +57,15 @@ export function AboutUsContentEditor({
   onCompanyHrEmailChange,
 }: Props) {
   return (
-    <section id="about-us-content" className="sk-card scroll-mt-24 p-6 md:p-8">
+    <section className="sk-card p-6 md:p-8">
       <div className="border-b border-black/5 pb-5">
         <h2 className="sk-section-title">About Us content</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          Text for the public{" "}
+          Text for {" "}
           <a href="/about-us" className="font-semibold text-primary underline">
             About Us
           </a>{" "}
-          page. Photos are in{" "}
-          <a href="#site-media" className="font-semibold text-primary underline">
-            Site images
-          </a>
-          .
+          page. Photos are in <AdminLandingTabLink tab="site-images" onNavigate={onNavigateToTab} />.
         </p>
       </div>
 
@@ -115,6 +118,7 @@ export function AboutUsContentEditor({
           <legend className="font-heading text-lg font-semibold text-ink">Bank account</legend>
           <label className="block">
             <span className="sk-label">Account details</span>
+            
             <textarea
               value={bankAccountDetails}
               onChange={(e) => onBankAccountDetailsChange(e.currentTarget.value)}
@@ -123,12 +127,15 @@ export function AboutUsContentEditor({
               placeholder="Account name, bank, account number…"
               disabled={isSaving}
             />
+            <p className="mt-2 text-xs text-ink-muted">
+              QR payment image can be uploaded in <AdminLandingTabLink tab="site-images" onNavigate={onNavigateToTab} />.
+            </p>
           </label>
         </fieldset>
 
         <fieldset className="space-y-4">
           <legend className="font-heading text-lg font-semibold text-ink">Contact details</legend>
-          <label className="block max-w-xl">
+          <label className="block">
             <span className="sk-label">Company email</span>
             <input
               type="email"
@@ -139,9 +146,10 @@ export function AboutUsContentEditor({
               disabled={isSaving}
             />
           </label>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 pt-2 md:grid-cols-2 md:gap-0">
             <ContactPersonFields
-              title="Contact person 1"
+              title="Contact 1"
+              className="md:pr-6"
               name={contact1Name}
               phone={contact1Phone}
               email={contact1Email}
@@ -151,7 +159,8 @@ export function AboutUsContentEditor({
               onEmailChange={onContact1EmailChange}
             />
             <ContactPersonFields
-              title="Contact person 2"
+              title="Contact 2"
+              className="md:border-l md:border-black/10 md:pl-6"
               name={contact2Name}
               phone={contact2Phone}
               email={contact2Email}
@@ -169,6 +178,7 @@ export function AboutUsContentEditor({
 
 function ContactPersonFields({
   title,
+  className = "",
   name,
   phone,
   email,
@@ -178,6 +188,7 @@ function ContactPersonFields({
   onEmailChange,
 }: {
   title: string;
+  className?: string;
   name: string;
   phone: string;
   email: string;
@@ -187,8 +198,8 @@ function ContactPersonFields({
   onEmailChange: (v: string) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-card border border-black/10 bg-primary/5 p-4">
-      <p className="text-sm font-bold text-primary">{title}</p>
+    <div className={`space-y-3 ${className}`.trim()}>
+      <p className="text-sm font-semibold text-ink">{title}</p>
       <label className="block">
         <span className="sk-label">Name</span>
         <input
@@ -199,27 +210,29 @@ function ContactPersonFields({
           disabled={isSaving}
         />
       </label>
-      <label className="block">
-        <span className="sk-label">Phone</span>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => onPhoneChange(e.currentTarget.value)}
-          className="sk-input"
-          disabled={isSaving}
-        />
-      </label>
-      <label className="block">
-        <span className="sk-label">Email</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => onEmailChange(e.currentTarget.value)}
-          className="sk-input"
-          placeholder="name@company.com"
-          disabled={isSaving}
-        />
-      </label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="sk-label">Phone</span>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => onPhoneChange(e.currentTarget.value)}
+            className="sk-input"
+            disabled={isSaving}
+          />
+        </label>
+        <label className="block">
+          <span className="sk-label">Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => onEmailChange(e.currentTarget.value)}
+            className="sk-input"
+            placeholder="name@company.com"
+            disabled={isSaving}
+          />
+        </label>
+      </div>
     </div>
   );
 }

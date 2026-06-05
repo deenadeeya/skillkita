@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { optimizeImageUrl } from "../../../shared/media/optimizeImageUrl";
 
 /** True when URL path ends in .pdf (Supabase public URLs include the file extension). */
@@ -14,7 +13,7 @@ export function isPosterPdfUrl(url: string): boolean {
 }
 
 type CoursePosterMediaProps = {
-  url: string;
+  url: string | null | undefined;
   alt: string;
   /** Applied to <img> or to the PDF wrapper (keep layout classes like w-full, mt-4, rounded-*). */
   className: string;
@@ -30,6 +29,7 @@ type CoursePosterMediaProps = {
 
 /**
  * Renders a course poster as an image or embedded PDF (PDFs cannot use <img src>).
+ * Shows an empty box when no URL is provided or the image fails to load.
  */
 export function CoursePosterMedia({
   url,
@@ -40,30 +40,35 @@ export function CoursePosterMedia({
   fetchPriority,
   optimizeWidth = 720,
 }: CoursePosterMediaProps) {
-  const displayUrl = url?.trim() || PlaceholderPoster;
-  const asPdf = forcePdf || isPosterPdfUrl(displayUrl);
+  const trimmedUrl = url?.trim() ?? "";
+  const asPdf = Boolean(trimmedUrl) && (forcePdf || isPosterPdfUrl(trimmedUrl));
   const optimizedSrc = useMemo(
-    () => optimizeImageUrl(displayUrl, { width: optimizeWidth }),
-    [displayUrl, optimizeWidth]
+    () => (trimmedUrl ? optimizeImageUrl(trimmedUrl, { width: optimizeWidth }) : ""),
+    [trimmedUrl, optimizeWidth]
   );
   const [src, setSrc] = useState(optimizedSrc);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  // Home page (and other screens) pass URLs after async Supabase fetch — sync img src when url changes.
   useEffect(() => {
     setSrc(optimizedSrc);
+    setImageFailed(false);
   }, [optimizedSrc]);
+
+  if (!trimmedUrl) {
+    return <div className={className} aria-hidden />;
+  }
 
   if (asPdf) {
     return (
       <div className={`overflow-hidden ${className}`}>
         <object
-          data={displayUrl}
+          data={trimmedUrl}
           type="application/pdf"
           title={alt}
           className="block h-full min-h-[280px] w-full bg-white"
         >
           <a
-            href={displayUrl}
+            href={trimmedUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-semibold text-primary underline"
@@ -75,14 +80,16 @@ export function CoursePosterMedia({
     );
   }
 
+  if (imageFailed) {
+    return <div className={className} aria-hidden />;
+  }
+
   const handleImageError = () => {
-    if (src === optimizedSrc && optimizedSrc !== displayUrl) {
-      setSrc(displayUrl);
+    if (src === optimizedSrc && optimizedSrc !== trimmedUrl) {
+      setSrc(trimmedUrl);
       return;
     }
-    if (src !== PlaceholderPoster) {
-      setSrc(PlaceholderPoster);
-    }
+    setImageFailed(true);
   };
 
   return (

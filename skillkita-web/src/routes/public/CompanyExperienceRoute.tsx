@@ -152,7 +152,7 @@ const CompanyExperience = () => {
   const startEditExperience = (exp: ExperienceRow) => {
     setShowAddForm(false);
     setEditingExperienceId(exp.id);
-    setExperienceForm({ name: exp.name, date: exp.date, details: exp.details });
+    setExperienceForm({ name: exp.name, date: exp.date ?? "", details: exp.details });
     setExperienceFiles([]);
     setFormNonce((n) => n + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -198,9 +198,11 @@ const CompanyExperience = () => {
     event.preventDefault();
     setErrorMessage(null);
 
-    if (!experienceForm.name.trim() || !experienceForm.date.trim()) {
+    if (!experienceForm.name.trim()) {
       return;
     }
+
+    const date = experienceForm.date.trim() || null;
 
     setIsSaving(true);
     try {
@@ -212,14 +214,14 @@ const CompanyExperience = () => {
 
         await updateExperience(editingExperienceId, {
           name: experienceForm.name.trim(),
-          date: experienceForm.date,
+          date,
           details: experienceForm.details.trim(),
           photo_urls: mergedUrls,
         });
       } else {
         await insertExperience({
           name: experienceForm.name.trim(),
-          date: experienceForm.date,
+          date,
           details: experienceForm.details.trim(),
           photo_urls: newUrls,
         });
@@ -273,14 +275,16 @@ const CompanyExperience = () => {
           />
           <article className="sk-card mt-8 p-6 md:p-8">
             {!formVisible && (
-              <button
-                type="button"
-                className="sk-button-primary w-full sm:w-auto"
-                onClick={openAddExperience}
-                disabled={isSaving}
-              >
-                Add new experience
-              </button>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  className="sk-button-primary w-full sm:w-auto"
+                  onClick={openAddExperience}
+                  disabled={isSaving}
+                >
+                  Add new experience
+                </button>
+              </div>
             )}
             {formVisible && (
               <div>

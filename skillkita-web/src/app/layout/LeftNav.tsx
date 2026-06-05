@@ -1,5 +1,6 @@
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
+import { hideImageOnError } from "../../shared/ui/hideImageOnError";
 
 export type NavItem = {
   label: string;
@@ -199,6 +200,7 @@ const LeftNav = ({
               src={profilePicUrl}
               alt=""
               className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
+              onError={hideImageOnError}
             />
           ) : (
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/15">

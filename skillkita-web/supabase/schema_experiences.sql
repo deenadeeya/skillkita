@@ -5,7 +5,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.experiences (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  date date not null,
+  date date,
   details text not null,
   photo_urls text[] not null default '{}',
   created_at timestamptz not null default now()

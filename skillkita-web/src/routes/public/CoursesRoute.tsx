@@ -7,6 +7,7 @@ import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import { compareCoursesUpcomingFirst } from "../../features/courses/courseDate";
 import { CoursesGrid } from "../../features/courses/components/CoursesGrid";
 import { CoursesSearchBar } from "../../features/courses/components/CoursesSearchBar";
+import { CourseQuotationBanner } from "../../features/courses/components/CourseQuotationBanner";
 import { useViewer } from "../../shared/hooks/useViewer";
 
 type PublicCourse = {
@@ -90,7 +91,9 @@ const ViewCourses = () => {
 
   const body = (
     <div className="w-full pb-8">
-      <section className="rounded-hero bg-primary px-6 py-12 text-center sm:px-10 sm:py-14">
+      <CourseQuotationBanner viewerRole={viewerRole} variant="browse" />
+
+      <section className="mt-6 rounded-hero bg-primary px-6 py-12 text-center sm:px-10 sm:py-14">
         <h1 className="sk-heading-1 text-white">Available Courses</h1>
         <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 sm:text-lg">
           Browse training programmes currently open for registration. Open a course to view

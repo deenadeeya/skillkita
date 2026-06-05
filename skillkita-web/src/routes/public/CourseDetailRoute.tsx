@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { openCourseDocumentUrl } from "../../features/courses/storage/coursePrivateStorage";
 import { supabase } from "../../shared/api/supabaseClient";
 import { getCourseById, type CourseDetailRow } from "../../features/courses/api/coursesApi";
 import {
@@ -13,6 +12,7 @@ import { useViewer } from "../../shared/hooks/useViewer";
 import { CourseDetailHeader } from "../../features/courses/components/CourseDetailHeader";
 import { CourseDetailContent } from "../../features/courses/components/CourseDetailContent";
 import { CoursePrivateDocumentsPanel } from "../../features/courses/components/CoursePrivateDocumentsPanel";
+import { CourseQuotationBanner } from "../../features/courses/components/CourseQuotationBanner";
 
 type ViewerRole = "admin" | "employer" | null;
 
@@ -53,17 +53,6 @@ export default function CoursePage() {
     setViewerName("User");
     setViewerEmail(viewerState.kind === "signedInNoProfile" ? viewerState.email : null);
   }, [viewerState]);
-
-  const openPrivateDoc = async (path: string | null | undefined) => {
-    if (!path) return;
-    setErrorMessage(null);
-    try {
-      const url = await openCourseDocumentUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Could not open file.");
-    }
-  };
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -120,9 +109,11 @@ export default function CoursePage() {
 
   const body = (
     <div className="w-full pb-8">
+      <CourseQuotationBanner viewerRole={viewerRole} variant="detail" />
+
       <a
         href="/courses"
-        className="inline-flex min-h-[44px] items-center text-sm font-semibold text-primary transition hover:underline"
+        className="mt-6 inline-flex min-h-[44px] items-center text-sm font-semibold text-primary transition hover:underline"
       >
         ← Back to courses
       </a>
@@ -157,10 +148,7 @@ export default function CoursePage() {
         <>
           <CourseDetailHeader course={course} />
           <CourseDetailContent course={course} />
-          <CoursePrivateDocumentsPanel
-            privateFiles={privateFiles}
-            onOpenPrivateDoc={(path) => void openPrivateDoc(path)}
-          />
+          <CoursePrivateDocumentsPanel privateFiles={privateFiles} />
         </>
       )}
 

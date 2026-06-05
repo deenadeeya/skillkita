@@ -117,6 +117,7 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
     >
       <AdminPageFrame
         title={title}
+        headerVariant="hero"
         subtitle={subtitle}
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}

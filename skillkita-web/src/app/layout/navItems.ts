@@ -13,6 +13,29 @@ import {
 import { HiAnnotation } from "react-icons/hi";
 import type { NavItem } from "./LeftNav";
 
+export type FlatNavLink = {
+  label: string;
+  href: string;
+};
+
+export function flattenNavLinks(items: NavItem[]): FlatNavLink[] {
+  const links: FlatNavLink[] = [];
+
+  const walk = (nodes: NavItem[]) => {
+    for (const node of nodes) {
+      if (node.href) {
+        links.push({ label: node.label, href: node.href });
+      }
+      if (node.children?.length) {
+        walk(node.children);
+      }
+    }
+  };
+
+  walk(items);
+  return links;
+}
+
 export const adminNavItems: NavItem[] = [
   {
     label: "Home",

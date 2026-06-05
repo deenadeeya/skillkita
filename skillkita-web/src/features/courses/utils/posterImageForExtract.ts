@@ -1,4 +1,4 @@
-import { isImagePoster, isPdfPoster } from "./posterFileTypes";
+import { isImagePoster } from "./posterFileTypes";
 
 const MAX_EDGE = 1200;
 const JPEG_QUALITY = 0.85;
@@ -71,12 +71,10 @@ export async function renderPdfFirstPageToJpegPayload(file: File): Promise<Poste
 }
 
 export async function posterFileToExtractPayload(file: File): Promise<PosterImagePayload> {
-  if (isPdfPoster(file)) {
-    return renderPdfFirstPageToJpegPayload(file);
+  if (!isImagePoster(file)) {
+    throw new Error("Unsupported poster file type.");
   }
-  if (isImagePoster(file)) {
-    const img = await loadImageFromFile(file);
-    return resizeImageToJpegPayload(img, img.naturalWidth, img.naturalHeight);
-  }
-  throw new Error("Unsupported poster file type.");
+
+  const img = await loadImageFromFile(file);
+  return resizeImageToJpegPayload(img, img.naturalWidth, img.naturalHeight);
 }

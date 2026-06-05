@@ -140,7 +140,7 @@ const EmployerQuotationRequest = () => {
       </a>
       <DashboardPageHeader
         className="mt-4"
-        title="Request a quotation"
+        title="Create Quotation"
         subtitle="Submit your quotation details below. An administrator will review your request. When approved, you can download your quotation PDF from the employer dashboard."
       />
 

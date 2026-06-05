@@ -17,22 +17,20 @@ import { compareCoursesUpcomingFirst } from "../../features/courses/courseDate";
 import { HomePageContent } from "../../features/homepage/components/HomePageContent";
 import type { FeaturedCourse } from "../../features/homepage/components/HomeFeaturedCoursesSection";
 
-const DEFAULT_HERO_IMAGE = "/TRSCGroupPhoto.jpg";
-
 const DEFAULT_WHO_DESCRIPTION =
   "TAWAU RESOURCES & SKILLS CENTRE is a Bumiputera Company registered under the Trade License Ordinance 1948 in 2023, delivering accredited services and learning activities. We are also registered with the Ministry of Finance (MoF) as a Welding Competency Assessment (Accreditation) Centre for CIDB.";
 
 const HomePage = () => {
   const [hero, setHero] = useState<HomepageHeroRow>({
     ...DEFAULT_HERO,
-    hero_image: DEFAULT_HERO_IMAGE,
+    hero_image: "",
     updated_at: new Date().toISOString(),
   });
   const [stats, setStats] = useState<HomepageStatsRow>({
     ...DEFAULT_STATS,
     updated_at: new Date().toISOString(),
   });
-  const [whyChooseImage, setWhyChooseImage] = useState(DEFAULT_HERO_IMAGE);
+  const [whyChooseImage, setWhyChooseImage] = useState("");
   const [whyChooseDescription, setWhyChooseDescription] = useState(DEFAULT_WHO_DESCRIPTION);
   const [courses, setCourses] = useState<FeaturedCourse[]>([]);
   const [partners, setPartners] = useState<Awaited<ReturnType<typeof listHomepagePartners>>>([]);
@@ -100,7 +98,7 @@ const HomePage = () => {
 
         if (coursesRes.error) throw new Error(coursesRes.error.message);
 
-        const whoUrl = landing?.who_image_url?.trim() || DEFAULT_HERO_IMAGE;
+        const whoUrl = landing?.who_image_url?.trim() ?? "";
         const whoDesc = landing?.who_description?.trim() || DEFAULT_WHO_DESCRIPTION;
 
         setWhyChooseImage(whoUrl);
@@ -110,7 +108,7 @@ const HomePage = () => {
           ? {
               ...heroRow,
               hero_image: heroRow.hero_image?.trim() || whoUrl,
-              subtitle: DEFAULT_HERO.subtitle,
+              subtitle: heroRow.subtitle?.trim() || DEFAULT_HERO.subtitle,
               button_1_text: DEFAULT_HERO.button_1_text,
               button_1_link: DEFAULT_HERO.button_1_link,
               button_2_text: DEFAULT_HERO.button_2_text,
