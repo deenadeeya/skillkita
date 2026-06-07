@@ -4,7 +4,6 @@ import { employerNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { EmployerQuotationRequestsTable } from "../../features/quotation/components/EmployerQuotationRequestsTable";
 import {
-  quotationTotalAmountRm,
   resolveQuotationPdfInput,
   quotationRowToPdfMeta,
 } from "../../features/quotation/quotationRowToPdf";

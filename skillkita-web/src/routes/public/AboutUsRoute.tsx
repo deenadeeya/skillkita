@@ -49,12 +49,13 @@ const AboutUs = () => {
               profile_pic_url?: string | null;
             };
             setProfilePicUrl(normalizeSupabaseStorageUrl(r.profile_pic_url ?? null));
+            const nameFields = { full_name: r.full_name ?? "", short_name: r.short_name };
             if (r.role === "admin") {
               setViewerRole("admin");
-              setViewerName(getProfileDisplayName(r, "Admin"));
+              setViewerName(getProfileDisplayName(nameFields, "Admin"));
             } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
-              setViewerName(getProfileDisplayName(r, "Employer"));
+              setViewerName(getProfileDisplayName(nameFields, "Employer"));
             } else {
               setViewerRole(null);
             }
