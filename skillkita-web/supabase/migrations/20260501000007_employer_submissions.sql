@@ -1,9 +1,5 @@
--- JD14 & payment receipt submissions: employer uploads → admin approves/rejects with reason.
--- Also creates jd14_submission_templates + storage policy (JD14 downloadable templates for employers).
--- Prerequisites: auth_roles_setup.sql (public.is_admin()), user_profiles.
--- Create Storage bucket in Dashboard (private): employer-documents
-
-create extension if not exists "pgcrypto";
+-- JD14 & payment receipt submissions + downloadable JD14 templates.
+-- Requires: public.is_admin(), user_profiles, employer-documents bucket.
 
 create table if not exists public.employer_document_submissions (
   id uuid primary key default gen_random_uuid(),
@@ -27,8 +23,6 @@ create index if not exists employer_doc_sub_employer_type_idx
 create index if not exists employer_doc_sub_status_idx
   on public.employer_document_submissions (status, submission_type);
 
--- Employers may have multiple pending rows; admins review each submission independently.
--- If an older DB had a unique partial index, drop it:
 drop index if exists public.employer_doc_sub_one_pending_per_type;
 
 alter table public.employer_document_submissions enable row level security;
@@ -63,7 +57,7 @@ to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
--- Storage paths: jd14/<user_id>/<uuid>.<ext>  or  payment_receipt/<user_id>/<uuid>.<ext>
+-- Storage paths: jd14/<user_id>/... or payment_receipt/<user_id>/...
 drop policy if exists "employer_documents_admin_all" on storage.objects;
 create policy "employer_documents_admin_all"
 on storage.objects for all
@@ -91,11 +85,7 @@ with check (
   and split_part(name, '/', 1) in ('jd14', 'payment_receipt')
 );
 
--- ---------------------------------------------------------------------------
--- JD14 downloadable templates (admin CRUD; approved employers read metadata + files).
--- Storage paths: jd14_templates/<uuid>.<ext>  (same bucket as submissions)
--- ---------------------------------------------------------------------------
-
+-- JD14 downloadable templates (admin CRUD; approved employers read)
 create table if not exists public.jd14_submission_templates (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -163,5 +153,4 @@ using (
   )
 );
 
--- Refresh PostgREST so REST clients see jd14_submission_templates immediately.
 notify pgrst, 'reload schema';

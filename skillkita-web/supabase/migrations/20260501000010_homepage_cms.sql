@@ -5,6 +5,7 @@ create table if not exists public.homepage_hero (
   title text not null,
   subtitle text not null,
   hero_image text,
+  hero_image_file_name text,
   button_1_text text not null default 'Explore Courses',
   button_1_link text not null default '/courses',
   button_2_text text not null default 'Contact Us',
@@ -72,7 +73,6 @@ create table if not exists public.homepage_partners (
   created_at timestamptz not null default now()
 );
 
--- RLS
 alter table public.homepage_hero enable row level security;
 alter table public.homepage_stats enable row level security;
 alter table public.homepage_gallery enable row level security;

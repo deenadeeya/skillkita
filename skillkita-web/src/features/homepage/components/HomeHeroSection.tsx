@@ -7,7 +7,7 @@ type Props = {
 };
 
 export function HomeHeroSection({ hero, welcomeName }: Props) {
-  const imageUrl = hero.hero_image?.trim() || "/TRSCGroupPhoto.jpg";
+  const imageUrl = hero.hero_image?.trim() ?? "";
 
   return (
     <section className="relative w-full overflow-hidden rounded-hero bg-ink">
@@ -19,7 +19,9 @@ export function HomeHeroSection({ hero, welcomeName }: Props) {
             </span>
           )}
           <h1 className="sk-heading-1 max-w-xl text-white">{hero.title}</h1>
-          <p className="mt-4 max-w-lg text-base text-white/90 sm:text-lg">{DEFAULT_HERO.subtitle}</p>
+          <p className="mt-4 max-w-lg text-base text-white/90 sm:text-lg">
+            {hero.subtitle?.trim() || DEFAULT_HERO.subtitle}
+          </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href={DEFAULT_HERO.button_1_link} className="sk-button-primary min-w-[160px]">
               {DEFAULT_HERO.button_1_text}

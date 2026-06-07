@@ -15,6 +15,15 @@ export const PRIVATE_DOC_LABELS: Record<PrivateDocKind, string> = {
   trainer_cv: "Trainer CV file",
 };
 
+export const PRIVATE_DOC_TAB_LABELS: Record<PrivateDocKind, string> = {
+  syllabus: "Syllabus",
+  tentative: "Tentative",
+  trainer_hrd: "Trainer HRD",
+  trainer_cv: "Trainer CV",
+};
+
+export type PrivateDocPreviewKind = "pdf" | "image" | "unsupported";
+
 const KIND_TO_COLUMN: Record<
   PrivateDocKind,
   keyof {
@@ -28,6 +37,19 @@ const KIND_TO_COLUMN: Record<
   tentative: "tentative_storage_path",
   trainer_hrd: "trainer_hrd_storage_path",
   trainer_cv: "trainer_cv_storage_path",
+};
+
+const KIND_TO_FILE_NAME_COLUMN: Record<
+  PrivateDocKind,
+  | "syllabus_file_name"
+  | "tentative_file_name"
+  | "trainer_hrd_file_name"
+  | "trainer_cv_file_name"
+> = {
+  syllabus: "syllabus_file_name",
+  tentative: "tentative_file_name",
+  trainer_hrd: "trainer_hrd_file_name",
+  trainer_cv: "trainer_cv_file_name",
 };
 
 export function storagePathForPrivateFile(
@@ -62,6 +84,58 @@ export function columnForKind(kind: PrivateDocKind): string {
   return KIND_TO_COLUMN[kind];
 }
 
+export function fileNameColumnForKind(kind: PrivateDocKind): string {
+  return KIND_TO_FILE_NAME_COLUMN[kind];
+}
+
+export function fileNameFromStoragePath(path: string): string {
+  const segment = path.split("/").filter(Boolean).pop();
+  return segment ? decodeURIComponent(segment) : "document";
+}
+
+export function previewKindFromStoragePath(path: string): PrivateDocPreviewKind {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "pdf";
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext)) return "image";
+  return "unsupported";
+}
+
+export function pathForKind(
+  privateFiles: {
+    syllabus_storage_path: string | null;
+    tentative_storage_path: string | null;
+    trainer_hrd_storage_path: string | null;
+    trainer_cv_storage_path: string | null;
+  } | null,
+  kind: PrivateDocKind
+): string | null {
+  if (!privateFiles) return null;
+  const col = columnForKind(kind) as keyof typeof privateFiles;
+  const path = privateFiles[col];
+  return typeof path === "string" && path.trim() ? path : null;
+}
+
+export function displayFileNameForKind(
+  privateFiles: {
+    syllabus_file_name?: string | null;
+    tentative_file_name?: string | null;
+    trainer_hrd_file_name?: string | null;
+    trainer_cv_file_name?: string | null;
+    syllabus_storage_path: string | null;
+    tentative_storage_path: string | null;
+    trainer_hrd_storage_path: string | null;
+    trainer_cv_storage_path: string | null;
+  } | null,
+  kind: PrivateDocKind
+): string | null {
+  if (!privateFiles) return null;
+  const nameCol = fileNameColumnForKind(kind) as keyof typeof privateFiles;
+  const saved = privateFiles[nameCol];
+  if (typeof saved === "string" && saved.trim()) return saved.trim();
+  const path = pathForKind(privateFiles, kind);
+  return path ? fileNameFromStoragePath(path) : null;
+}
+
 function normalizeStoragePath(path: string): string {
   return path.trim().replace(/^\/+/, "");
 }
@@ -70,7 +144,10 @@ function normalizeStoragePath(path: string): string {
  * Opens a course document for the current user (including anonymous visitors).
  * Uses direct download + blob URL so public users are not blocked by signed-URL limits.
  */
-export async function openCourseDocumentUrl(path: string): Promise<string> {
+export async function openCourseDocumentUrl(
+  path: string,
+  displayName?: string | null
+): Promise<string> {
   const normalized = normalizeStoragePath(path);
   if (!normalized) {
     throw new Error("Invalid file path.");
@@ -87,7 +164,9 @@ export async function openCourseDocumentUrl(path: string): Promise<string> {
     throw new Error("Could not open file.");
   }
 
-  return URL.createObjectURL(blob);
+  const name = displayName?.trim() || fileNameFromStoragePath(normalized);
+  const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+  return URL.createObjectURL(file);
 }
 
 /** @deprecated Prefer openCourseDocumentUrl for visitor-safe access. */

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSessionUser, getUserProfile } from "../../app/auth/profile";
 import type { UserProfileRow, UserRole } from "../../app/auth/types";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../api/supabaseClient";
 
 export type Viewer = {
@@ -9,6 +10,7 @@ export type Viewer = {
   role: UserRole;
   status: UserProfileRow["status"];
   fullName: string;
+  displayName: string;
   companyName: string | null;
   companyAddress: string | null;
 };
@@ -46,6 +48,10 @@ export function useViewer(): ViewerState {
             role: profile.role,
             status: profile.status,
             fullName: profile.full_name,
+            displayName: getProfileDisplayName(
+              profile,
+              profile.role === "admin" ? "Admin" : "Employer"
+            ),
             companyName: profile.company_name ?? null,
             companyAddress: profile.company_address ?? null,
           },

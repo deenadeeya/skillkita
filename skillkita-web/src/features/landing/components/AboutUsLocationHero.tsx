@@ -2,8 +2,6 @@ import { ArrowTopRightOnSquareIcon, MapPinIcon } from "@heroicons/react/24/outli
 import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { googleMapsSearchLink } from "../aboutUsMap";
 
-const DEFAULT_BUILDING_IMAGE = "/TRSCGroupPhoto.jpg";
-
 const DEFAULT_SHORT_DESCRIPTION =
   "Visit our accredited training centre in Tawau — built for practical workshops, assessments, and industry-ready skills development.";
 
@@ -20,7 +18,7 @@ export function AboutUsLocationHero({
   address,
   mapsLink,
 }: Props) {
-  const buildingImage = imageUrl.trim() || DEFAULT_BUILDING_IMAGE;
+  const buildingImage = imageUrl.trim();
   const hasAddress = Boolean(address.trim());
   const openMapsHref = mapsLink ?? (hasAddress ? googleMapsSearchLink(address) : null);
 
@@ -37,13 +35,15 @@ export function AboutUsLocationHero({
   return (
     <section className="mt-16 sm:mt-20">
       <div className="relative min-h-[320px] overflow-hidden rounded-hero bg-ink sm:min-h-[360px] lg:min-h-[420px]">
-        <CoursePosterMedia
-          url={buildingImage}
-          alt="TRSC training centre building"
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="lazy"
-          optimizeWidth={1200}
-        />
+        {buildingImage ? (
+          <CoursePosterMedia
+            url={buildingImage}
+            alt="TRSC training centre building"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            optimizeWidth={1200}
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/35" />
 
         <div className="relative z-10 flex h-full min-h-[320px] flex-col justify-center px-6 py-10 sm:min-h-[360px] sm:px-10 lg:min-h-[420px] lg:max-w-2xl lg:px-12 lg:py-14">

@@ -77,8 +77,8 @@ const SignUp = () => {
       if (error) throw new Error(error.message);
       if (!data.user) throw new Error("Sign up failed. Please try again.");
 
-      // Profile row is created by DB trigger public.handle_new_user() (auth_profile_trigger.sql
-      // or end of auth_roles_setup.sql). Client insert fails when signUp returns no session
+      // Profile row is created by DB trigger public.handle_new_user() (see supabase/migrations/20260501000003_auth_and_profiles.sql).
+      // Client insert fails when signUp returns no session
       // (e.g. email confirmation): JWT is anon, so RLS blocks profiles_insert_self.
       if (data.session) {
         const { error: profileError } = await supabase.from("user_profiles").insert({
@@ -96,7 +96,7 @@ const SignUp = () => {
           !profileError.message.toLowerCase().includes("duplicate")
         ) {
           throw new Error(
-            `Profile setup failed: ${profileError.message}. Run supabase/auth_profile_trigger.sql (or full auth_roles_setup.sql) so signup works without a session.`
+            `Profile setup failed: ${profileError.message}. Run supabase migrations (see supabase/README.md) so signup works without a session.`
           );
         }
       }

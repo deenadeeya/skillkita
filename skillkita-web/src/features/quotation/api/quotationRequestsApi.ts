@@ -2,11 +2,11 @@ import { supabase } from "../../../shared/api/supabaseClient";
 import type { QuotationRequestRow, QuotationStatus } from "../types";
 
 function quotationRlsHint(action: string): string {
-  return ` Admin ${action} requires Supabase RLS (public.is_admin()). Run supabase/migrations/20260520110000_quotation_requests_base.sql on your project, and ensure your login user has user_profiles.role = 'admin'.`;
+  return ` Admin ${action} requires Supabase RLS (public.is_admin()). Run supabase migrations (see supabase/README.md), and ensure your login user has user_profiles.role = 'admin'.`;
 }
 
 function quotationStorageHint(): string {
-  return " Ensure the private Storage bucket `quotation-pdfs` exists and storage policies from supabase/quotations.sql (or migration 20260520110000) are applied.";
+  return " Ensure migrations through 20260501000006_quotations.sql are applied (see supabase/README.md).";
 }
 
 export type EmployerLabel = {
@@ -27,6 +27,17 @@ export async function listQuotationRequests() {
 
   if (error) throw new Error(error.message);
   return (data ?? []) as QuotationRequestRow[];
+}
+
+export async function getQuotationRequestById(id: string) {
+  const { data, error } = await supabase
+    .from("quotation_requests")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data ?? null) as QuotationRequestRow | null;
 }
 
 export async function listApprovedEmployers() {
@@ -125,7 +136,6 @@ export async function createEmployerQuotationRequest(payload: {
   company_name: string | null;
   course_name: string;
   course_mode: string;
-  unit_price: number;
   course_location_address: string;
   number_of_employers: number;
   proposed_date: string;

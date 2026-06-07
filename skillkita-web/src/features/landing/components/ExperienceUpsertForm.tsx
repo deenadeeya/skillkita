@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 import type { ExperienceRow } from "../api/landingApi";
 
 export type ExperienceFormState = {
@@ -53,17 +54,13 @@ export function ExperienceUpsertForm({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-primary">
-            Date
-            <RequiredMark />
-          </span>
+          <span className="mb-1 block text-sm font-semibold text-primary">Date</span>
           <input
             type="date"
             name="date"
             value={experienceForm.date}
             onChange={onFieldChange}
             className={fieldClass}
-            required
           />
         </label>
         <label className="block">
@@ -97,7 +94,12 @@ export function ExperienceUpsertForm({
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {(editingExperience.photo_urls ?? []).map((url) => (
               <div key={url} className="rounded-card border border-black/5 bg-white p-2">
-                <img src={url} alt="Experience" className="aspect-square w-full rounded-lg object-cover" />
+                <img
+                  src={url}
+                  alt="Experience"
+                  className="aspect-square w-full rounded-lg object-cover"
+                  onError={hideImageOnError}
+                />
                 <button
                   type="button"
                   onClick={() => onRemoveExistingPhoto(url)}

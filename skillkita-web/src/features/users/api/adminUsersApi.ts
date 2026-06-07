@@ -8,7 +8,7 @@ export type ProfileRow = {
   company_name: string | null;
   company_address: string | null;
   phone: string | null;
-  /** Mirrored from auth.users; see supabase/user_profiles_email.sql */
+  /** Mirrored from auth.users; see supabase/migrations/20260501000003_auth_and_profiles.sql */
   email: string | null;
   profile_pic_url: string | null;
   role: "admin" | "employer";

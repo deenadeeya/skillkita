@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
+import { hideImageOnError } from "../../../../shared/ui/hideImageOnError";
 import {
   DEFAULT_HERO,
   DEFAULT_STATS,
@@ -14,16 +15,22 @@ import {
   type HomepagePartnerRow,
 } from "../../api/homepageApi";
 import { uploadSiteAssetPartnerLogo } from "../../../landing/api/landingStorage";
+import {
+  AdminLandingTabLink,
+  type AdminLandingTabId,
+} from "../../../landing/components/admin/AdminLandingSectionNav";
 
 type Props = {
   isSaving: boolean;
   setIsSaving: (v: boolean) => void;
   onError: (msg: string | null) => void;
+  onNavigateToTab: (tab: AdminLandingTabId) => void;
 };
 
-export function HomepageCmsEditors({ isSaving, setIsSaving, onError }: Props) {
+export function HomepageCmsEditors({ isSaving, setIsSaving, onError, onNavigateToTab }: Props) {
   const [hero, setHero] = useState<HomepageHeroRow | null>(null);
   const [heroTitle, setHeroTitle] = useState(DEFAULT_HERO.title);
+  const [heroSubtitle, setHeroSubtitle] = useState(DEFAULT_HERO.subtitle);
 
   const [studentsValue, setStudentsValue] = useState(String(DEFAULT_STATS.students_value));
   const [studentsSuffix, setStudentsSuffix] = useState(DEFAULT_STATS.students_suffix);
@@ -50,6 +57,7 @@ export function HomepageCmsEditors({ isSaving, setIsSaving, onError }: Props) {
     setHero(heroRow);
     if (heroRow) {
       setHeroTitle(heroRow.title);
+      setHeroSubtitle(heroRow.subtitle);
     }
 
     if (statsRow) {
@@ -84,8 +92,9 @@ export function HomepageCmsEditors({ isSaving, setIsSaving, onError }: Props) {
       await upsertHomepageHero({
         id: 1,
         title: heroTitle.trim(),
-        subtitle: DEFAULT_HERO.subtitle,
+        subtitle: heroSubtitle.trim() || DEFAULT_HERO.subtitle,
         hero_image: hero?.hero_image ?? null,
+        hero_image_file_name: hero?.hero_image_file_name ?? null,
         button_1_text: DEFAULT_HERO.button_1_text,
         button_1_link: DEFAULT_HERO.button_1_link,
         button_2_text: DEFAULT_HERO.button_2_text,
@@ -130,31 +139,35 @@ export function HomepageCmsEditors({ isSaving, setIsSaving, onError }: Props) {
   };
 
   return (
-    <div className="mt-10 space-y-6">
-      <div className="border-b border-black/10 pb-4">
+    <div className="space-y-6">
+      <div className="sk-card border-b border-black/5 p-6 md:p-8">
         <h2 className="sk-section-title">Homepage CMS</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          Hero headline, statistics, and partners. Subtitle and buttons are fixed on the public site.
-          Background photo:{" "}
-          <a href="#site-media" className="font-semibold text-primary underline">
-            Site images
-          </a>
-          .
+          Display headline, statistics, and partners.
+          Background photo can be edited at  <AdminLandingTabLink tab="site-images" onNavigate={onNavigateToTab} />.
         </p>
       </div>
 
       <form className="sk-card p-6 md:p-8" onSubmit={saveHero}>
-        <h3 className="font-heading text-lg font-semibold text-ink">Hero headline</h3>
-        <p className="mt-1 text-xs text-ink-muted">
-          Description and call-to-action buttons use the default site copy and cannot be edited here.
-        </p>
+        <h3 className="font-heading text-lg font-semibold text-ink">Headline</h3>
         <label className="mt-5 block">
-          <span className="sk-label">Headline</span>
+          <span className="sk-label">Title</span>
           <input
             value={heroTitle}
             onChange={(e) => setHeroTitle(e.currentTarget.value)}
             className="sk-input"
             required
+          />
+        </label>
+        <label className="mt-4 block">
+          <span className="sk-label">Description</span>
+          <textarea
+            value={heroSubtitle}
+            onChange={(e) => setHeroSubtitle(e.currentTarget.value)}
+            rows={3}
+            className="sk-input"
+            placeholder="Short intro shown below the headline on the home page"
+            disabled={isSaving}
           />
         </label>
         <button type="submit" disabled={isSaving} className="sk-button-primary mt-6">
@@ -327,7 +340,12 @@ function PartnersAdmin({
         {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-black/10 p-2">
             {item.logo_url ? (
-              <img src={item.logo_url} alt="" className="h-10 w-24 object-contain grayscale" />
+              <img
+                src={item.logo_url}
+                alt=""
+                className="h-10 w-24 object-contain grayscale"
+                onError={hideImageOnError}
+              />
             ) : null}
             <span className="flex-1 text-sm font-medium">{item.name}</span>
             <button

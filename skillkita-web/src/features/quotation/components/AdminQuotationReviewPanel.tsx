@@ -22,7 +22,6 @@ type Props = {
   onChangeCompanyAddress: (next: string) => void;
   onChangeCourseMode: (next: string) => void;
   onChangeUnitPrice: (next: string) => void;
-  onChangeAmountRm: (next: string) => void;
   onApprove: () => void;
   onReject: () => void;
 };
@@ -41,17 +40,16 @@ export function AdminQuotationReviewPanel({
   onChangeCompanyAddress,
   onChangeCourseMode,
   onChangeUnitPrice,
-  onChangeAmountRm,
   onApprove,
   onReject,
 }: Props) {
   const employer = employerLabels[activeReview.employer_user_id];
   return (
-    <section className="sk-card mt-8 p-6">
+    <section className="sk-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 className="text-xl font-bold text-primary">Review &amp; price</h2>
         <button type="button" onClick={onClose} className="text-sm font-semibold text-primary underline">
-          Close
+          Cancel
         </button>
       </div>
 
@@ -63,7 +61,7 @@ export function AdminQuotationReviewPanel({
         </p>
         <p className="mt-1">
           <span className="font-semibold">To (company):</span>{" "}
-          {activeReview.company_name?.trim() || activeReview.company_name_snapshot}
+          {activeReview.company_name_snapshot?.trim() || activeReview.company_name?.trim()}
         </p>
         {activeReview.company_address?.trim() ? (
           <p className="mt-1 whitespace-pre-wrap">
@@ -80,7 +78,7 @@ export function AdminQuotationReviewPanel({
         ) : null}
         {activeReview.unit_price != null ? (
           <p className="mt-1">
-            <span className="font-semibold">Requested price / pax:</span> RM{" "}
+            <span className="font-semibold">Previously saved unit price:</span> RM{" "}
             {Number(activeReview.unit_price).toFixed(2)}
           </p>
         ) : null}
@@ -158,7 +156,7 @@ export function AdminQuotationReviewPanel({
 
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-primary">
-            Unit price (RM)
+            Unit price (RM per participant)
             <RequiredMark />
           </span>
           <input
@@ -169,11 +167,14 @@ export function AdminQuotationReviewPanel({
             onChange={(e) => onChangeUnitPrice(e.target.value)}
             className="w-full rounded-lg border border-black/10 px-3 py-2"
           />
+          <p className="mt-1 text-xs text-ink-muted">
+            Prefilled from the course catalog when the course name matches Manage Course.
+          </p>
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-primary">
-            Amount (RM)
+            Total amount (RM)
             <RequiredMark />
           </span>
           <input
@@ -181,9 +182,13 @@ export function AdminQuotationReviewPanel({
             min={0}
             step="0.01"
             value={amountRm}
-            onChange={(e) => onChangeAmountRm(e.target.value)}
-            className="w-full rounded-lg border border-black/10 px-3 py-2"
+            readOnly
+            className="w-full rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-ink-muted"
           />
+          <p className="mt-1 text-xs text-ink-muted">
+            Calculated automatically: unit price × {activeReview.number_of_employers} participant
+            {activeReview.number_of_employers === 1 ? "" : "s"}.
+          </p>
         </label>
       </div>
 

@@ -6,6 +6,7 @@ export type PublicCourseRow = {
   date: string | null;
   details: string;
   poster_url: string | null;
+  price: string | null;
   is_visible: boolean;
   created_at: string;
 };
@@ -30,7 +31,7 @@ export type CourseDetailRow = {
 export async function listVisibleCourses() {
   const { data, error } = await supabase
     .from("courses")
-    .select("id,name,date,details,poster_url,is_visible,created_at")
+    .select("id,name,date,details,poster_url,is_visible,created_at,price")
     .eq("is_visible", true)
     .order("date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });

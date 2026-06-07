@@ -6,28 +6,28 @@ import {
   COURSE_PRIVATE_BUCKET,
   PRIVATE_DOC_LABELS,
   columnForKind,
+  fileNameColumnForKind,
   createSignedUrlForPath,
   uploadCoursePrivateFile,
   type PrivateDocKind,
 } from "../../features/courses/storage/coursePrivateStorage";
+import type { CoursePrivatePaths } from "../../features/courses/api/privateFilesApi";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
 import { extractPosterFieldsFromImage } from "../../features/courses/api/extractPosterApi";
 import { mergePosterExtractionIntoForm } from "../../features/courses/utils/applyPosterExtraction";
 import { posterFileToExtractPayload } from "../../features/courses/utils/posterImageForExtract";
 import type { PosterExtractState } from "../../features/courses/utils/posterExtractState";
 import { startProgressTicker } from "../../features/courses/utils/posterExtractProgress";
-import { isImagePoster, isPdfPoster } from "../../features/courses/utils/posterFileTypes";
+import {
+  isAllowedPosterFile,
+  isImagePoster,
+  POSTER_FILE_TYPE_ERROR,
+} from "../../features/courses/utils/posterFileTypes";
 import { CoursePosterOcrPanel } from "../../features/courses/components/admin/CoursePosterOcrPanel";
 import { CoursePrivateDocumentsPicker } from "../../features/courses/components/admin/CoursePrivateDocumentsPicker";
 import { CourseDetailsForm } from "../../features/courses/components/admin/CourseDetailsForm";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
-
-type CoursePrivatePaths = {
-  syllabus_storage_path: string | null;
-  tentative_storage_path: string | null;
-  trainer_hrd_storage_path: string | null;
-  trainer_cv_storage_path: string | null;
-};
 
 type CourseRow = {
   id: string;
@@ -91,9 +91,13 @@ function normalizePrivateFiles(raw: CourseRow["course_private_files"]): CoursePr
   if (!row) return null;
   return {
     syllabus_storage_path: row.syllabus_storage_path ?? null,
+    syllabus_file_name: row.syllabus_file_name ?? null,
     tentative_storage_path: row.tentative_storage_path ?? null,
+    tentative_file_name: row.tentative_file_name ?? null,
     trainer_hrd_storage_path: row.trainer_hrd_storage_path ?? null,
+    trainer_hrd_file_name: row.trainer_hrd_file_name ?? null,
     trainer_cv_storage_path: row.trainer_cv_storage_path ?? null,
+    trainer_cv_file_name: row.trainer_cv_file_name ?? null,
   };
 }
 
@@ -167,7 +171,7 @@ export default function AdminCreateCourse() {
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name")
+        .select("user_id,role,status,full_name,short_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -188,7 +192,9 @@ export default function AdminCreateCourse() {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
-      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
+      setAdminName(
+        getProfileDisplayName(profileRow as { full_name: string; short_name?: string | null }, "Admin")
+      );
       setIsAuthorized(true);
       setIsAuthChecking(false);
     };
@@ -211,7 +217,7 @@ export default function AdminCreateCourse() {
     const { data, error } = await supabase
       .from("courses")
       .select(
-        "id,name,date,details,trainer_names,course_time,venue,mycoid,price,contact_person,contact_phone,syllabus,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,tentative_storage_path,trainer_hrd_storage_path,trainer_cv_storage_path)"
+        "id,name,date,details,trainer_names,course_time,venue,mycoid,price,contact_person,contact_phone,syllabus,poster_url,is_visible,created_at,course_private_files(syllabus_storage_path,syllabus_file_name,tentative_storage_path,tentative_file_name,trainer_hrd_storage_path,trainer_hrd_file_name,trainer_cv_storage_path,trainer_cv_file_name)"
       )
       .eq("id", editingId)
       .maybeSingle();
@@ -266,6 +272,13 @@ export default function AdminCreateCourse() {
 
   const handlePosterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
+    if (file && !isAllowedPosterFile(file)) {
+      setErrorMessage(POSTER_FILE_TYPE_ERROR);
+      event.target.value = "";
+      setSelectedPosterFile(null);
+      setExtractState({ status: "idle" });
+      return;
+    }
     setSelectedPosterFile(file);
     setExtractState({ status: "idle" });
   };
@@ -288,13 +301,15 @@ export default function AdminCreateCourse() {
   const uploadPosterIfNeeded = async (): Promise<string | null> => {
     if (!selectedPosterFile) return null;
 
-    const fileExt = selectedPosterFile.name.split(".").pop() || "png";
-    const safeExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const fileName = `${crypto.randomUUID()}.${safeExt || "png"}`;
-    const filePath = `courses/${fileName}`;
+    if (!isAllowedPosterFile(selectedPosterFile)) {
+      throw new Error(POSTER_FILE_TYPE_ERROR);
+    }
 
-    const contentType =
-      selectedPosterFile.type || (safeExt === "pdf" ? "application/pdf" : undefined);
+    const lowerName = selectedPosterFile.name.toLowerCase();
+    const safeExt = lowerName.endsWith(".png") ? "png" : "jpg";
+    const fileName = `${crypto.randomUUID()}.${safeExt}`;
+    const filePath = `courses/${fileName}`;
+    const contentType = safeExt === "png" ? "image/png" : "image/jpeg";
 
     const { error: uploadError } = await supabase.storage
       .from("course-posters")
@@ -313,17 +328,23 @@ export default function AdminCreateCourse() {
 
     const merged: CoursePrivatePaths = {
       syllabus_storage_path: null,
+      syllabus_file_name: null,
       tentative_storage_path: null,
+      tentative_file_name: null,
       trainer_hrd_storage_path: null,
+      trainer_hrd_file_name: null,
       trainer_cv_storage_path: null,
+      trainer_cv_file_name: null,
     };
 
     for (const kind of kinds) {
-      const col = columnForKind(kind) as keyof CoursePrivatePaths;
+      const pathCol = columnForKind(kind) as keyof CoursePrivatePaths;
+      const nameCol = fileNameColumnForKind(kind) as keyof CoursePrivatePaths;
       const file = privateSelections[kind];
       if (file) {
         try {
-          merged[col] = await uploadCoursePrivateFile(courseId, kind, file);
+          merged[pathCol] = await uploadCoursePrivateFile(courseId, kind, file);
+          merged[nameCol] = file.name;
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           throw new Error(
@@ -331,7 +352,8 @@ export default function AdminCreateCourse() {
           );
         }
       } else {
-        merged[col] = existing?.[col] ?? null;
+        merged[pathCol] = existing?.[pathCol] ?? null;
+        merged[nameCol] = existing?.[nameCol] ?? null;
       }
     }
     return merged;
@@ -341,10 +363,8 @@ export default function AdminCreateCourse() {
     const file = selectedPosterFile;
     if (!file) return;
 
-    const pdf = isPdfPoster(file);
-    const img = isImagePoster(file);
-    if (!pdf && !img) {
-      setExtractState({ status: "error", message: "Unsupported poster file type." });
+    if (!isImagePoster(file)) {
+      setExtractState({ status: "error", message: POSTER_FILE_TYPE_ERROR });
       return;
     }
 
@@ -359,7 +379,7 @@ export default function AdminCreateCourse() {
 
       setExtractState({
         status: "running",
-        progressLabel: pdf ? "Rendering PDF page…" : "Preparing image…",
+        progressLabel: "Preparing image…",
         progressPct: 20,
       });
 
@@ -481,16 +501,18 @@ export default function AdminCreateCourse() {
     >
       <AdminPageFrame
         title={editingId ? "Update Course" : "Add New Course"}
-        subtitle={editingId ? "Edit and update course details." : "Create a new course and publish it to the catalog."}
+        headerVariant="hero"
+        subtitle={
+          editingId
+            ? "Edit course details, documents, and visibility settings."
+            : "Create a new course and publish it to the catalog."
+        }
         errorMessage={errorMessage}
         isAuthChecking={isAuthChecking}
         isAuthorized={isAuthorized}
       >
         <section className="sk-card p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-bold text-primary">
-              {editingId ? "Update Course" : "Add New Course"}
-            </h2>
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => (window.location.href = "/admin")}
@@ -518,10 +540,7 @@ export default function AdminCreateCourse() {
                       target: { files: [file] },
                     } as unknown as ChangeEvent<HTMLInputElement>);
                   }}
-                  canRunAutoFill={Boolean(
-                    selectedPosterFile &&
-                      (isPdfPoster(selectedPosterFile) || isImagePoster(selectedPosterFile))
-                  )}
+                  canRunAutoFill={Boolean(selectedPosterFile && isImagePoster(selectedPosterFile))}
                   onRunAutoFill={() => void runPosterAutoFill()}
                   onClearExtract={() => setExtractState({ status: "idle" })}
                 />

@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import {
   BuildingLibraryIcon,
   EnvelopeIcon,
   PhoneIcon,
   QrCodeIcon,
 } from "@heroicons/react/24/outline";
-import type { ReactNode } from "react";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { HomeCtaBanner } from "../../homepage/components/HomeCtaBanner";
 import type { ExperienceRow, LandingContentRow } from "../api/landingApi";
@@ -84,14 +85,12 @@ function IconTile({
 
 export function AboutUsPublicSections({ landing, experiences, isLoading }: Props) {
   const profileParagraphs = splitParagraphs(landing?.who_description ?? "");
-  const profileImage = landing?.who_image_url?.trim() || "/TRSCGroupPhoto.jpg";
+  const profileImage = landing?.who_image_url?.trim() ?? "";
   const locationRaw = (landing?.location_description ?? "").trim();
   const { shortDescription: locationShortDescription, address: locationAddress } =
     splitLocationContent(locationRaw);
   const locationBuildingImage =
-    landing?.home_featured_3_url?.trim() ||
-    landing?.who_image_url?.trim() ||
-    profileImage;
+    landing?.home_featured_3_url?.trim() || landing?.who_image_url?.trim() || "";
   const bankRaw = (landing?.bank_account_details ?? "").trim();
   const bankLines = multilineToDisplayLines(bankRaw);
   const bankQrUrl = landing?.bank_qr_image_url?.trim() ?? "";
@@ -233,6 +232,7 @@ export function AboutUsPublicSections({ landing, experiences, isLoading }: Props
                     alt="Payment QR code"
                     className="mx-auto max-h-[200px] w-full max-w-[200px] object-contain"
                     loading="lazy"
+                    onError={hideImageOnError}
                   />
                 </div>
                 <p className="mt-4 text-sm text-ink-muted">

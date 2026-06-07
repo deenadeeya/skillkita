@@ -1,4 +1,3 @@
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "./CoursePosterMedia";
 import { CourseUpcomingMeta } from "./CourseUpcomingMeta";
 import { formatCourseDisplayDate, isUpcomingCourseDate } from "../courseDate";
@@ -63,7 +62,7 @@ export function CoursesGrid({
           >
             <div className="relative flex h-[200px] shrink-0 items-center justify-center overflow-hidden bg-paper sm:h-[220px] lg:h-[240px]">
               <CoursePosterMedia
-                url={course.posterUrl ?? PlaceholderPoster}
+                url={course.posterUrl}
                 alt={`${course.name} poster`}
                 className="h-full w-full object-contain object-center p-2 transition duration-300 group-hover:scale-[1.02]"
                 optimizeWidth={520}

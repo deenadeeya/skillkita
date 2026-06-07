@@ -1,29 +1,37 @@
+import {
+  AdminLandingTabLink,
+  type AdminLandingTabId,
+} from "./admin/AdminLandingSectionNav";
+
 type Props = {
   socialFacebookPageUrl: string;
   socialInstagramProfileUrl: string;
+  socialLinkedinProfileUrl: string;
   isSaving: boolean;
+  onNavigateToTab: (tab: AdminLandingTabId) => void;
   onChangeSocialFacebookPageUrl: (next: string) => void;
   onChangeSocialInstagramProfileUrl: (next: string) => void;
+  onChangeSocialLinkedinProfileUrl: (next: string) => void;
 };
 
 export function LandingContentEditor({
   socialFacebookPageUrl,
   socialInstagramProfileUrl,
+  socialLinkedinProfileUrl,
   isSaving,
+  onNavigateToTab,
   onChangeSocialFacebookPageUrl,
   onChangeSocialInstagramProfileUrl,
+  onChangeSocialLinkedinProfileUrl,
 }: Props) {
   return (
-    <section id="home-content" className="sk-card scroll-mt-24 p-6 md:p-8">
+    <section className="sk-card p-6 md:p-8">
       <div className="border-b border-black/5 pb-5">
         <h2 className="sk-section-title">Home page — social profiles</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          Facebook and Instagram profile links only. Hero description and buttons are fixed on the
-          public site. Images are in{" "}
-          <a href="#site-media" className="font-semibold text-primary underline">
-            Site images
-          </a>
-          .
+          Facebook, Instagram, and LinkedIn profile links shown in the site footer. Hero description
+          and buttons are fixed on the public site. Images are in{" "}
+          <AdminLandingTabLink tab="site-images" onNavigate={onNavigateToTab} />.
         </p>
       </div>
 
@@ -48,6 +56,18 @@ export function LandingContentEditor({
             onChange={(e) => onChangeSocialInstagramProfileUrl(e.currentTarget.value)}
             className="sk-input"
             placeholder="https://www.instagram.com/yourprofile/"
+            disabled={isSaving}
+          />
+        </label>
+
+        <label className="block sm:col-span-2">
+          <span className="sk-label">LinkedIn profile URL</span>
+          <input
+            type="url"
+            value={socialLinkedinProfileUrl}
+            onChange={(e) => onChangeSocialLinkedinProfileUrl(e.currentTarget.value)}
+            className="sk-input"
+            placeholder="https://www.linkedin.com/company/yourpage/"
             disabled={isSaving}
           />
         </label>

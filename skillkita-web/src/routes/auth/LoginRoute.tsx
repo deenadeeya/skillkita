@@ -12,6 +12,16 @@ type UserProfileRow = {
   company_name: string | null;
 };
 
+function getSafeRedirectUrl(): string | null {
+  const redirect = new URLSearchParams(window.location.search).get("redirect")?.trim();
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return null;
+  return redirect;
+}
+
+function getPostLoginRedirectUrl(): string {
+  return getSafeRedirectUrl() ?? "/";
+}
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,13 +55,11 @@ const Login = () => {
       if (error || !profile) return;
 
       const row = profile as Pick<UserProfileRow, "role" | "status">;
-      if (row.role === "admin" && row.status !== "rejected") {
-        window.location.href = "/admin";
-        return;
-      }
-      if (row.role === "employer" && row.status !== "rejected") {
-        window.location.href = "/employer";
-        return;
+      if (
+        (row.role === "admin" || row.role === "employer") &&
+        row.status !== "rejected"
+      ) {
+        window.location.href = getPostLoginRedirectUrl();
       }
     };
     void check();
@@ -79,7 +87,7 @@ const Login = () => {
 
       if (profileError) {
         throw new Error(
-          `Profile lookup failed: ${profileError.message}. Did you run supabase/auth_roles_setup.sql?`
+          `Profile lookup failed: ${profileError.message}. Did you run supabase migrations? See supabase/README.md.`
         );
       }
 
@@ -97,7 +105,7 @@ const Login = () => {
           throw new Error("Your admin account has been deactivated. Contact another administrator.");
         }
         window.localStorage.setItem("skillkita-role", "admin");
-        window.location.href = "/admin";
+        window.location.href = getPostLoginRedirectUrl();
         return;
       }
 
@@ -109,7 +117,7 @@ const Login = () => {
         throw new Error("Your account was rejected. Please contact support.");
       }
 
-      window.location.href = "/employer";
+      window.location.href = getPostLoginRedirectUrl();
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(formatSupabaseNetworkError(err));

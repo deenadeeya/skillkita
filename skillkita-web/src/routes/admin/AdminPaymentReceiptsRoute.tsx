@@ -3,7 +3,7 @@ import { DocumentSubmissionAdminPage } from "../../features/submissions/componen
 const AdminPaymentReceiptsRoute = () => (
   <DocumentSubmissionAdminPage
     submissionType="payment_receipt"
-    title="Payment receipts"
+    title="Payment Receipt"
     subtitle="Review employer payment receipts (PDF or image). Approve or reject with a reason. Multiple pending rows per employer are allowed."
   />
 );

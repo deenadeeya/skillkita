@@ -1,5 +1,6 @@
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { useMemo, useState } from "react";
+import { hideImageOnError } from "../../shared/ui/hideImageOnError";
 
 export type NavItem = {
   label: string;
@@ -102,9 +103,27 @@ const LeftNav = ({
     <aside className="flex h-full w-full flex-col bg-white">
       <nav className="flex-1 overflow-auto px-3 py-4">
         {items.map((cat) => {
+          const hasChildren = (cat.children?.length ?? 0) > 0;
+          const CatIcon = cat.icon;
+
+          if (!hasChildren && cat.href) {
+            const active = isLinkActive(cat.href, currentPath);
+            return (
+              <div key={cat.label} className="mb-1">
+                <a
+                  href={cat.href}
+                  className={linkClass(active)}
+                  onClick={onNavigate}
+                >
+                  {CatIcon && <CatIcon className={linkIconClass(active)} />}
+                  {cat.label}
+                </a>
+              </div>
+            );
+          }
+
           const open = openByLabel[cat.label] ?? false;
           const active = isItemActive(cat, currentPath);
-          const CatIcon = cat.icon;
 
           return (
             <div key={cat.label} className="mb-1">
@@ -199,6 +218,7 @@ const LeftNav = ({
               src={profilePicUrl}
               alt=""
               className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
+              onError={hideImageOnError}
             />
           ) : (
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/15">

@@ -1,4 +1,4 @@
-import type { HomepagePartnerRow } from "../api/homepageApi";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 
 type Props = {
   partners: HomepagePartnerRow[];
@@ -31,20 +31,21 @@ export function HomePartnersSection({ partners }: Props) {
         {partners.map((partner) => (
           <div
             key={partner.id}
-            className="group flex min-h-[88px] items-center justify-center rounded-card bg-white p-4 shadow-card transition hover:shadow-lg"
-            title={partner.name}
+            className="group flex flex-col items-center rounded-card bg-white p-4 shadow-card transition hover:shadow-lg"
           >
-            {partner.logo_url ? (
-              <img
-                src={partner.logo_url}
-                alt={partner.name}
-                className="max-h-12 w-full object-contain grayscale transition duration-200 group-hover:grayscale-0"
-              />
-            ) : (
-              <span className="text-center text-sm font-semibold text-ink-muted transition group-hover:text-primary">
-                {partner.name}
-              </span>
-            )}
+            <div className="flex min-h-12 w-full items-center justify-center">
+              {partner.logo_url ? (
+                <img
+                  src={partner.logo_url}
+                  alt=""
+                  className="max-h-12 w-full object-contain grayscale transition duration-200 group-hover:grayscale-0"
+                  onError={hideImageOnError}
+                />
+              ) : null}
+            </div>
+            <p className="mt-3 text-center text-xs font-medium leading-snug text-ink-muted transition group-hover:text-primary">
+              {partner.name}
+            </p>
           </div>
         ))}
       </div>

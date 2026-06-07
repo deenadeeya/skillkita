@@ -1,4 +1,3 @@
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { formatCourseDisplayDate, isUpcomingCourseDate } from "../courseDate";
 import type { CourseDetailRow } from "../api/coursesApi";
 import { CoursePosterMedia } from "./CoursePosterMedia";
@@ -13,7 +12,7 @@ export function CourseDetailHeader({ course }: Props) {
     <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(240px,320px),1fr]">
       <div className="sk-card flex items-center justify-center overflow-hidden bg-paper p-4">
         <CoursePosterMedia
-          url={course.poster_url ?? PlaceholderPoster}
+          url={course.poster_url}
           alt={`${course.name} poster`}
           className="max-h-[420px] w-full object-contain"
           optimizeWidth={640}

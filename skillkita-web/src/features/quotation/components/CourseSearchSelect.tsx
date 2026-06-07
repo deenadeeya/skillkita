@@ -5,6 +5,7 @@ export type QuotationCourseOption = {
   name: string;
   date: string | null;
   poster_url: string | null;
+  price: string | null;
 };
 
 

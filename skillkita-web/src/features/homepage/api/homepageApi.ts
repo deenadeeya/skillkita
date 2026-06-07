@@ -5,6 +5,7 @@ export type HomepageHeroRow = {
   title: string;
   subtitle: string;
   hero_image: string | null;
+  hero_image_file_name: string | null;
   button_1_text: string;
   button_1_link: string;
   button_2_text: string;
@@ -63,6 +64,7 @@ export const DEFAULT_HERO: Omit<HomepageHeroRow, "updated_at"> = {
   subtitle:
     "Accredited TVET training programmes designed to equip individuals and industries with practical skills for the future.",
   hero_image: null,
+  hero_image_file_name: null,
   button_1_text: "Explore Courses",
   button_1_link: "/courses",
   button_2_text: "Contact Us",

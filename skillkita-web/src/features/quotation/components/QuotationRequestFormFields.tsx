@@ -1,6 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
 import { useMemo } from "react";
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
@@ -15,7 +14,7 @@ export type QuotationFormValues = {
   courseName: string;
   selectedCourseId: string;
   courseMode: string;
-  pricePerPax: string;
+  numberOfParticipants: string;
   courseLocationAddress: string;
   courseDate: string;
   additionalDescription: string;
@@ -33,6 +32,8 @@ type Props = {
   onSubmit: (ev: FormEvent<HTMLFormElement>) => void;
   /** Rendered above the To fieldset (e.g. admin employer picker). */
   prefix?: ReactNode;
+  /** Hint under the To legend (employer vs admin create). */
+  toSectionHint?: string;
 };
 
 export function QuotationRequestFormFields({
@@ -46,6 +47,7 @@ export function QuotationRequestFormFields({
   submitLabel = "Submit",
   onSubmit,
   prefix,
+  toSectionHint = "Choose company name and address from the employer profile, or enter them manually.",
 }: Props) {
   const canUseProfile = Boolean(profileCompanyName || profileCompanyAddress);
 
@@ -63,9 +65,7 @@ export function QuotationRequestFormFields({
           To
           <RequiredMark />
         </legend>
-        <p className="text-xs text-ink-muted">
-          Choose company name and address from the employer profile, or enter them manually.
-        </p>
+        <p className="text-xs text-ink-muted">{toSectionHint}</p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
             <input
@@ -166,7 +166,7 @@ export function QuotationRequestFormFields({
           {selectedCourse ? (
             <>
               <CoursePosterMedia
-                url={selectedCourse.poster_url ?? PlaceholderPoster}
+                url={selectedCourse.poster_url}
                 alt={`${selectedCourse.name} poster`}
                 className="mt-2 aspect-[210/297] w-full rounded-lg object-cover shadow-sm"
                 optimizeWidth={400}
@@ -186,7 +186,7 @@ export function QuotationRequestFormFields({
       <div className="grid gap-5 md:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-primary">
-            Course mode / Mode kursus
+            Course mode 
             <RequiredMark />
           </span>
           <select
@@ -209,26 +209,29 @@ export function QuotationRequestFormFields({
 
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-primary">
-            Price / pax (RM)
+            Number of participants
             <RequiredMark />
           </span>
           <input
             type="number"
-            min={0}
-            step="0.01"
-            value={values.pricePerPax}
-            onChange={(e) => onChange({ pricePerPax: e.target.value })}
+            min={1}
+            step={1}
+            value={values.numberOfParticipants}
+            onChange={(e) => onChange({ numberOfParticipants: e.target.value })}
             disabled={disabled}
             className="w-full rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm shadow-sm focus:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            placeholder="0.00"
+            placeholder="e.g. 10"
             required
           />
+          <p className="mt-1 text-xs text-ink-muted">
+            Admin will price the quotation using the course catalog price per participant.
+          </p>
         </label>
       </div>
 
       <label className="block">
         <span className="mb-1.5 block text-sm font-semibold text-primary">
-          Address of course location / Alamat tempat kursus
+          Address of course location
           <RequiredMark />
         </span>
         <textarea

@@ -1,37 +1,33 @@
--- SkillKita: Auth + roles + approvals setup
--- Run this in Supabase SQL Editor.
--- This creates user_profiles, admin check helpers, and RLS policies for admin-only writes.
+-- Auth profiles, roles, admin helpers, signup triggers, and content RLS.
 
-create extension if not exists "pgcrypto";
-
--- 1) Profiles: role + approval status (source of truth)
+-- Profiles: role + approval status (source of truth)
 create table if not exists public.user_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
   company_name text,
   company_address text,
   phone text,
-  role text not null check (role in ('employer','admin')),
-  status text not null check (status in ('pending','approved','rejected')),
+  email text,
+  short_name text,
+  profile_pic_url text,
+  role text not null check (role in ('employer', 'admin')),
+  status text not null check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
   approved_at timestamptz,
   approved_by uuid references auth.users(id)
 );
 
--- Forward-compatible: if the table already exists, ensure company_address exists.
-alter table public.user_profiles
-  add column if not exists company_address text;
-
 alter table public.user_profiles enable row level security;
 
--- 2) Admin helper + compatibility with existing admin_users (optional)
+-- Legacy admin_users table (optional compatibility)
 create table if not exists public.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
--- SECURITY DEFINER + search_path: read user_profiles/admin_users without RLS recursion
--- blocking the check (otherwise inserts can fail with "new row violates row-level security policy").
+alter table public.admin_users enable row level security;
+
+-- Admin check (deactivated admins lose privileges)
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -57,9 +53,7 @@ $$;
 
 grant execute on function public.is_admin() to authenticated;
 
--- 2b) RLS on admin_users (must run after is_admin() exists; is_admin() reads this table with SECURITY DEFINER)
-alter table public.admin_users enable row level security;
-
+-- admin_users RLS
 drop policy if exists "admin_users_select_own" on public.admin_users;
 create policy "admin_users_select_own"
 on public.admin_users for select
@@ -91,12 +85,18 @@ on public.admin_users for delete
 to authenticated
 using (public.is_admin());
 
--- 3) Policies: user can see/update own profile; admin can manage all
+-- user_profiles RLS
 drop policy if exists "profiles_select_own" on public.user_profiles;
 create policy "profiles_select_own"
 on public.user_profiles for select
 to authenticated
 using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "profiles_select_admin_directory" on public.user_profiles;
+create policy "profiles_select_admin_directory"
+on public.user_profiles for select
+to authenticated
+using (role = 'admin');
 
 drop policy if exists "profiles_insert_self" on public.user_profiles;
 create policy "profiles_insert_self"
@@ -104,8 +104,6 @@ on public.user_profiles for insert
 to authenticated
 with check (user_id = auth.uid());
 
--- Allow user to update their own non-privileged fields.
--- NOTE: Postgres RLS cannot easily restrict columns; enforce privileged fields in app and via admin-only update below.
 drop policy if exists "profiles_update_own" on public.user_profiles;
 create policy "profiles_update_own"
 on public.user_profiles for update
@@ -120,8 +118,7 @@ to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
--- 4) Admin-only writes for content tables (courses/landing/experiences)
--- Courses
+-- Content table RLS (requires is_admin())
 alter table public.courses enable row level security;
 
 drop policy if exists "courses_select_all" on public.courses;
@@ -148,7 +145,6 @@ on public.courses for delete
 to authenticated
 using (public.is_admin());
 
--- Landing content
 alter table public.landing_content enable row level security;
 
 drop policy if exists "landing_select_all" on public.landing_content;
@@ -169,7 +165,6 @@ to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
--- Experiences
 alter table public.experiences enable row level security;
 
 drop policy if exists "experiences_select_all" on public.experiences;
@@ -197,7 +192,7 @@ on public.experiences for delete
 to authenticated
 using (public.is_admin());
 
--- 5) Auto-create employer profile on auth signup (bypasses RLS; works without a JWT).
+-- Auto-create employer profile on auth signup (bypasses RLS; works without a JWT)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -205,7 +200,16 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.user_profiles (user_id, full_name, company_name, phone, role, status, approved_at)
+  insert into public.user_profiles (
+    user_id,
+    full_name,
+    company_name,
+    phone,
+    role,
+    status,
+    approved_at,
+    email
+  )
   values (
     new.id,
     coalesce(nullif(trim(new.raw_user_meta_data->>'full_name'), ''), '—'),
@@ -213,9 +217,26 @@ begin
     nullif(trim(coalesce(new.raw_user_meta_data->>'phone', '')), ''),
     'employer',
     'approved',
-    now()
+    now(),
+    nullif(trim(coalesce(new.email::text, '')), '')
   )
   on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+create or replace function public.handle_auth_user_email_updated()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is distinct from old.email then
+    update public.user_profiles
+    set email = nullif(trim(new.email::text), '')
+    where user_id = new.id;
+  end if;
   return new;
 end;
 $$;
@@ -225,3 +246,16 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row
   execute function public.handle_new_user();
+
+drop trigger if exists on_auth_user_email_updated on auth.users;
+create trigger on_auth_user_email_updated
+  after update of email on auth.users
+  for each row
+  execute function public.handle_auth_user_email_updated();
+
+-- Backfill email for existing profiles
+update public.user_profiles up
+set email = au.email::text
+from auth.users au
+where au.id = up.user_id
+  and up.email is null;

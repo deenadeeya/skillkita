@@ -7,6 +7,7 @@ export type UserProfileRow = {
   role: UserRole;
   status: UserApprovalStatus;
   full_name: string;
+  short_name?: string | null;
   company_name: string | null;
   company_address?: string | null;
 };

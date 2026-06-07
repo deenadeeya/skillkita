@@ -13,7 +13,7 @@ import {
 } from "../../features/users/api/adminUsersApi";
 import { supabase } from "../../shared/api/supabaseClient";
 import { useViewer } from "../../shared/hooks/useViewer";
-import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
+import { hideImageOnError } from "../../shared/ui/hideImageOnError";
 
 function profileInitials(fullName: string, shortName: string | null) {
   const base = (shortName || fullName || "—").trim();
@@ -93,7 +93,7 @@ const AdminUsers = () => {
   useEffect(() => {
     if (viewerState.kind === "signedIn") {
       setAdminEmail(viewerState.viewer.email);
-      setAdminName(viewerState.viewer.fullName || "Admin");
+      setAdminName(viewerState.viewer.displayName || "Admin");
     }
   }, [viewerState]);
 
@@ -258,6 +258,7 @@ const AdminUsers = () => {
     >
       <AdminPageFrame
         title="Manage Users"
+        headerVariant="hero"
         subtitle="Approve employers, manage admins, or create new admin accounts."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
@@ -377,6 +378,7 @@ const AdminUsers = () => {
                               src={p.profile_pic_url}
                               alt=""
                               className="h-full w-full object-cover"
+                              onError={hideImageOnError}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-lg font-bold text-primary">

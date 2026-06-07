@@ -3,6 +3,7 @@ import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
 import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
@@ -12,6 +13,7 @@ type UserProfileRow = {
   role: "admin" | "employer";
   status: "pending" | "approved" | "rejected";
   full_name: string;
+  short_name: string | null;
   company_name: string | null;
 };
 
@@ -81,7 +83,7 @@ const EmployerTalkToAdmin = () => {
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name,company_name")
+        .select("user_id,role,status,full_name,short_name,company_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -158,28 +160,20 @@ const EmployerTalkToAdmin = () => {
   return (
     <DashboardLayout
       items={employerNavItems}
-      userName={profile?.full_name ?? "Employer"}
+      userName={profile ? getProfileDisplayName(profile, "Employer") : "Employer"}
       userEmail={email}
       onLogout={() => {
         void signOutAndRedirectHome();
       }}
     >
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <DashboardPageHeader
-            className="flex-1"
-            title="Talk to admin"
-            subtitle={
-              profile
-                ? `Hi ${profile.full_name}. Choose an admin and start a chat.`
-                : "Choose an admin and start a chat."
-            }
-          />
-          {selectedAdmin && (
-            <button type="button" onClick={backToPicker} className="sk-button-secondary shrink-0 px-4 py-2">
-              Change admin
-            </button>
-          )}
-        </div>
+        <DashboardPageHeader
+          title="Talk to Admin"
+          subtitle={
+            profile
+              ? `Hi ${getProfileDisplayName(profile, "Employer")}. Choose an admin and start a chat.`
+              : "Choose an admin and start a chat."
+          }
+        />
 
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -229,9 +223,18 @@ const EmployerTalkToAdmin = () => {
               conversationId={conversation.id}
               currentUserId={profile!.user_id}
               header={
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold text-primary">Chatting with</p>
-                  <p className="text-xl font-bold text-ink">{selectedAdmin.full_name}</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-semibold text-primary">Chatting with</p>
+                    <p className="text-xl font-bold text-ink">{selectedAdmin.full_name}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={backToPicker}
+                    className="sk-button-secondary shrink-0 px-4 py-2"
+                  >
+                    Change admin
+                  </button>
                 </div>
               }
             />

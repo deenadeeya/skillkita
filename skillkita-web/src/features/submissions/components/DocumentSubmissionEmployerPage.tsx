@@ -125,7 +125,7 @@ export function DocumentSubmissionEmployerPage({
   return (
     <DashboardLayout
       items={employerNavItems}
-      userName={viewerState.kind === "signedIn" ? viewerState.viewer.fullName : "Employer"}
+      userName={viewerState.kind === "signedIn" ? viewerState.viewer.displayName : "Employer"}
       userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
       onLogout={() => {
         void signOutAndRedirectHome();

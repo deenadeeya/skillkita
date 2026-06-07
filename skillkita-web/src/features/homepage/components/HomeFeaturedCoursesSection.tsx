@@ -1,6 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import PlaceholderPoster from "../../../assets/placeholder.jpg";
 import { compareCoursesUpcomingFirst } from "../../courses/courseDate";
 import { CoursePosterMedia } from "../../courses/components/CoursePosterMedia";
 import { CourseUpcomingMeta } from "../../courses/components/CourseUpcomingMeta";
@@ -44,7 +43,7 @@ function CourseSlideCard({ course }: { course: FeaturedCourse }) {
     <article className="sk-card group flex h-full flex-col overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-lg">
       <div className="relative flex h-[200px] shrink-0 items-center justify-center overflow-hidden bg-paper sm:h-[220px] lg:h-[240px]">
         <CoursePosterMedia
-          url={course.poster_url ?? PlaceholderPoster}
+          url={course.poster_url}
           alt={`${course.name} poster`}
           className="h-full w-full object-contain object-center p-1.5 transition duration-300 group-hover:scale-[1.02]"
           optimizeWidth={480}

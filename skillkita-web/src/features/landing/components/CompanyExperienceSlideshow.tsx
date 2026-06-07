@@ -10,7 +10,7 @@ export type ExperienceSlide = {
   id: string;
   imageUrl: string;
   title: string;
-  date: string;
+  date: string | null;
   details: string;
 };
 
@@ -52,7 +52,7 @@ function useSlidesPerPage() {
 }
 
 function ExperienceSlidePanel({ slide }: { slide: ExperienceSlide }) {
-  const dateLabel = formatCourseDisplayDate(slide.date) ?? slide.date;
+  const dateLabel = formatCourseDisplayDate(slide.date);
 
   return (
     <figure className="relative aspect-[4/3] overflow-hidden rounded-card bg-ink shadow-card ring-1 ring-black/5 lg:aspect-[3/2]">
@@ -65,10 +65,14 @@ function ExperienceSlidePanel({ slide }: { slide: ExperienceSlide }) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
       <figcaption className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-secondary sm:text-xs">
-          {dateLabel}
-        </p>
-        <p className="mt-0.5 font-heading line-clamp-2 text-sm font-bold text-white lg:text-base">
+        {dateLabel ? (
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-secondary sm:text-xs">
+            {dateLabel}
+          </p>
+        ) : null}
+        <p
+          className={`font-heading line-clamp-2 text-sm font-bold text-white lg:text-base ${dateLabel ? "mt-0.5" : ""}`}
+        >
           {slide.title}
         </p>
       </figcaption>

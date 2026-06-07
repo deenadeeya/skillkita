@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
@@ -18,12 +19,17 @@ const AdminProfile = () => {
 
       const { data: profileRow } = await supabase
         .from("user_profiles")
-        .select("full_name,role")
+        .select("full_name,short_name,role")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (profileRow && (profileRow as { role?: string }).role === "admin") {
-        setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
+        setAdminName(
+          getProfileDisplayName(
+            profileRow as { full_name: string; short_name?: string | null },
+            "Admin"
+          )
+        );
       }
     };
 

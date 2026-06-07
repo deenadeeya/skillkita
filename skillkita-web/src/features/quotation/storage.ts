@@ -3,7 +3,7 @@ import type { QuotationRequestRow } from "./types";
 import { QUOTATION_PDF_BUCKET, quotationPdfPath } from "./types";
 
 function quotationStorageHint(): string {
-  return " Ensure the private Storage bucket `quotation-pdfs` exists (see supabase/migrations/20260520110000_quotation_requests_base.sql).";
+  return " Ensure migrations through 20260501000006_quotations.sql are applied (see supabase/README.md).";
 }
 
 function quotationUploadRlsHint(): string {

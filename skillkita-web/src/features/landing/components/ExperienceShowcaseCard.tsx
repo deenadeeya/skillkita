@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 import { formatCourseDisplayDate } from "../../courses/courseDate";
 import type { ExperienceRow } from "../api/landingApi";
 
@@ -20,7 +21,7 @@ export function ExperienceShowcaseCard({
   const photos = experience.photo_urls ?? [];
   const [activeIndex, setActiveIndex] = useState(0);
   const activeUrl = photos[activeIndex] ?? photos[0];
-  const dateLabel = formatCourseDisplayDate(experience.date) ?? experience.date;
+  const dateLabel = formatCourseDisplayDate(experience.date);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -42,6 +43,7 @@ export function ExperienceShowcaseCard({
             alt={experience.name}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             loading="lazy"
+            onError={hideImageOnError}
           />
         </div>
       ) : (
@@ -51,8 +53,12 @@ export function ExperienceShowcaseCard({
       )}
 
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">{dateLabel}</p>
-        <h3 className="mt-1 font-heading line-clamp-2 text-lg font-semibold text-ink">{experience.name}</h3>
+        {dateLabel ? (
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{dateLabel}</p>
+        ) : null}
+        <h3 className={`font-heading line-clamp-2 text-lg font-semibold text-ink ${dateLabel ? "mt-1" : ""}`}>
+          {experience.name}
+        </h3>
         {experience.details?.trim() ? (
           <p className="mt-2 line-clamp-3 flex-1 text-sm text-ink-muted">{experience.details}</p>
         ) : null}
@@ -78,6 +84,7 @@ export function ExperienceShowcaseCard({
                     alt=""
                     className="h-14 w-20 object-cover"
                     loading="lazy"
+                    onError={hideImageOnError}
                   />
                 </button>
               );
