@@ -13,6 +13,7 @@ import {
 } from "../../features/users/api/adminUsersApi";
 import { supabase } from "../../shared/api/supabaseClient";
 import { useViewer } from "../../shared/hooks/useViewer";
+import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { hideImageOnError } from "../../shared/ui/hideImageOnError";
 
 function profileInitials(fullName: string, shortName: string | null) {

@@ -338,8 +338,8 @@ export default function AdminCreateCourse() {
     };
 
     for (const kind of kinds) {
-      const pathCol = columnForKind(kind) as keyof CoursePrivatePaths;
-      const nameCol = fileNameColumnForKind(kind) as keyof CoursePrivatePaths;
+      const pathCol = columnForKind(kind) as Exclude<keyof CoursePrivatePaths, "course_id">;
+      const nameCol = fileNameColumnForKind(kind) as Exclude<keyof CoursePrivatePaths, "course_id">;
       const file = privateSelections[kind];
       if (file) {
         try {

@@ -1,4 +1,5 @@
 import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
+import type { HomepagePartnerRow } from "../api/homepageApi";
 
 type Props = {
   partners: HomepagePartnerRow[];

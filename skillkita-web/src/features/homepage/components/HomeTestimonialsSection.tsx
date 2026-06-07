@@ -1,5 +1,6 @@
-import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
+import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
+import { hideImageOnError } from "../../../shared/ui/hideImageOnError";
 import type { HomepageTestimonialRow } from "../api/homepageApi";
 
 type Props = {
