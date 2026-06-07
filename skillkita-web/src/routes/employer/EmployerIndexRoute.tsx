@@ -4,24 +4,27 @@ import { employerNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
 import { EmployerQuotationRequestsTable } from "../../features/quotation/components/EmployerQuotationRequestsTable";
 import {
-  quotationRowToPdfInput,
+  quotationTotalAmountRm,
+  resolveQuotationPdfInput,
   quotationRowToPdfMeta,
 } from "../../features/quotation/quotationRowToPdf";
 import {
   buildInvoicePdfDownloadFileName,
   buildQuotationPdfDownloadFileName,
   downloadBlobWithFileName,
-  downloadQuotationPdfWithFileName,
 } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
 import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
+import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 type UserProfileRow = {
   user_id: string;
   role: "admin" | "employer";
   status: "pending" | "approved" | "rejected";
   full_name: string;
+  short_name: string | null;
   company_name: string | null;
 };
 
@@ -72,7 +75,7 @@ const EmployerDashboard = () => {
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name,company_name")
+        .select("user_id,role,status,full_name,short_name,company_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -106,14 +109,17 @@ const EmployerDashboard = () => {
   }, [loadQuotations]);
 
   const downloadQuotationPdf = async (row: QuotationRequestRow) => {
-    if (!row.pdf_storage_path) return;
+    const pdfInput = await resolveQuotationPdfInput(row);
+    if (!pdfInput) {
+      setQuotationError("Quotation requires approved pricing (company, mode, and course price).");
+      return;
+    }
+
     setDownloadQuotationId(row.id);
     setQuotationError(null);
     try {
-      await downloadQuotationPdfWithFileName(
-        row.pdf_storage_path,
-        buildQuotationPdfDownloadFileName(row)
-      );
+      const blob = await buildQuotationPdfBlob(pdfInput, quotationRowToPdfMeta(row, "quotation"));
+      downloadBlobWithFileName(blob, buildQuotationPdfDownloadFileName(row));
     } catch (err) {
       setQuotationError(err instanceof Error ? err.message : "Quotation download failed.");
     } finally {
@@ -122,9 +128,9 @@ const EmployerDashboard = () => {
   };
 
   const downloadInvoicePdf = async (row: QuotationRequestRow) => {
-    const pdfInput = quotationRowToPdfInput(row);
+    const pdfInput = await resolveQuotationPdfInput(row);
     if (!pdfInput) {
-      setQuotationError("Invoice requires approved pricing (company, mode, unit price, and amount).");
+      setQuotationError("Invoice requires approved pricing (company, mode, and course price).");
       return;
     }
 
@@ -143,21 +149,18 @@ const EmployerDashboard = () => {
   return (
     <DashboardLayout
       items={employerNavItems}
-      userName={profile?.full_name ?? "Employer"}
+      userName={profile ? getProfileDisplayName(profile, "Employer") : "Employer"}
       userEmail={email}
       onLogout={() => {
         void signOutAndRedirectHome();
       }}
     >
-        
-        <p className="mt-3 text-lg text-ink md:text-xl">
-          {profile ? `Welcome, ${profile.full_name}.` : "Welcome."}
-        </p>
-        <p className="mt-2 text-sm text-ink-muted">
-          View your quotation requests and download your quotation PDF along with the invoice PDF.
-        </p>
+      <DashboardPageHeader
+        title="Quotation Application History"
+        subtitle="View your quotation requests, track their status, and download quotation or invoice PDFs once approved."
+      />
 
-        {quotationError && (
+      {quotationError && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {quotationError}
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { normalizeSupabaseStorageUrl, supabase } from "../../shared/api/supabaseClient";
 import { getLandingContent } from "../../features/landing/api/landingApi";
 import {
@@ -53,7 +54,7 @@ const HomePage = () => {
           setViewerEmail(user.email ?? null);
           const { data: profileRow } = await supabase
             .from("user_profiles")
-            .select("role,status,full_name,profile_pic_url")
+            .select("role,status,full_name,short_name,profile_pic_url")
             .eq("user_id", user.id)
             .maybeSingle();
 
@@ -62,19 +63,20 @@ const HomePage = () => {
               role: "admin" | "employer";
               status: string;
               full_name?: string;
+              short_name?: string | null;
               profile_pic_url?: string | null;
             };
             setProfilePicUrl(normalizeSupabaseStorageUrl(r.profile_pic_url ?? null));
 
             if (r.role === "admin") {
               setViewerRole("admin");
-              setViewerName(r.full_name ?? "Admin");
+              setViewerName(getProfileDisplayName(r, "Admin"));
             } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
-              setViewerName(r.full_name ?? "Employer");
+              setViewerName(getProfileDisplayName(r, "Employer"));
             } else {
               setViewerRole(null);
-              if (r.role === "employer") setViewerName(r.full_name ?? "Employer");
+              if (r.role === "employer") setViewerName(getProfileDisplayName(r, "Employer"));
             }
           } else {
             setViewerRole(null);

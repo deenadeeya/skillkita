@@ -27,11 +27,13 @@ export function StatusBadge({ status }: { status: QuotationRequestRow["status"] 
 export function QuotationActionButton({
   children,
   onClick,
+  href,
   disabled,
   variant = "primary",
 }: {
   children: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
+  href?: string;
   disabled?: boolean;
   variant?: "primary" | "secondary" | "danger";
 }) {
@@ -42,12 +44,22 @@ export function QuotationActionButton({
         ? "border-black/10 bg-white text-primary hover:border-secondary hover:bg-secondary hover:text-white"
         : "border-primary/30 bg-primary/5 text-ink hover:border-primary hover:bg-primary-dark hover:text-white";
 
+  const sharedClassName = `inline-flex items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-semibold no-underline transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`;
+
+  if (href) {
+    return (
+      <a href={href} className={sharedClassName}>
+        {children}
+      </a>
+    );
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={sharedClassName}
     >
       {children}
     </button>

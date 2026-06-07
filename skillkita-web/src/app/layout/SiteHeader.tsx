@@ -110,13 +110,7 @@ const SiteHeader = ({ onMenuClick }: Props) => {
         : null;
 
   const viewerName =
-    viewerState.kind === "signedIn"
-      ? viewerState.viewer.fullName?.trim()
-        ? viewerState.viewer.fullName
-        : viewerState.viewer.role === "admin"
-          ? "Admin"
-          : "Employer"
-      : "User";
+    viewerState.kind === "signedIn" ? viewerState.viewer.displayName : "User";
 
   const isAdmin = viewerState.kind === "signedIn" && viewerState.viewer.role === "admin";
   const employerStatus =

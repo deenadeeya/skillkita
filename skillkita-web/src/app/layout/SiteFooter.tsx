@@ -9,12 +9,11 @@ const FOOTER_LINKS = {
   ],
   courses: [
     { label: "Browse Courses", href: "/courses" },
-    { label: "Popular Courses", href: "/courses" },
   ],
   contact: [
-    { label: "Phone", href: "/about-us" },
-    { label: "Email", href: "/about-us" },
     { label: "Address", href: "/about-us" },
+    { label: "Email", href: "/about-us" },
+    { label: "Phone", href: "/about-us" },
   ],
 } as const;
 
@@ -24,7 +23,6 @@ type SocialLink = {
 };
 
 const SiteFooter = () => {
-  const year = new Date().getFullYear();
   const { desktopInsetPx } = useDashboardMainInset();
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
 

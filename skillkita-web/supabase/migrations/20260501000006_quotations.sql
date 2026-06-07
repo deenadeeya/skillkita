@@ -1,10 +1,6 @@
--- Quotation requests: employer submits → admin prices & approves → PDF in storage
--- Run after auth_roles_setup.sql (uses is_admin()). Create Storage bucket: quotation-pdfs (private)
+-- Quotation requests: employer submits → admin prices & approves → PDF in storage.
+-- Requires: public.is_admin(), user_profiles, quotation-pdfs bucket.
 
-create extension if not exists "pgcrypto";
-
--- Human-friendly sequential quotation number (unique), used on the PDF.
--- This is separate from the UUID primary key.
 create sequence if not exists public.quotation_requests_no_seq;
 
 create table if not exists public.quotation_requests (
@@ -32,16 +28,9 @@ create table if not exists public.quotation_requests (
   updated_at timestamptz not null default now()
 );
 
--- Forward-compatible: if the table already exists, ensure columns exist.
-alter table public.quotation_requests
-  add column if not exists quotation_no bigint,
-  add column if not exists company_address text,
-  add column if not exists course_location_address text;
-
 alter table public.quotation_requests
   alter column quotation_no set default nextval('public.quotation_requests_no_seq');
 
--- Backfill existing rows that predate quotation_no.
 update public.quotation_requests
 set quotation_no = nextval('public.quotation_requests_no_seq')
 where quotation_no is null;
@@ -79,8 +68,6 @@ with check (
   )
 );
 
--- Admins can create approved quotations (e.g. manual/admin-entered).
--- Note: employers can still only create 'pending' requests for themselves via the policy above.
 drop policy if exists "quotation_insert_admin" on public.quotation_requests;
 create policy "quotation_insert_admin"
 on public.quotation_requests for insert
@@ -104,7 +91,7 @@ on public.quotation_requests for delete
 to authenticated
 using (public.is_admin());
 
--- Storage: bucket quotation-pdfs, object path {employer_user_id}/{quotation_id}.pdf
+-- Storage path: {employer_user_id}/{quotation_id}.pdf
 drop policy if exists "quotation_pdf_admin_all" on storage.objects;
 create policy "quotation_pdf_admin_all"
 on storage.objects for all

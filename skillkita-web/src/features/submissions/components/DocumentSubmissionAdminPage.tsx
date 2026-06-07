@@ -53,7 +53,7 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
   useEffect(() => {
     if (viewerState.kind === "signedIn") {
       setAdminEmail(viewerState.viewer.email);
-      setAdminName(viewerState.viewer.fullName || "Admin");
+      setAdminName(viewerState.viewer.displayName || "Admin");
     }
   }, [viewerState]);
 

@@ -10,7 +10,7 @@ export async function getSessionUser() {
 export async function getUserProfile(userId: string) {
   const primary = await supabase
     .from("user_profiles")
-    .select("user_id,role,status,full_name,company_name,company_address")
+    .select("user_id,role,status,full_name,short_name,company_name,company_address")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -22,7 +22,7 @@ export async function getUserProfile(userId: string) {
   const res = shouldFallback
     ? await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name,company_name")
+        .select("user_id,role,status,full_name,short_name,company_name")
         .eq("user_id", userId)
         .maybeSingle()
     : primary;

@@ -12,6 +12,7 @@ import {
   type PrivateDocKind,
 } from "../../features/courses/storage/coursePrivateStorage";
 import type { CoursePrivatePaths } from "../../features/courses/api/privateFilesApi";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { getStoragePublicUrl, supabase } from "../../shared/api/supabaseClient";
 import { extractPosterFieldsFromImage } from "../../features/courses/api/extractPosterApi";
 import { mergePosterExtractionIntoForm } from "../../features/courses/utils/applyPosterExtraction";
@@ -170,7 +171,7 @@ export default function AdminCreateCourse() {
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name")
+        .select("user_id,role,status,full_name,short_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -191,7 +192,9 @@ export default function AdminCreateCourse() {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
-      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
+      setAdminName(
+        getProfileDisplayName(profileRow as { full_name: string; short_name?: string | null }, "Admin")
+      );
       setIsAuthorized(true);
       setIsAuthChecking(false);
     };

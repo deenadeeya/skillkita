@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { QuotationRequestRow } from "../types";
+import { canDownloadInvoicePdf } from "../quotationRowToPdf";
 import { QuotationActionButton, StatusBadge } from "./quotationRequestTableUi";
 
 type EmployerLabel = {
@@ -15,11 +16,9 @@ type Props = {
   downloadId: string | null;
   invoiceDownloadId: string | null;
   deleteId: string | null;
-  onReview: (row: QuotationRequestRow) => void;
   onDownloadQuotation: (row: QuotationRequestRow) => void;
   onDownloadInvoice: (row: QuotationRequestRow) => void;
   onDeleteRequest: (row: QuotationRequestRow) => void;
-  isSaving?: boolean;
 };
 
 type EmployerGroup = {
@@ -36,6 +35,13 @@ function getEmployerDisplayName(
   const fallbackName = row.company_name_snapshot || row.employer_user_id;
   if (!label) return fallbackName;
   return label.company_name ? `${label.full_name} (${label.company_name})` : label.full_name;
+}
+
+function formatReviewedDate(reviewedAt: string | null): string {
+  if (!reviewedAt) return "—";
+  const d = new Date(reviewedAt);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-CA");
 }
 
 function groupRowsByEmployer(
@@ -86,11 +92,9 @@ function QuotationRequestRowCells({
   row,
   busy,
   canDownloadDocs,
-  isSaving,
   downloadId,
   invoiceDownloadId,
   deleteId,
-  onReview,
   onDownloadQuotation,
   onDownloadInvoice,
   onDeleteRequest,
@@ -98,11 +102,9 @@ function QuotationRequestRowCells({
   row: QuotationRequestRow;
   busy: boolean;
   canDownloadDocs: boolean;
-  isSaving: boolean;
   downloadId: string | null;
   invoiceDownloadId: string | null;
   deleteId: string | null;
-  onReview: (row: QuotationRequestRow) => void;
   onDownloadQuotation: (row: QuotationRequestRow) => void;
   onDownloadInvoice: (row: QuotationRequestRow) => void;
   onDeleteRequest: (row: QuotationRequestRow) => void;
@@ -111,26 +113,27 @@ function QuotationRequestRowCells({
     <tr className="border-t border-black/10 transition hover:bg-primary/5/60">
       <td className="px-4 py-3 align-top text-ink">{row.course_name}</td>
       <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">{row.proposed_date}</td>
+      <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">
+        {formatReviewedDate(row.reviewed_at)}
+      </td>
       <td className="px-4 py-3 align-top">
         <StatusBadge status={row.status} />
       </td>
       <td className="px-4 py-3 align-top">
         <div className="flex flex-wrap gap-2">
           {row.status === "pending" && (
-            <QuotationActionButton onClick={() => onReview(row)} disabled={isSaving}>
+            <QuotationActionButton href={`/admin/quotations/review/${row.id}`}>
               Review
             </QuotationActionButton>
           )}
 
           {row.status === "approved" && (
             <>
-              {row.pdf_storage_path ? (
+              {canDownloadDocs ? (
                 <QuotationActionButton onClick={() => onDownloadQuotation(row)} disabled={busy}>
                   {downloadId === row.id ? "Preparing…" : "Quotation"}
                 </QuotationActionButton>
-              ) : (
-                <span className="self-center text-xs font-medium text-red-700">Missing PDF</span>
-              )}
+              ) : null}
               {canDownloadDocs ? (
                 <QuotationActionButton
                   variant="secondary"
@@ -148,7 +151,7 @@ function QuotationRequestRowCells({
           <QuotationActionButton
             variant="danger"
             onClick={() => onDeleteRequest(row)}
-            disabled={busy || isSaving}
+            disabled={busy}
           >
             {deleteId === row.id ? "Deleting…" : "Delete"}
           </QuotationActionButton>
@@ -165,11 +168,9 @@ export function AdminQuotationRequestsTable({
   downloadId,
   invoiceDownloadId,
   deleteId,
-  onReview,
   onDownloadQuotation,
   onDownloadInvoice,
   onDeleteRequest,
-  isSaving = false,
 }: Props) {
   const pendingCount = rows.filter((r) => r.status === "pending").length;
   const approvedCount = rows.filter((r) => r.status === "approved").length;
@@ -246,11 +247,12 @@ export function AdminQuotationRequestsTable({
                   </button>
                   {isExpanded && (
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+                      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                         <thead>
                           <tr className="bg-white text-primary">
                             <th className="px-4 py-2.5 font-semibold">Course</th>
                             <th className="px-4 py-2.5 font-semibold">Proposed</th>
+                            <th className="px-4 py-2.5 font-semibold">Reviewed</th>
                             <th className="px-4 py-2.5 font-semibold">Status</th>
                             <th className="px-4 py-2.5 font-semibold">Actions</th>
                           </tr>
@@ -261,11 +263,7 @@ export function AdminQuotationRequestsTable({
                               downloadId === r.id ||
                               invoiceDownloadId === r.id ||
                               deleteId === r.id;
-                            const canDownloadDocs =
-                              r.status === "approved" &&
-                              r.unit_price != null &&
-                              r.amount_rm != null &&
-                              !!r.course_mode?.trim();
+                            const canDownloadDocs = canDownloadInvoicePdf(r);
 
                             return (
                               <QuotationRequestRowCells
@@ -273,11 +271,9 @@ export function AdminQuotationRequestsTable({
                                 row={r}
                                 busy={busy}
                                 canDownloadDocs={canDownloadDocs}
-                                isSaving={isSaving}
                                 downloadId={downloadId}
                                 invoiceDownloadId={invoiceDownloadId}
                                 deleteId={deleteId}
-                                onReview={onReview}
                                 onDownloadQuotation={onDownloadQuotation}
                                 onDownloadInvoice={onDownloadInvoice}
                                 onDeleteRequest={onDeleteRequest}

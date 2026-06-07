@@ -22,7 +22,7 @@ const emptyFormValues = (): QuotationFormValues => ({
   courseName: "",
   selectedCourseId: "",
   courseMode: "",
-  pricePerPax: "",
+  numberOfParticipants: "",
   courseLocationAddress: "",
   courseDate: "",
   additionalDescription: "",
@@ -50,6 +50,7 @@ const EmployerQuotationRequest = () => {
           name: c.name,
           date: c.date,
           poster_url: c.poster_url,
+          price: c.price,
         }))
       );
     } catch (e) {
@@ -71,19 +72,19 @@ const EmployerQuotationRequest = () => {
     setErrorMessage(null);
 
     const resolvedTo = resolveQuotationTo(formValues, profileCompanyName, profileCompanyAddress);
-    const price = parseFloat(formValues.pricePerPax);
+    const participants = parseInt(formValues.numberOfParticipants, 10);
 
     if (
       !resolvedTo.companyName ||
       !formValues.courseName.trim() ||
       !isQuotationCourseMode(formValues.courseMode) ||
-      !Number.isFinite(price) ||
-      price < 0 ||
+      !Number.isFinite(participants) ||
+      participants < 1 ||
       !formValues.courseLocationAddress.trim() ||
       !formValues.courseDate
     ) {
       setErrorMessage(
-        "Please complete To (company name), course name, course mode, price per pax, course location address, and course date."
+        "Please complete To (company name), course name, course mode, number of participants, course location address, and course date."
       );
       return;
     }
@@ -107,9 +108,8 @@ const EmployerQuotationRequest = () => {
         company_address: resolvedTo.companyAddress ? resolvedTo.companyAddress : null,
         course_name: formValues.courseName.trim(),
         course_mode: formValues.courseMode,
-        unit_price: price,
         course_location_address: formValues.courseLocationAddress.trim(),
-        number_of_employers: 1,
+        number_of_employers: participants,
         proposed_date: formValues.courseDate,
         additional_description: formValues.additionalDescription.trim() || null,
       });
@@ -126,7 +126,7 @@ const EmployerQuotationRequest = () => {
   return (
     <DashboardLayout
       items={employerNavItems}
-      userName={viewerState.kind === "signedIn" ? viewerState.viewer.fullName : "Employer"}
+      userName={viewerState.kind === "signedIn" ? viewerState.viewer.displayName : "Employer"}
       userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
       onLogout={() => {
         void signOutAndRedirectHome();
@@ -168,6 +168,7 @@ const EmployerQuotationRequest = () => {
             disabled={isLoading}
             isSubmitting={isSubmitting}
             submitLabel="Submit"
+            toSectionHint="Enter your company details."
             onSubmit={(ev) => void handleSubmit(ev)}
           />
         </div>

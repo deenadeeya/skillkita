@@ -33,7 +33,12 @@ export function notificationHref(row: UserNotificationRow, role: Viewer["role"])
   }
 
   if (row.kind === "quotation_request_new" || row.kind === "quotation_request_reviewed") {
-    return role === "admin" ? "/admin/quotations" : "/employer/quotation";
+    if (role === "admin") {
+      return row.kind === "quotation_request_new" && row.quotation_request_id
+        ? `/admin/quotations/review/${row.quotation_request_id}`
+        : "/admin/quotations";
+    }
+    return "/employer/quotation";
   }
 
   if (row.kind === "document_submission_new") {

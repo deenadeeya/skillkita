@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { AdminCoursesPanel } from "../../features/courses/components/AdminCoursesPanel";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { createSignedUrlForPath } from "../../features/courses/storage/coursePrivateStorage";
 import type { CoursePrivatePaths } from "../../features/courses/api/privateFilesApi";
@@ -130,7 +131,7 @@ const AdminManageCourses = () => {
 
       const { data: profileRow, error: profileError } = await supabase
         .from("user_profiles")
-        .select("user_id,role,status,full_name")
+        .select("user_id,role,status,full_name,short_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -151,7 +152,9 @@ const AdminManageCourses = () => {
       }
 
       window.localStorage.setItem("skillkita-role", "admin");
-      setAdminName((profileRow as { full_name?: string }).full_name ?? "Admin");
+      setAdminName(
+        getProfileDisplayName(profileRow as { full_name: string; short_name?: string | null }, "Admin")
+      );
       setIsAuthorized(true);
       setIsAuthChecking(false);
     };

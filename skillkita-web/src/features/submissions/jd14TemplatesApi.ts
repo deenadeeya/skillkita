@@ -3,7 +3,7 @@ import type { Jd14SubmissionTemplateRow } from "./types";
 
 /** Shown when PostgREST has no jd14_submission_templates (migration not applied or wrong Supabase project). */
 export const JD14_TEMPLATES_DEPLOY_MESSAGE =
-  "Supabase does not expose jd14_submission_templates yet. Open the Supabase project that matches skillkita-web/.env (VITE_SUPABASE_URL), run SQL from skillkita-web/supabase/migrations/20260514120000_jd14_submission_templates.sql (or the JD14 block at the end of supabase/employer_document_submissions.sql), then run: NOTIFY pgrst, 'reload schema'; For CLI: from skillkita-web run `npx supabase link` once, then `npx supabase db push`. Without link, use the Dashboard SQL Editor instead of db push.";
+  "Supabase does not expose jd14_submission_templates yet. Open the Supabase project that matches skillkita-web/.env (VITE_SUPABASE_URL), then apply migrations through 20260501000007_employer_submissions.sql (see supabase/README.md). For CLI: from skillkita-web run `npx supabase link` once, then `npx supabase db push`. Without link, use the Dashboard SQL Editor instead of db push.";
 
 export function isJd14TemplatesMissingFromApi(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;

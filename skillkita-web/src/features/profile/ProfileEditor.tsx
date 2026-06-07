@@ -1,6 +1,8 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "../../shared/api/supabaseClient";
 import { hideImageOnError } from "../../shared/ui/hideImageOnError";
+import { getProfileDisplayName, getProfileInitials } from "./displayName";
 import { uploadProfilePic } from "./profilePicStorage";
 import type { UserProfileRow } from "./types";
 
@@ -31,12 +33,14 @@ const ProfileEditor = ({ expectedRole }: Props) => {
   const showPhone = expectedRole === "employer";
 
   const initials = useMemo(() => {
-    const base = (shortName || fullName || "—").trim();
-    const parts = base.split(/\s+/).filter(Boolean);
-    const a = parts[0]?.[0] ?? "—";
-    const b = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-    return (a + b).toUpperCase();
-  }, [fullName, shortName]);
+    if (!profile) return "—";
+    return getProfileInitials(profile);
+  }, [profile]);
+
+  const displayName = useMemo(() => {
+    if (!profile) return expectedRole === "admin" ? "Admin" : "Employer";
+    return getProfileDisplayName(profile, expectedRole === "admin" ? "Admin" : "Employer");
+  }, [profile, expectedRole]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -181,7 +185,7 @@ const ProfileEditor = ({ expectedRole }: Props) => {
             )}
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-primary">My profile</h2>
+            <h2 className="text-2xl font-bold text-primary">{displayName}</h2>
             <p className="mt-1 text-sm text-ink-muted">
               Role: <span className="font-semibold capitalize">{expectedRole}</span>
             </p>

@@ -35,7 +35,6 @@ const BRAND = {
   ],
   tel: "016-5825825",
   email: "tawauresourceskillscentre@gmail.com",
-  accountCodeDefault: "TD-B004",
 };
 
 const COLOR = {
@@ -126,8 +125,11 @@ function ringgitToWords(amount: number | null | undefined): string {
 }
 
 function textValue(doc: jsPDF, text: string, x: number, y: number, opts?: Parameters<jsPDF["text"]>[3]) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const value = text == null ? "" : String(text);
+  if (!value) return;
   setColor(doc, COLOR.black);
-  doc.text(text, x, y, opts as any);
+  doc.text(value, x, y, opts as any);
 }
 
 /** Vertical layout for footer (amount in words, total, signatures). */
@@ -246,9 +248,8 @@ export async function buildQuotationPdfBlob(
     const addrLines = doc.splitTextToSize(addr, 85);
     textValue(doc, addrLines.join("\n"), leftX + 10, toY + 4.8);
   }
-  doc.text("A/C Code :", rightX - 55, toY);
+
   doc.setFont("times", "bold");
-  textValue(doc, meta.account_code ?? BRAND.accountCodeDefault, rightX - 25, toY);
   doc.setFont("times", "normal");
 
   // Table frame
@@ -259,9 +260,9 @@ export async function buildQuotationPdfBlob(
   const col = {
     item: tableLeft + tableW * 0.0,
     desc: tableLeft + tableW * 0.10,
-    qtyUnit: tableLeft + tableW * 0.74,
-    uprice: tableLeft + tableW * 0.88,
-    amount: tableRight,
+    qtyUnit: tableLeft + tableW * 0.58,
+    uprice: tableLeft + tableW * 0.72,
+    amount: tableLeft + tableW * 0.88,
   };
 
   doc.setLineWidth(0.25);
@@ -272,9 +273,9 @@ export async function buildQuotationPdfBlob(
   doc.setFontSize(9);
   doc.text("ITEM", col.item, tableTop + 4.8);
   doc.text("DESCRIPTION", col.desc, tableTop + 4.8);
-  doc.text("QTY Unit", col.qtyUnit, tableTop + 4.8, { align: "right" });
-  doc.text("U*PRICE", col.uprice, tableTop + 4.8, { align: "right" });
-  doc.text("AMOUNT(RM)", col.amount, tableTop + 4.8, { align: "right" });
+  doc.text("PAX", col.qtyUnit, tableTop + 4.8, { align: "center" });
+  doc.text("UNIT PRICE", col.uprice, tableTop + 4.8, { align: "center" });
+  doc.text("AMOUNT(RM)", col.amount, tableTop + 4.8, { align: "center" });
 
   doc.setFont("times", "normal");
   doc.setFontSize(9);
@@ -301,7 +302,7 @@ export async function buildQuotationPdfBlob(
     textValue(doc, locLines.join("\n"), col.desc, descY);
   }
 
-  textValue(doc, `${data.number_of_employers} pax`, col.qtyUnit, rowY, { align: "right" });
+  textValue(doc, String(data.number_of_employers), col.qtyUnit, rowY, { align: "right" });
   const uPrice = formatMoney(data.unit_price);
   const amt = formatMoney(data.amount_rm);
   if (uPrice) textValue(doc, uPrice, col.uprice, rowY, { align: "right" });

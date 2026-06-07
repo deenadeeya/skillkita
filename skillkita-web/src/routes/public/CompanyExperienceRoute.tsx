@@ -18,6 +18,7 @@ import {
   type ExperienceFormState,
 } from "../../features/landing/components/ExperienceUpsertForm";
 import { ExperienceShowcaseCard } from "../../features/landing/components/ExperienceShowcaseCard";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 
 const initialExperienceForm: ExperienceFormState = {
   name: "",
@@ -79,7 +80,7 @@ const CompanyExperience = () => {
           setViewerEmail(user.email ?? null);
           const { data: profileRow } = await supabase
             .from("user_profiles")
-            .select("role,status,full_name,profile_pic_url")
+            .select("role,status,full_name,short_name,profile_pic_url")
             .eq("user_id", user.id)
             .maybeSingle();
 
@@ -88,15 +89,16 @@ const CompanyExperience = () => {
               role: "admin" | "employer";
               status: string;
               full_name?: string;
+              short_name?: string | null;
               profile_pic_url?: string | null;
             };
             setProfilePicUrl(normalizeSupabaseStorageUrl(r.profile_pic_url ?? null));
             if (r.role === "admin") {
               setViewerRole("admin");
-              setViewerName(r.full_name ?? "Admin");
+              setViewerName(getProfileDisplayName(r, "Admin"));
             } else if (r.role === "employer" && r.status !== "rejected") {
               setViewerRole("employer");
-              setViewerName(r.full_name ?? "Employer");
+              setViewerName(getProfileDisplayName(r, "Employer"));
             } else {
               setViewerRole(null);
             }

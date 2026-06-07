@@ -87,7 +87,7 @@ const Login = () => {
 
       if (profileError) {
         throw new Error(
-          `Profile lookup failed: ${profileError.message}. Did you run supabase/auth_roles_setup.sql?`
+          `Profile lookup failed: ${profileError.message}. Did you run supabase migrations? See supabase/README.md.`
         );
       }
 

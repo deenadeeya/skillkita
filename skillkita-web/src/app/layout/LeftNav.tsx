@@ -103,9 +103,27 @@ const LeftNav = ({
     <aside className="flex h-full w-full flex-col bg-white">
       <nav className="flex-1 overflow-auto px-3 py-4">
         {items.map((cat) => {
+          const hasChildren = (cat.children?.length ?? 0) > 0;
+          const CatIcon = cat.icon;
+
+          if (!hasChildren && cat.href) {
+            const active = isLinkActive(cat.href, currentPath);
+            return (
+              <div key={cat.label} className="mb-1">
+                <a
+                  href={cat.href}
+                  className={linkClass(active)}
+                  onClick={onNavigate}
+                >
+                  {CatIcon && <CatIcon className={linkIconClass(active)} />}
+                  {cat.label}
+                </a>
+              </div>
+            );
+          }
+
           const open = openByLabel[cat.label] ?? false;
           const active = isItemActive(cat, currentPath);
-          const CatIcon = cat.icon;
 
           return (
             <div key={cat.label} className="mb-1">

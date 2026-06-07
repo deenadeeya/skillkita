@@ -31,28 +31,19 @@ export function EmployerQuotationRequestsTable({
 
   return (
     <section className="sk-card mt-6 overflow-hidden p-0">
-      <div className="border-b border-black/10 bg-primary/5 px-6 py-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-primary">Quotation Application History</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              {rows.length} request{rows.length === 1 ? "" : "s"}
-              {!isLoading && rows.length > 0 && (
-                <>
-                  {" "}
-                  · {pendingCount} pending · {approvedCount} approved · {rejectedCount} rejected
-                </>
-              )}
-            </p>
-            <p className="mt-1 text-sm text-ink-muted">
-              After admin approves your request, download your quotation or invoice PDF from the actions
-              column.
-            </p>
-          </div>
-          <a href={requestHref} className="sk-button-primary shrink-0 px-4 py-2 text-sm no-underline">
-            Request a Quotation
-          </a>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 bg-primary/5 px-6 py-4">
+        <p className="text-sm text-ink-muted">
+          {rows.length} request{rows.length === 1 ? "" : "s"}
+          {!isLoading && rows.length > 0 && (
+            <>
+              {" "}
+              · {pendingCount} pending · {approvedCount} approved · {rejectedCount} rejected
+            </>
+          )}
+        </p>
+        <a href={requestHref} className="sk-button-primary shrink-0 px-4 py-2 text-sm no-underline">
+          Request a Quotation
+        </a>
       </div>
 
       <div className="p-6">
@@ -75,8 +66,7 @@ export function EmployerQuotationRequestsTable({
                 <tbody>
                   {rows.map((row) => {
                     const busy = downloadId === row.id || invoiceDownloadId === row.id;
-                    const canDownloadQuotation =
-                      row.status === "approved" && !!row.pdf_storage_path;
+                    const canDownloadQuotation = canDownloadInvoicePdf(row);
                     const canDownloadInvoice = canDownloadInvoicePdf(row);
 
                     return (

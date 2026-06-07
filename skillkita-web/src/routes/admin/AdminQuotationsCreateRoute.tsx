@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import { listVisibleCourses } from "../../features/courses/api/coursesApi";
+import { parseCoursePriceRm } from "../../features/courses/parseCoursePrice";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
+import { lookupCourseUnitPriceByName } from "../../features/quotation/coursePriceLookup";
 import { uploadQuotationPdf } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { AdminCreateQuotationForm } from "../../features/quotation/components/AdminCreateQuotationForm";
@@ -30,7 +32,7 @@ const emptyFormValues = (): QuotationFormValues => ({
   courseName: "",
   selectedCourseId: "",
   courseMode: "",
-  pricePerPax: "",
+  numberOfParticipants: "",
   courseLocationAddress: "",
   courseDate: "",
   additionalDescription: "",
@@ -69,6 +71,7 @@ const AdminCreateQuotation = () => {
           name: c.name,
           date: c.date,
           poster_url: c.poster_url,
+          price: c.price,
         }))
       );
     } catch (e) {
@@ -80,7 +83,7 @@ const AdminCreateQuotation = () => {
   useEffect(() => {
     if (viewerState.kind === "signedIn") {
       setAdminEmail(viewerState.viewer.email);
-      setAdminName(viewerState.viewer.fullName || "Admin");
+      setAdminName(viewerState.viewer.displayName || "Admin");
     }
   }, [viewerState]);
 
@@ -135,9 +138,14 @@ const AdminCreateQuotation = () => {
     setErrorMessage(null);
 
     const resolvedTo = resolveQuotationTo(formValues, profileCompanyName, profileCompanyAddress);
-    const unit = parseFloat(formValues.pricePerPax);
-    const participants = 1;
-    const amount = unit * participants;
+    const participants = parseInt(formValues.numberOfParticipants, 10);
+
+    const selectedCourse =
+      courseOptions.find((c) => c.id === formValues.selectedCourseId) ?? null;
+    let unit = selectedCourse ? parseCoursePriceRm(selectedCourse.price) : null;
+    if (unit == null && formValues.courseName.trim()) {
+      unit = await lookupCourseUnitPriceByName(formValues.courseName.trim());
+    }
 
     const manualEmployerName = createManualEmployerName.trim();
     const hasEmployer =
@@ -148,16 +156,19 @@ const AdminCreateQuotation = () => {
       !resolvedTo.companyName ||
       !formValues.courseName.trim() ||
       !isQuotationCourseMode(formValues.courseMode) ||
-      !Number.isFinite(unit) ||
-      unit < 0 ||
+      !Number.isFinite(participants) ||
+      participants < 1 ||
+      unit == null ||
       !formValues.courseLocationAddress.trim() ||
       !formValues.courseDate
     ) {
       setErrorMessage(
-        "Fill employer (or manual employer name), To (company name), course name, course mode, price per pax, course location address, and course date."
+        "Fill employer (or manual employer name), To (company name), course name, course mode, number of participants, course location address, and course date. The course must have a catalog price (Manage Course)."
       );
       return;
     }
+
+    const amount = unit * participants;
 
     setIsSaving(true);
     try {

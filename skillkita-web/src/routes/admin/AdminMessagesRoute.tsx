@@ -3,6 +3,7 @@ import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
+import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
@@ -11,6 +12,7 @@ type ProfileRow = {
   role: "admin" | "employer";
   status: "pending" | "approved" | "rejected";
   full_name: string;
+  short_name: string | null;
   company_name: string | null;
 };
 
@@ -97,7 +99,7 @@ const AdminMessages = () => {
 
     const { data: profileRow, error: profileError } = await supabase
       .from("user_profiles")
-      .select("user_id,role,status,full_name,company_name")
+      .select("user_id,role,status,full_name,short_name,company_name")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -168,7 +170,7 @@ const AdminMessages = () => {
   return (
     <DashboardLayout
       items={adminNavItems}
-      userName={adminProfile?.full_name ?? "Admin"}
+      userName={adminProfile ? getProfileDisplayName(adminProfile, "Admin") : "Admin"}
       userEmail={adminEmail}
       onLogout={async () => {
         await supabase.auth.signOut();
@@ -180,7 +182,7 @@ const AdminMessages = () => {
         <DashboardPageHeader
           className="flex-1"
           title="Messages"
-          subtitle={`${adminProfile ? `Welcome, ${adminProfile.full_name}. ` : ""}${
+          subtitle={`${adminProfile ? `Welcome, ${getProfileDisplayName(adminProfile, "Admin")}. ` : ""}${
             inChatView
               ? "You're in a chat with an employer."
               : "Pick a conversation from your inbox to reply."

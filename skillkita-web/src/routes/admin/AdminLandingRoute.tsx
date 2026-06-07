@@ -66,7 +66,7 @@ const AdminLandingEditor = () => {
   useEffect(() => {
     if (viewerState.kind === "signedIn") {
       setAdminEmail(viewerState.viewer.email);
-      setAdminName(viewerState.viewer.fullName || "Admin");
+      setAdminName(viewerState.viewer.displayName || "Admin");
     }
   }, [viewerState]);
 

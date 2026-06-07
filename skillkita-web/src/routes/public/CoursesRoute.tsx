@@ -35,12 +35,12 @@ const ViewCourses = () => {
       setViewerEmail(viewerState.viewer.email);
       if (viewerState.viewer.role === "admin") {
         setViewerRole("admin");
-        setViewerName(viewerState.viewer.fullName || "Admin");
+        setViewerName(viewerState.viewer.displayName || "Admin");
         return;
       }
       if (viewerState.viewer.role === "employer" && viewerState.viewer.status !== "rejected") {
         setViewerRole("employer");
-        setViewerName(viewerState.viewer.fullName || "Employer");
+        setViewerName(viewerState.viewer.displayName || "Employer");
         return;
       }
     }

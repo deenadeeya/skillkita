@@ -19,6 +19,7 @@ const AdminMessages = lazy(() => import("./admin/AdminMessagesRoute"));
 const AdminProfile = lazy(() => import("./admin/AdminProfileRoute"));
 const AdminCreateQuotation = lazy(() => import("./admin/AdminQuotationsCreateRoute"));
 const AdminQuotations = lazy(() => import("./admin/AdminQuotationsRoute"));
+const AdminQuotationReview = lazy(() => import("./admin/AdminQuotationReviewRoute"));
 const AdminUsers = lazy(() => import("./admin/AdminUsersRoute"));
 const AdminJd14Route = lazy(() => import("./admin/AdminJd14Route"));
 const AdminPaymentReceiptsRoute = lazy(() => import("./admin/AdminPaymentReceiptsRoute"));
@@ -99,6 +100,14 @@ export default function AppRouter() {
               element={
                 <RequireRole role="admin" denied={<AccessDenied />}>
                   <AdminQuotations />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/quotations/review/:id"
+              element={
+                <RequireRole role="admin" denied={<AccessDenied />}>
+                  <AdminQuotationReview />
                 </RequireRole>
               }
             />
