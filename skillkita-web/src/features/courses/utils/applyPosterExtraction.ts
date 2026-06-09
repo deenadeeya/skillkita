@@ -1,3 +1,5 @@
+import { formatCoursePriceRm, parseCoursePriceRm } from "../parseCoursePrice";
+
 export type PosterExtractedFields = {
   name: string;
   date: string;
@@ -25,6 +27,11 @@ export type CourseFormSlice = {
   syllabus: string;
   details: string;
 };
+
+function normalizeExtractedPriceForForm(raw: string): string {
+  const parsed = parseCoursePriceRm(raw);
+  return parsed != null ? formatCoursePriceRm(parsed) : "";
+}
 
 function buildDetailsFromExtraction(fields: PosterExtractedFields): string {
   const lines: string[] = [];
@@ -55,7 +62,12 @@ export function mergePosterExtractionIntoForm<T extends CourseFormSlice>(
   prev: T,
   extracted: PosterExtractedFields
 ): T {
-  const detailsBlock = buildDetailsFromExtraction(extracted);
+  const normalizedPrice = normalizeExtractedPriceForForm(extracted.price);
+  const fieldsForDetails: PosterExtractedFields = {
+    ...extracted,
+    price: normalizedPrice || extracted.price,
+  };
+  const detailsBlock = buildDetailsFromExtraction(fieldsForDetails);
   const nextDetails = prev.details.trim()
     ? detailsBlock
       ? `${prev.details.trim()}\n\n${detailsBlock}`
@@ -72,7 +84,7 @@ export function mergePosterExtractionIntoForm<T extends CourseFormSlice>(
     time: prev.time.trim() ? prev.time : extracted.time || prev.time,
     venue: prev.venue.trim() ? prev.venue : extracted.venue || prev.venue,
     mycoid: prev.mycoid.trim() ? prev.mycoid : extracted.mycoid || prev.mycoid,
-    price: prev.price.trim() ? prev.price : extracted.price || prev.price,
+    price: prev.price.trim() ? prev.price : normalizedPrice || prev.price,
     contactPerson: prev.contactPerson.trim()
       ? prev.contactPerson
       : extracted.contactPerson || prev.contactPerson,

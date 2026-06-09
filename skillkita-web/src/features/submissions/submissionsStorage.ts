@@ -28,8 +28,14 @@ export async function uploadEmployerSubmissionFile(
   return path;
 }
 
-export async function getSubmissionFileSignedUrl(storagePath: string, expiresSeconds = 3600) {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, expiresSeconds);
+export async function getSubmissionFileSignedUrl(
+  storagePath: string,
+  expiresSeconds = 3600,
+  options?: { download?: string }
+) {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, expiresSeconds, options?.download ? { download: options.download } : undefined);
   if (error) throw new Error(error.message);
   if (!data?.signedUrl) throw new Error("Could not create download link.");
   return data.signedUrl;

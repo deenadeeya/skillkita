@@ -37,6 +37,7 @@ export function DocumentSubmissionEmployerPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openingPath, setOpeningPath] = useState<string | null>(null);
+  const [downloadingPath, setDownloadingPath] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setErrorMessage(null);
@@ -64,6 +65,26 @@ export function DocumentSubmissionEmployerPage({
       setErrorMessage(e instanceof Error ? e.message : "Could not open file.");
     } finally {
       setOpeningPath(null);
+    }
+  };
+
+  const downloadFile = async (path: string) => {
+    setDownloadingPath(path);
+    setErrorMessage(null);
+    try {
+      const fileName = path.split("/").pop() ?? "submission";
+      const url = await getSubmissionFileSignedUrl(path, 3600, { download: fileName });
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      anchor.rel = "noopener noreferrer";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Could not download file.");
+    } finally {
+      setDownloadingPath(null);
     }
   };
 
@@ -225,14 +246,24 @@ export function DocumentSubmissionEmployerPage({
                         </p>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className="sk-button-secondary shrink-0 px-3 py-2 text-sm"
-                      disabled={openingPath === r.file_storage_path}
-                      onClick={() => void openFile(r.file_storage_path)}
-                    >
-                      {openingPath === r.file_storage_path ? "Opening…" : "View file"}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="sk-button-secondary shrink-0 px-3 py-2 text-sm"
+                        disabled={openingPath === r.file_storage_path}
+                        onClick={() => void openFile(r.file_storage_path)}
+                      >
+                        {openingPath === r.file_storage_path ? "Opening…" : "View file"}
+                      </button>
+                      <button
+                        type="button"
+                        className="sk-button-secondary shrink-0 px-3 py-2 text-sm"
+                        disabled={downloadingPath === r.file_storage_path}
+                        onClick={() => void downloadFile(r.file_storage_path)}
+                      >
+                        {downloadingPath === r.file_storage_path ? "Downloading…" : "Download"}
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}

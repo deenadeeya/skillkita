@@ -1,5 +1,5 @@
 import type { ChangeEvent, FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../app/layout/navItems";
 import {
@@ -140,6 +140,7 @@ export default function AdminCreateCourse() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const formBeforePosterExtractRef = useRef<CourseFormState | null>(null);
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -413,7 +414,10 @@ export default function AdminCreateCourse() {
         progressPct: 95,
       });
 
-      setForm((prev) => mergePosterExtractionIntoForm(prev, extracted));
+      setForm((prev) => {
+        formBeforePosterExtractRef.current = { ...prev };
+        return mergePosterExtractionIntoForm(prev, extracted);
+      });
 
       setExtractState({
         status: "done",
@@ -542,7 +546,13 @@ export default function AdminCreateCourse() {
                   }}
                   canRunAutoFill={Boolean(selectedPosterFile && isImagePoster(selectedPosterFile))}
                   onRunAutoFill={() => void runPosterAutoFill()}
-                  onClearExtract={() => setExtractState({ status: "idle" })}
+                  onClearExtract={() => {
+                    if (formBeforePosterExtractRef.current) {
+                      setForm(formBeforePosterExtractRef.current);
+                      formBeforePosterExtractRef.current = null;
+                    }
+                    setExtractState({ status: "idle" });
+                  }}
                 />
               }
               form={form}

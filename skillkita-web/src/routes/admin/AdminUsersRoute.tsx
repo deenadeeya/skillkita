@@ -4,10 +4,12 @@ import { adminNavItems } from "../../app/layout/navItems";
 import { uploadProfilePic } from "../../features/profile/profilePicStorage";
 import {
   createAdminAuthUser,
+  createEmployerAccount,
+  deleteEmployerAccount,
   listUserProfiles,
   promoteProfileToAdmin,
   setAdminActiveStatus,
-  setEmployerApproval,
+  setEmployerActiveStatus,
   updateEmployerProfile,
   type ProfileRow,
 } from "../../features/users/api/adminUsersApi";
@@ -34,6 +36,27 @@ function canDeactivateAdmin(target: ProfileRow, viewerId: string | null, admins:
   return countActiveAdmins(admins) > 1;
 }
 
+type UserTabId = "employers" | "admins";
+
+function matchesProfileSearch(profile: ProfileRow, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+
+  const haystack = [
+    profile.full_name,
+    profile.short_name,
+    profile.email,
+    profile.company_name,
+    profile.company_address,
+    profile.phone,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(q);
+}
+
 type EmployerEditDraft = {
   userId: string;
   fullName: string;
@@ -41,6 +64,7 @@ type EmployerEditDraft = {
   companyName: string;
   companyAddress: string;
   phone: string;
+  email: string;
   pendingPic: File | null;
 };
 
@@ -53,17 +77,30 @@ const AdminUsers = () => {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const viewerState = useViewer();
 
-  const pendingEmployers = useMemo(
-    () => profiles.filter((p) => p.role === "employer" && p.status === "pending"),
+  const managedEmployers = useMemo(
+    () => profiles.filter((p) => p.role === "employer"),
     [profiles]
   );
 
-  const existingEmployers = useMemo(
-    () => profiles.filter((p) => p.role === "employer" && p.status === "approved"),
-    [profiles]
+  const activeEmployerCount = useMemo(
+    () => managedEmployers.filter((p) => p.status === "approved").length,
+    [managedEmployers]
   );
 
   const admins = useMemo(() => profiles.filter((p) => p.role === "admin"), [profiles]);
+
+  const [activeTab, setActiveTab] = useState<UserTabId>("employers");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredEmployers = useMemo(
+    () => managedEmployers.filter((p) => matchesProfileSearch(p, searchQuery)),
+    [managedEmployers, searchQuery]
+  );
+
+  const filteredAdmins = useMemo(
+    () => admins.filter((p) => matchesProfileSearch(p, searchQuery)),
+    [admins, searchQuery]
+  );
 
   const [newAdminFullName, setNewAdminFullName] = useState("");
   const [newAdminEmail, setNewAdminEmail] = useState("");
@@ -75,6 +112,15 @@ const AdminUsers = () => {
 
   const [employerEdit, setEmployerEdit] = useState<EmployerEditDraft | null>(null);
   const [employerEditSuccess, setEmployerEditSuccess] = useState<string | null>(null);
+  const [employerActionSuccess, setEmployerActionSuccess] = useState<string | null>(null);
+
+  const [newEmployerFullName, setNewEmployerFullName] = useState("");
+  const [newEmployerEmail, setNewEmployerEmail] = useState("");
+  const [newEmployerPassword, setNewEmployerPassword] = useState("");
+  const [newEmployerCompanyName, setNewEmployerCompanyName] = useState("");
+  const [newEmployerCompanyAddress, setNewEmployerCompanyAddress] = useState("");
+  const [newEmployerPhone, setNewEmployerPhone] = useState("");
+  const [newEmployerSuccess, setNewEmployerSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -101,23 +147,6 @@ const AdminUsers = () => {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const setEmployerStatus = async (userId: string, status: "approved" | "rejected") => {
-    setIsSaving(true);
-    setErrorMessage(null);
-    setNewAdminSuccess(null);
-    setAdminActionSuccess(null);
-
-    try {
-      const adminId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
-      await setEmployerApproval({ userId, status, approvedBy: adminId });
-      await load();
-      setIsSaving(false);
-    } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Failed to update employer status.");
-      setIsSaving(false);
-    }
-  };
 
   const createAdmin = async () => {
     setIsSaving(true);
@@ -146,6 +175,7 @@ const AdminUsers = () => {
       setNewAdminFullName("");
       setNewAdminEmail("");
       setNewAdminPassword("");
+      setActiveTab("admins");
       await load();
       setIsSaving(false);
     } catch (e) {
@@ -200,6 +230,110 @@ const AdminUsers = () => {
     }
   };
 
+  const createEmployer = async () => {
+    setIsSaving(true);
+    setErrorMessage(null);
+    setNewEmployerSuccess(null);
+    setEmployerActionSuccess(null);
+
+    const fullName = newEmployerFullName.trim();
+    const email = newEmployerEmail.trim();
+    const password = newEmployerPassword;
+
+    if (!fullName || !email || !password) {
+      setErrorMessage("Please provide full name, email, and password.");
+      setIsSaving(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      const result = await createEmployerAccount({
+        fullName,
+        password,
+        email,
+        companyName: newEmployerCompanyName.trim() || null,
+        companyAddress: newEmployerCompanyAddress.trim() || null,
+        phone: newEmployerPhone.trim() || null,
+      });
+
+      setNewEmployerSuccess(result.message);
+      setNewEmployerFullName("");
+      setNewEmployerEmail("");
+      setNewEmployerPassword("");
+      setNewEmployerCompanyName("");
+      setNewEmployerCompanyAddress("");
+      setNewEmployerPhone("");
+      await load();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to create employer.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const setManagedEmployerStatus = async (target: ProfileRow, active: boolean) => {
+    const label = active ? "reactivate" : "deactivate";
+    const ok = window.confirm(
+      active
+        ? `Reactivate employer access for ${target.full_name}?`
+        : `Deactivate ${target.full_name}? They will not be able to sign in or use employer tools.`
+    );
+    if (!ok) return;
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    setEmployerActionSuccess(null);
+    setNewEmployerSuccess(null);
+
+    try {
+      const adminId = viewerState.kind === "signedIn" ? viewerState.viewer.userId : null;
+      await setEmployerActiveStatus({
+        userId: target.user_id,
+        active,
+        approvedBy: adminId,
+      });
+      setEmployerActionSuccess(
+        active
+          ? `${target.full_name} can access employer tools again.`
+          : `${target.full_name} has been deactivated.`
+      );
+      await load();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : `Failed to ${label} employer.`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const removeEmployer = async (target: ProfileRow) => {
+    const ok = window.confirm(
+      `Permanently delete ${target.full_name}? This removes their account and cannot be undone.`
+    );
+    if (!ok) return;
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    setEmployerActionSuccess(null);
+    setNewEmployerSuccess(null);
+
+    try {
+      const result = await deleteEmployerAccount(target.user_id);
+      if (employerEdit?.userId === target.user_id) setEmployerEdit(null);
+      setEmployerActionSuccess(result.message);
+      await load();
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Failed to delete employer.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const openEmployerEdit = (p: ProfileRow) => {
     setEmployerEditSuccess(null);
     setEmployerEdit({
@@ -209,6 +343,7 @@ const AdminUsers = () => {
       companyName: p.company_name ?? "",
       companyAddress: p.company_address ?? "",
       phone: p.phone ?? "",
+      email: p.email ?? "",
       pendingPic: null,
     });
   };
@@ -233,6 +368,7 @@ const AdminUsers = () => {
         companyName: employerEdit.companyName.trim() ? employerEdit.companyName.trim() : null,
         companyAddress: employerEdit.companyAddress.trim() ? employerEdit.companyAddress.trim() : null,
         phone: employerEdit.phone.trim() ? employerEdit.phone.trim() : null,
+        email: employerEdit.email.trim() ? employerEdit.email.trim() : null,
         profilePicUrl,
       });
 
@@ -260,96 +396,193 @@ const AdminUsers = () => {
       <AdminPageFrame
         title="Manage Users"
         headerVariant="hero"
-        subtitle="Approve employers, manage admins, or create new admin accounts."
+        subtitle="Create and manage employer and admin accounts."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn"}
       >
-        {adminActionSuccess && (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-            {adminActionSuccess}
-          </div>
-        )}
-
-        {newAdminSuccess && (
-          <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-            {newAdminSuccess}
-          </div>
-        )}
-
-        <section className="sk-card mt-10 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-primary">Pending Employer</h2>
-            <p className="text-sm font-semibold text-primary">{pendingEmployers.length} pending</p>
-          </div>
-          <p className="mt-2 text-sm text-ink">Admin can reject or approve the new users.</p>
-
-          <div className="mt-5 space-y-3">
-            {isLoading && (
-              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
-                Loading users...
-              </p>
-            )}
-
-            {!isLoading && pendingEmployers.length === 0 && (
-              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
-                No pending requests.
-              </p>
-            )}
-
-            {pendingEmployers.map((p) => (
-              <article key={p.user_id} className="rounded-xl border border-black/10 p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
-                    <p className="mt-1 text-sm text-ink-muted">
-                      Company: {p.company_name ?? "—"} · Phone: {p.phone ?? "—"}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-primary">
-                      Requested: {new Date(p.created_at).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => void setEmployerStatus(p.user_id, "approved")}
-                      className="sk-button-primary px-3 py-2"
+        <section className="sk-card mt-10 overflow-hidden">
+          <nav
+            className="border-b border-black/10 bg-white/60 p-2 md:p-3"
+            aria-label="User types"
+            role="tablist"
+          >
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { id: "employers" as const, label: "Employers", count: managedEmployers.length },
+                  { id: "admins" as const, label: "Admins", count: admins.length },
+                ] as const
+              ).map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={`users-tab-${tab.id}`}
+                    aria-selected={isActive}
+                    aria-controls={`users-panel-${tab.id}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={[
+                      "rounded-xl px-4 py-2.5 text-sm font-semibold transition",
+                      isActive
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-ink hover:bg-primary/5 hover:text-primary",
+                    ].join(" ")}
+                  >
+                    {tab.label}
+                    <span
+                      className={[
+                        "ml-2 rounded-full px-2 py-0.5 text-xs",
+                        isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary",
+                      ].join(" ")}
                     >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => void setEmployerStatus(p.user_id, "rejected")}
-                      className="sk-button-secondary px-3 py-2"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="sk-card mt-8 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-primary">Employers</h2>
-            <p className="text-sm font-semibold text-primary">
-              {existingEmployers.length} employers
-            </p>
-          </div>
-          <p className="mt-2 text-sm text-ink">
-            Company contact details and profile photo. Use Edit to update an employer&apos;s profile.
-          </p>
-
-          {employerEditSuccess && (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-              {employerEditSuccess}
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </nav>
+
+          {activeTab === "employers" && (
+            <div
+              id="users-panel-employers"
+              role="tabpanel"
+              aria-labelledby="users-tab-employers"
+              className="p-6"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-primary">Employers</h2>
+                  <p className="mt-1 text-sm text-ink">
+                    {activeEmployerCount} active · {managedEmployers.length} total
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 text-sm text-ink">
+                Create employer accounts, update profiles, deactivate access, or permanently delete
+                an account.
+              </p>
+
+              <div className="mt-4">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, email, company, or phone..."
+                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-sm text-ink outline-none focus:border-primary"
+                />
+                <p className="mt-2 text-xs font-semibold text-ink-muted">
+                  Showing {filteredEmployers.length} of {managedEmployers.length}
+                </p>
+              </div>
+
+              {employerActionSuccess && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                  {employerActionSuccess}
+                </div>
+              )}
+
+              {newEmployerSuccess && (
+                <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                  {newEmployerSuccess}
+                </div>
+              )}
+
+              {employerEditSuccess && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                  {employerEditSuccess}
+                </div>
+              )}
+
+              <div className="mt-4 rounded-xl border border-black/10 bg-white/60 p-5">
+            <h3 className="text-lg font-bold text-primary">Create New Employer</h3>
+            <p className="mt-2 text-sm text-ink">
+              Create employer accounts with full name, email, and password so they can sign in and use
+              employer tools.
+            </p>
+
+            <form
+              className="mt-4 grid gap-3 md:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void createEmployer();
+              }}
+            >
+              <label className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-sm font-semibold text-ink">Full name</span>
+                <input
+                  value={newEmployerFullName}
+                  onChange={(e) => setNewEmployerFullName(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                  placeholder="e.g. Ahmad Rahman"
+                  autoComplete="name"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-ink">Email</span>
+                <input
+                  value={newEmployerEmail}
+                  onChange={(e) => setNewEmployerEmail(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                  placeholder="employer@company.com"
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-ink">Password</span>
+                <input
+                  value={newEmployerPassword}
+                  onChange={(e) => setNewEmployerPassword(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                  placeholder="Minimum 6 characters"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-ink">Company name</span>
+                <input
+                  value={newEmployerCompanyName}
+                  onChange={(e) => setNewEmployerCompanyName(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-ink">Phone</span>
+                <input
+                  value={newEmployerPhone}
+                  onChange={(e) => setNewEmployerPhone(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 md:col-span-2">
+                <span className="text-sm font-semibold text-ink">Company address</span>
+                <textarea
+                  value={newEmployerCompanyAddress}
+                  onChange={(e) => setNewEmployerCompanyAddress(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                />
+              </label>
+
+              <div className="md:col-span-2">
+                <button type="submit" disabled={isSaving} className="sk-button-primary px-4 py-2">
+                  {isSaving ? "Saving…" : "Create employer"}
+                </button>
+              </div>
+            </form>
+          </div>
 
           <div className="mt-5 space-y-3">
             {isLoading && (
@@ -358,16 +591,23 @@ const AdminUsers = () => {
               </p>
             )}
 
-            {!isLoading && existingEmployers.length === 0 && (
+            {!isLoading && managedEmployers.length === 0 && (
               <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
-                No approved employers found.
+                No employer accounts yet.
+              </p>
+            )}
+
+            {!isLoading && managedEmployers.length > 0 && filteredEmployers.length === 0 && (
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
+                No employers match your search.
               </p>
             )}
 
             {!isLoading &&
-              existingEmployers.map((p) => {
+              filteredEmployers.map((p) => {
                 const isEditing = employerEdit?.userId === p.user_id;
                 const initials = profileInitials(p.full_name, p.short_name);
+                const isActive = p.status === "approved";
 
                 return (
                   <article key={p.user_id} className="rounded-xl border border-black/10 p-4">
@@ -388,7 +628,18 @@ const AdminUsers = () => {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-bold text-ink">{p.full_name}</h3>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                isActive
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-900"
+                              }`}
+                            >
+                              {isActive ? "Active" : "Deactivated"}
+                            </span>
+                          </div>
                           <p className="mt-1 text-sm text-ink-muted">
                             Company:{" "}
                             <span className="font-semibold text-primary">{p.company_name ?? "—"}</span>
@@ -425,14 +676,43 @@ const AdminUsers = () => {
                             Cancel
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            disabled={isSaving}
-                            onClick={() => openEmployerEdit(p)}
-                            className="sk-button-primary px-3 py-2"
-                          >
-                            Edit
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              disabled={isSaving}
+                              onClick={() => openEmployerEdit(p)}
+                              className="sk-button-primary px-3 py-2"
+                            >
+                              Edit
+                            </button>
+                            {isActive ? (
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => void setManagedEmployerStatus(p, false)}
+                                className="sk-button-secondary border-red-200 px-3 py-2 text-red-800 hover:bg-red-50"
+                              >
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                onClick={() => void setManagedEmployerStatus(p, true)}
+                                className="sk-button-secondary px-3 py-2"
+                              >
+                                Reactivate
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              disabled={isSaving}
+                              onClick={() => void removeEmployer(p)}
+                              className="sk-button-secondary border-red-200 px-3 py-2 text-red-800 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -503,6 +783,24 @@ const AdminUsers = () => {
                           </label>
                           <label className="block md:col-span-2">
                             <span className="mb-1 block text-sm font-semibold text-primary">
+                              Email (for sign-in)
+                            </span>
+                            <input
+                              value={employerEdit.email}
+                              onChange={(e) =>
+                                setEmployerEdit({ ...employerEdit, email: e.target.value })
+                              }
+                              className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-ink"
+                              placeholder="Add or update login email"
+                              type="email"
+                              disabled={isSaving}
+                            />
+                            <span className="mt-1 block text-xs text-ink-muted">
+                              Employers manage their own password via Forgot password on the login page.
+                            </span>
+                          </label>
+                          <label className="block md:col-span-2">
+                            <span className="mb-1 block text-sm font-semibold text-primary">
                               Phone number
                             </span>
                             <input
@@ -547,84 +845,125 @@ const AdminUsers = () => {
                 );
               })}
           </div>
-        </section>
+            </div>
+          )}
 
-        <section className="sk-card mt-8 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-primary">Admins</h2>
-            <p className="text-sm font-semibold text-primary">{admins.length} admins</p>
-          </div>
-
-          <p className="mt-2 text-sm text-ink">
-            Deactivate another admin to revoke their access. At least one admin must stay active. You
-            cannot deactivate yourself.
-          </p>
-
-          <div className="mt-3 rounded-xl border border-black/10 bg-white/60 p-5">
-            <h3 className="text-lg font-bold text-primary">Create New Admin</h3>
-            <p className="mt-2 text-sm text-ink">
-              Create a new admin by submitting Full Name, Email and Password.
-            </p>
-
-            <form
-              className="mt-4 grid gap-3 md:grid-cols-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void createAdmin();
-              }}
+          {activeTab === "admins" && (
+            <div
+              id="users-panel-admins"
+              role="tabpanel"
+              aria-labelledby="users-tab-admins"
+              className="p-6"
             >
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-ink">Full Name</span>
-                <input
-                  value={newAdminFullName}
-                  onChange={(e) => setNewAdminFullName(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
-                  placeholder="e.g. Jane Doe"
-                  autoComplete="name"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-ink">Email</span>
-                <input
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
-                  placeholder="admin@example.com"
-                  type="email"
-                  autoComplete="email"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-ink">Password</span>
-                <input
-                  value={newAdminPassword}
-                  onChange={(e) => setNewAdminPassword(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
-                  placeholder="Minimum 6 characters"
-                  type="password"
-                  autoComplete="new-password"
-                />
-              </label>
-
-              <div className="md:col-span-3 flex flex-wrap items-center justify-between gap-3">
-                <button type="submit" disabled={isSaving} className="sk-button-primary px-4 py-2">
-                  {isSaving ? "Saving..." : "Create admin"}
-                </button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-primary">Admins</h2>
+                  <p className="mt-1 text-sm text-ink">
+                    {countActiveAdmins(admins)} active · {admins.length} total
+                  </p>
+                </div>
               </div>
-            </form>
-          </div>
 
-          <div className="mt-5 space-y-3">
+              <p className="mt-2 text-sm text-ink">
+                Deactivate another admin to revoke their access. At least one admin must stay active.
+                You cannot deactivate yourself.
+              </p>
+
+              <div className="mt-4">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2 text-sm text-ink outline-none focus:border-primary"
+                />
+                <p className="mt-2 text-xs font-semibold text-ink-muted">
+                  Showing {filteredAdmins.length} of {admins.length}
+                </p>
+              </div>
+
+              {adminActionSuccess && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                  {adminActionSuccess}
+                </div>
+              )}
+
+              {newAdminSuccess && (
+                <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                  {newAdminSuccess}
+                </div>
+              )}
+
+              <div className="mt-4 rounded-xl border border-black/10 bg-white/60 p-5">
+                <h3 className="text-lg font-bold text-primary">Create New Admin</h3>
+                <p className="mt-2 text-sm text-ink">
+                  Create a new admin by submitting Full Name, Email and Password.
+                </p>
+
+                <form
+                  className="mt-4 grid gap-3 md:grid-cols-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void createAdmin();
+                  }}
+                >
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-ink">Full Name</span>
+                    <input
+                      value={newAdminFullName}
+                      onChange={(e) => setNewAdminFullName(e.target.value)}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                      placeholder="e.g. Jane Doe"
+                      autoComplete="name"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-ink">Email</span>
+                    <input
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                      placeholder="admin@example.com"
+                      type="email"
+                      autoComplete="email"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-ink">Password</span>
+                    <input
+                      value={newAdminPassword}
+                      onChange={(e) => setNewAdminPassword(e.target.value)}
+                      className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-ink outline-none focus:border-primary"
+                      placeholder="Minimum 6 characters"
+                      type="password"
+                      autoComplete="new-password"
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 md:col-span-3">
+                    <button type="submit" disabled={isSaving} className="sk-button-primary px-4 py-2">
+                      {isSaving ? "Saving..." : "Create admin"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="mt-5 space-y-3">
             {!isLoading && admins.length === 0 && (
               <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
                 No admins found.
               </p>
             )}
 
+            {!isLoading && admins.length > 0 && filteredAdmins.length === 0 && (
+              <p className="rounded-xl border border-dashed border-primary/20 p-6 text-sm text-ink">
+                No admins match your search.
+              </p>
+            )}
+
             {!isLoading &&
-              admins.map((p) => {
+              filteredAdmins.map((p) => {
                 const isSelf = p.user_id === viewerId;
                 const isActive = p.status === "approved";
                 const showDeactivate = canDeactivateAdmin(p, viewerId, admins);
@@ -688,6 +1027,8 @@ const AdminUsers = () => {
               );
               })}
           </div>
+            </div>
+          )}
         </section>
       </AdminPageFrame>
     </DashboardLayout>

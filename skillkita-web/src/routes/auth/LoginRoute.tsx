@@ -18,8 +18,10 @@ function getSafeRedirectUrl(): string | null {
   return redirect;
 }
 
-function getPostLoginRedirectUrl(): string {
-  return getSafeRedirectUrl() ?? "/";
+function getPostLoginRedirectUrl(role: UserProfileRow["role"]): string {
+  const custom = getSafeRedirectUrl();
+  if (custom) return custom;
+  return role === "employer" ? "/employer" : role === "admin" ? "/admin" : "/";
 }
 
 const Login = () => {
@@ -59,7 +61,7 @@ const Login = () => {
         (row.role === "admin" || row.role === "employer") &&
         row.status !== "rejected"
       ) {
-        window.location.href = getPostLoginRedirectUrl();
+        window.location.href = getPostLoginRedirectUrl(row.role);
       }
     };
     void check();
@@ -105,7 +107,7 @@ const Login = () => {
           throw new Error("Your admin account has been deactivated. Contact another administrator.");
         }
         window.localStorage.setItem("skillkita-role", "admin");
-        window.location.href = getPostLoginRedirectUrl();
+        window.location.href = getPostLoginRedirectUrl("admin");
         return;
       }
 
@@ -117,7 +119,7 @@ const Login = () => {
         throw new Error("Your account was rejected. Please contact support.");
       }
 
-      window.location.href = getPostLoginRedirectUrl();
+      window.location.href = getPostLoginRedirectUrl("employer");
     } catch (err) {
       setIsLoading(false);
       setErrorMessage(formatSupabaseNetworkError(err));

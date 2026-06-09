@@ -193,7 +193,7 @@ export function AdminQuotationRequestsTable({
   };
 
   return (
-    <section className="sk-card mt-8 overflow-hidden p-0">
+    <section className="sk-card overflow-hidden p-0">
       <div className="border-b border-black/10 bg-primary/5 px-6 py-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

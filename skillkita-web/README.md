@@ -7,12 +7,12 @@ React + TypeScript + Vite app backed by Supabase.
 1. Import this repository in [Vercel](https://vercel.com/new).
 2. Set **Root Directory** to `skillkita-web` (recommended). Build settings come from `vercel.json` in this folder.
    - Alternatively, leave the repo root as the project root; the root `vercel.json` builds `skillkita-web` for you.
-3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`. Use the **same Supabase project** as local dev unless you intentionally maintain separate databases. For **Gemini** features (admin poster auto-fill + public **Course assistant** on `/`, `/courses`, etc.), set `GEMINI_API_KEY` (server-only, from [Google AI Studio](https://aistudio.google.com/apikey)).
+3. Add **Environment Variables** (Production and Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — same names as in `.env.example`. Use the **same Supabase project** as local dev unless you intentionally maintain separate databases. For **Gemini** features (admin poster auto-fill + public **Course assistant** on `/`, `/courses`, etc.), set `GEMINI_API_KEY` (server-only, from [Google AI Studio](https://aistudio.google.com/apikey)). For **admin employer management** (create / delete / update login email), set `SUPABASE_SECRET_KEY` (server-only, from Supabase → Project Settings → API Keys → **Secret keys**, `sb_secret_...`). If your project still uses legacy keys, `SUPABASE_SERVICE_ROLE_KEY` also works.
 4. Deploy. SPA routes (`/login`, `/admin`, `/employer`, etc.) are rewritten to `index.html` so React Router works on refresh. Supabase API calls go through `/supabase-api` on your domain (same as local dev) via a Vercel serverless proxy.
 5. In **Supabase** → Authentication → URL Configuration, set **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://your-app.vercel.app`).
 6. **Database:** From `skillkita-web`, run `npx supabase link` (once) then `npx supabase db push`, **or** follow the manual steps in [`supabase/README.md`](supabase/README.md). Promote your admin user with `user_profiles.role = 'admin'` and `status = 'approved'`.
 
-Local dev: copy `.env.example` to `.env`, add `GEMINI_API_KEY`, then `npm install` and `npm run dev`. The dev server proxies `POST /api/extract-poster` and `POST /api/course-assistant` via a Vite plugin (same handlers as Vercel).
+Local dev: copy `.env.example` to `.env`, add `GEMINI_API_KEY` and `SUPABASE_SECRET_KEY` (for admin employer management), then `npm install` and `npm run dev`. The dev server proxies `/api/extract-poster`, `/api/course-assistant`, and `/api/admin-employers` via a Vite plugin (same handlers as Vercel).
 
 ---
 

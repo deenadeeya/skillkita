@@ -17,6 +17,17 @@ export async function listMyDocumentSubmissions(submissionType: DocumentSubmissi
   return (data ?? []) as DocumentSubmissionRow[];
 }
 
+export async function getDocumentSubmissionById(id: string) {
+  const { data, error } = await supabase
+    .from("employer_document_submissions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as DocumentSubmissionRow | null) ?? null;
+}
+
 export async function listAllDocumentSubmissions(submissionType: DocumentSubmissionType) {
   const { data, error } = await supabase
     .from("employer_document_submissions")
@@ -74,4 +85,14 @@ export async function adminReviewDocumentSubmission(
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+}
+
+export async function adminDeleteDocumentSubmission(id: string): Promise<string> {
+  const row = await getDocumentSubmissionById(id);
+  if (!row) throw new Error("Submission not found.");
+
+  const { error } = await supabase.from("employer_document_submissions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  return row.file_storage_path;
 }
