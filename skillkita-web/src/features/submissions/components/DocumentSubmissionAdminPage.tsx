@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../../app/layout/navItems";
 import { supabase } from "../../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../../shared/hooks/useViewer";
 import { listEmployerLabels } from "../../quotation/api/quotationRequestsApi";
-import { adminReviewDocumentSubmission, listAllDocumentSubmissions } from "../submissionsApi";
-import { getSubmissionFileSignedUrl } from "../submissionsStorage";
+import {
+  confirmAdminDeleteDocumentSubmission,
+  deleteDocumentSubmissionWithFile,
+} from "../adminDeleteDocumentSubmission";
+import { listAllDocumentSubmissions } from "../submissionsApi";
 import type { DocumentSubmissionRow, DocumentSubmissionType } from "../types";
 import { Jd14TemplatesAdminSection } from "./Jd14TemplatesAdminSection";
 
@@ -22,16 +26,70 @@ type Props = {
   subtitle: string;
 };
 
+function reviewHref(submissionType: DocumentSubmissionType, id: string): string {
+  return submissionType === "jd14"
+    ? `/admin/jd14/review/${id}`
+    : `/admin/payment-receipts/review/${id}`;
+}
+
+function SubmissionListItem({
+  row,
+  label,
+  submissionType,
+  deletingId,
+  onDelete,
+}: {
+  row: DocumentSubmissionRow;
+  label: EmployerLabel | undefined;
+  submissionType: DocumentSubmissionType;
+  deletingId: string | null;
+  onDelete: (row: DocumentSubmissionRow) => void;
+}) {
+  const isPending = row.status === "pending";
+  const isDeleting = deletingId === row.id;
+
+  return (
+    <li className="flex flex-wrap items-stretch gap-2 rounded-xl border border-black/10 bg-white p-2 sm:flex-nowrap">
+      <Link
+        to={reviewHref(submissionType, row.id)}
+        className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-primary/5"
+      >
+        <div className="min-w-0">
+          <p className="font-semibold text-ink">{row.course_name}</p>
+          <p className="text-xs text-ink-muted">
+            {label?.full_name ?? row.employer_user_id}
+            {label?.company_name ? ` · ${label.company_name}` : ""}
+          </p>
+          <p className="text-xs text-ink-muted">Date: {row.proposed_date}</p>
+          {!isPending && (
+            <p className="mt-1 text-xs capitalize text-ink-muted">Status: {row.status}</p>
+          )}
+        </div>
+        <span className="shrink-0 text-sm font-semibold text-primary">
+          {isPending ? "Review →" : "View →"}
+        </span>
+      </Link>
+      {!isPending && (
+        <button
+          type="button"
+          className="sk-button-secondary shrink-0 self-center border-red-200 px-3 py-2 text-sm text-red-800 hover:bg-red-50"
+          disabled={Boolean(deletingId)}
+          onClick={() => onDelete(row)}
+        >
+          {isDeleting ? "Deleting…" : "Delete"}
+        </button>
+      )}
+    </li>
+  );
+}
+
 export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }: Props) {
   const viewerState = useViewer();
   const [rows, setRows] = useState<DocumentSubmissionRow[]>([]);
   const [labels, setLabels] = useState<Record<string, EmployerLabel>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [active, setActive] = useState<DocumentSubmissionRow | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [openingPath, setOpeningPath] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("Admin");
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
@@ -62,42 +120,18 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
     void load().finally(() => setIsLoading(false));
   }, [load]);
 
-  useEffect(() => {
-    if (active) setRejectionReason("");
-  }, [active]);
+  const handleDelete = async (row: DocumentSubmissionRow) => {
+    if (!confirmAdminDeleteDocumentSubmission(row)) return;
 
-  const openFile = async (path: string) => {
-    setOpeningPath(path);
     setErrorMessage(null);
+    setDeletingId(row.id);
     try {
-      const url = await getSubmissionFileSignedUrl(path);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Could not open file.");
-    } finally {
-      setOpeningPath(null);
-    }
-  };
-
-  const review = async (status: "approved" | "rejected") => {
-    if (!active) return;
-    if (status === "rejected" && !rejectionReason.trim()) {
-      setErrorMessage("Please enter a reason when rejecting.");
-      return;
-    }
-    setErrorMessage(null);
-    setIsSaving(true);
-    try {
-      await adminReviewDocumentSubmission(active.id, {
-        status,
-        rejection_reason: status === "rejected" ? rejectionReason.trim() : null,
-      });
-      setActive(null);
+      await deleteDocumentSubmissionWithFile(row.id);
       await load();
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Update failed.");
+      setErrorMessage(e instanceof Error ? e.message : "Could not delete submission.");
     } finally {
-      setIsSaving(false);
+      setDeletingId(null);
     }
   };
 
@@ -131,127 +165,46 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
         {isLoading ? (
           <p className="text-sm text-ink-muted">Loading…</p>
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[1fr,380px]">
-            <div>
+          <div className="max-w-3xl space-y-8">
+            <section>
               <h2 className="text-lg font-bold text-primary">Pending</h2>
               {pending.length === 0 ? (
                 <p className="mt-2 text-sm text-ink-muted">No pending submissions.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {pending.map((r) => {
-                    const lb = labels[r.employer_user_id];
-                    return (
-                      <li key={r.id}>
-                        <button
-                          type="button"
-                          onClick={() => setActive(r)}
-                          className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                            active?.id === r.id
-                              ? "border-primary bg-primary/5"
-                              : "border-black/10 bg-white hover:bg-primary/5"
-                          }`}
-                        >
-                          <p className="font-semibold text-ink">{r.course_name}</p>
-                          <p className="text-xs text-ink-muted">
-                            {lb?.full_name ?? r.employer_user_id}
-                            {lb?.company_name ? ` · ${lb.company_name}` : ""}
-                          </p>
-                          <p className="text-xs text-ink-muted">Date: {r.proposed_date}</p>
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {pending.map((r) => (
+                    <SubmissionListItem
+                      key={r.id}
+                      row={r}
+                      label={labels[r.employer_user_id]}
+                      submissionType={submissionType}
+                      deletingId={deletingId}
+                      onDelete={(row) => void handleDelete(row)}
+                    />
+                  ))}
                 </ul>
               )}
+            </section>
 
-              <h2 className="mt-8 text-lg font-bold text-primary">Reviewed</h2>
+            <section>
+              <h2 className="text-lg font-bold text-primary">Reviewed</h2>
               {done.length === 0 ? (
                 <p className="mt-2 text-sm text-ink-muted">None yet.</p>
               ) : (
-                <ul className="mt-3 max-h-80 space-y-2 overflow-auto">
-                  {done.map((r) => {
-                    const lb = labels[r.employer_user_id];
-                    return (
-                      <li
-                        key={r.id}
-                        className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
-                      >
-                        <span className="font-semibold text-ink">{r.course_name}</span>{" "}
-                        <span className="text-ink-muted">· {r.status}</span>
-                        <div className="text-xs text-ink-muted">
-                          {lb?.full_name ?? r.employer_user_id} · {r.proposed_date}
-                        </div>
-                      </li>
-                    );
-                  })}
+                <ul className="mt-3 space-y-2">
+                  {done.map((r) => (
+                    <SubmissionListItem
+                      key={r.id}
+                      row={r}
+                      label={labels[r.employer_user_id]}
+                      submissionType={submissionType}
+                      deletingId={deletingId}
+                      onDelete={(row) => void handleDelete(row)}
+                    />
+                  ))}
                 </ul>
               )}
-            </div>
-
-            <div className="sk-card p-5">
-              {!active ? (
-                <p className="text-sm text-ink-muted">Select a pending submission to approve or reject.</p>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-ink-muted">Employer</p>
-                    <p className="font-semibold text-ink">
-                      {labels[active.employer_user_id]?.full_name ?? active.employer_user_id}
-                    </p>
-                    {labels[active.employer_user_id]?.company_name && (
-                      <p className="text-sm text-ink-muted">{labels[active.employer_user_id]?.company_name}</p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-ink-muted">Course</p>
-                    <p className="text-sm">{active.course_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-ink-muted">Proposed date</p>
-                    <p className="text-sm">{active.proposed_date}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="sk-button-secondary w-full px-3 py-2 text-sm"
-                    disabled={openingPath === active.file_storage_path}
-                    onClick={() => void openFile(active.file_storage_path)}
-                  >
-                    {openingPath === active.file_storage_path ? "Opening…" : "View uploaded file"}
-                  </button>
-
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-primary">Rejection reason (required if reject)</span>
-                    <textarea
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.currentTarget.value)}
-                      rows={3}
-                      className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
-                      placeholder="Explain what needs to change…"
-                      disabled={isSaving}
-                    />
-                  </label>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="sk-button-primary flex-1"
-                      disabled={isSaving}
-                      onClick={() => void review("approved")}
-                    >
-                      {isSaving ? "Saving…" : "Approve"}
-                    </button>
-                    <button
-                      type="button"
-                      className="sk-button-secondary flex-1 border-red-200 text-red-800 hover:bg-red-50"
-                      disabled={isSaving}
-                      onClick={() => void review("rejected")}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            </section>
           </div>
         )}
       </AdminPageFrame>

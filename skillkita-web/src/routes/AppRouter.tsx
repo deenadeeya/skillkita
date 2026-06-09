@@ -22,7 +22,9 @@ const AdminQuotations = lazy(() => import("./admin/AdminQuotationsRoute"));
 const AdminQuotationReview = lazy(() => import("./admin/AdminQuotationReviewRoute"));
 const AdminUsers = lazy(() => import("./admin/AdminUsersRoute"));
 const AdminJd14Route = lazy(() => import("./admin/AdminJd14Route"));
+const AdminJd14ReviewRoute = lazy(() => import("./admin/AdminJd14ReviewRoute"));
 const AdminPaymentReceiptsRoute = lazy(() => import("./admin/AdminPaymentReceiptsRoute"));
+const AdminPaymentReceiptReviewRoute = lazy(() => import("./admin/AdminPaymentReceiptReviewRoute"));
 
 const Login = lazy(() => import("./auth/LoginRoute"));
 const SignUp = lazy(() => import("./auth/SignUpRoute"));
@@ -144,10 +146,26 @@ export default function AppRouter() {
               }
             />
             <Route
+              path="/admin/jd14/review/:id"
+              element={
+                <RequireRole role="admin" denied={<AccessDenied />}>
+                  <AdminJd14ReviewRoute />
+                </RequireRole>
+              }
+            />
+            <Route
               path="/admin/payment-receipts"
               element={
                 <RequireRole role="admin" denied={<AccessDenied />}>
                   <AdminPaymentReceiptsRoute />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/admin/payment-receipts/review/:id"
+              element={
+                <RequireRole role="admin" denied={<AccessDenied />}>
+                  <AdminPaymentReceiptReviewRoute />
                 </RequireRole>
               }
             />

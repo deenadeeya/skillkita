@@ -31,9 +31,22 @@ const SignUp = () => {
   useEffect(() => {
     const check = async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        window.location.href = "/";
+      const user = data.session?.user;
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("role,status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const row = profile as { role: string; status: string } | null;
+      if (row?.role === "employer" && row.status !== "rejected") {
+        window.location.href = "/employer";
+        return;
       }
+
+      window.location.href = "/";
     };
     void check();
   }, []);

@@ -71,6 +71,53 @@ export async function markDocumentSubmissionNotificationsRead(
   }
 }
 
+export async function markNotificationsReadByKind(kinds: UserNotificationRow["kind"][]): Promise<void> {
+  if (kinds.length === 0) return;
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("user_notifications")
+    .update({ read_at: now })
+    .in("kind", kinds)
+    .is("read_at", null);
+
+  if (error) {
+    console.warn("markNotificationsReadByKind:", error.message);
+  }
+}
+
+export async function markDocumentSubmissionNotificationsReadByPreview(
+  paymentReceipt: boolean
+): Promise<void> {
+  const now = new Date().toISOString();
+  let query = supabase
+    .from("user_notifications")
+    .update({ read_at: now })
+    .eq("kind", "document_submission_new")
+    .is("read_at", null);
+
+  query = paymentReceipt
+    ? query.ilike("preview", "%payment receipt%")
+    : query.not("preview", "ilike", "%payment receipt%");
+
+  const { error } = await query;
+  if (error) {
+    console.warn("markDocumentSubmissionNotificationsReadByPreview:", error.message);
+  }
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("user_notifications")
+    .update({ read_at: now })
+    .is("read_at", null);
+
+  if (error) {
+    console.warn("markAllNotificationsRead:", error.message);
+  }
+}
+
 export function subscribeUserNotifications(userId: string, onChange: () => void) {
   // Unique topic per subscription: Supabase reuses `channel(name)` instances. React Strict Mode
   // mounts → unmount → remount; a fixed name can return an already-subscribed channel, and then

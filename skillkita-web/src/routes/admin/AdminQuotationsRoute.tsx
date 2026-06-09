@@ -155,8 +155,9 @@ const AdminQuotations = () => {
       }}
     >
       <AdminPageFrame
-        title="Quotation requests"
-        subtitle="Review employer submissions, approve to generate a quotation PDF, then download quotation or invoice for approved requests. Employers download quotations from their dashboard."
+        title="Quotation Requests"
+        headerVariant="hero"
+        subtitle="Review employer submissions, approve pricing to generate PDFs, and download quotations or invoices for approved requests."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn" && viewerState.viewer.role === "admin"}

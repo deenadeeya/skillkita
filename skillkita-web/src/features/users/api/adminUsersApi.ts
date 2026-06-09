@@ -57,10 +57,100 @@ export type EmployerProfileUpdate = {
   companyName: string | null;
   companyAddress: string | null;
   phone: string | null;
+  email: string | null;
   profilePicUrl: string | null;
 };
 
+async function callAdminEmployersApi<T>(
+  method: "POST" | "PATCH" | "DELETE",
+  options?: { body?: Record<string, unknown>; userId?: string }
+): Promise<T> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw new Error(sessionError.message);
+
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("You must be signed in as admin.");
+
+  const url =
+    method === "DELETE" && options?.userId
+      ? `/api/admin-employers?userId=${encodeURIComponent(options.userId)}`
+      : "/api/admin-employers";
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as { message?: string; userId?: string };
+  if (!res.ok) {
+    throw new Error(payload.message || `Request failed (${res.status}).`);
+  }
+
+  return payload as T;
+}
+
+export async function createEmployerAccount(params: {
+  fullName: string;
+  password: string;
+  email: string;
+  companyName?: string | null;
+  companyAddress?: string | null;
+  phone?: string | null;
+}) {
+  return callAdminEmployersApi<{ userId: string; message: string }>("POST", {
+    body: {
+      fullName: params.fullName,
+      password: params.password.trim(),
+      email: params.email.trim(),
+      companyName: params.companyName?.trim() || "",
+      companyAddress: params.companyAddress?.trim() || "",
+      phone: params.phone?.trim() || "",
+    },
+  });
+}
+
+export async function updateEmployerLoginEmail(userId: string, email: string) {
+  return callAdminEmployersApi<{ message: string }>("PATCH", {
+    body: { userId, email: email.trim() },
+  });
+}
+
+export async function deleteEmployerAccount(userId: string) {
+  return callAdminEmployersApi<{ message: string }>("DELETE", { userId });
+}
+
+export async function setEmployerActiveStatus(params: {
+  userId: string;
+  active: boolean;
+  approvedBy: string | null;
+}) {
+  return setEmployerApproval({
+    userId: params.userId,
+    status: params.active ? "approved" : "rejected",
+    approvedBy: params.approvedBy,
+  });
+}
+
 export async function updateEmployerProfile(params: EmployerProfileUpdate) {
+  const existing = await supabase
+    .from("user_profiles")
+    .select("email")
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (existing.error) throw new Error(existing.error.message);
+
+  const nextEmail = params.email?.trim() ? params.email.trim() : null;
+  const prevEmail = (existing.data as { email?: string | null } | null)?.email?.trim() || null;
+
+  if (nextEmail && nextEmail !== prevEmail) {
+    await updateEmployerLoginEmail(params.userId, nextEmail);
+  }
+
   const update = {
     full_name: params.fullName.trim() || "—",
     short_name: params.shortName?.trim() ? params.shortName.trim() : null,
@@ -68,6 +158,7 @@ export async function updateEmployerProfile(params: EmployerProfileUpdate) {
     company_address: params.companyAddress?.trim() ? params.companyAddress.trim() : null,
     phone: params.phone?.trim() ? params.phone.trim() : null,
     profile_pic_url: params.profilePicUrl,
+    ...(nextEmail ? { email: nextEmail } : {}),
   };
 
   const primary = await supabase.from("user_profiles").update(update).eq("user_id", params.userId);

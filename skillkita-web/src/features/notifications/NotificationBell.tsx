@@ -7,22 +7,21 @@ import {
   notificationCategoryLabel,
   notificationHref,
 } from "./notificationDisplay";
-import { fetchUserNotifications, subscribeUserNotifications } from "./notificationsApi";
+import {
+  fetchUserNotifications,
+  markAllNotificationsRead,
+  subscribeUserNotifications,
+} from "./notificationsApi";
 import type { UserNotificationRow } from "./types";
 
 type Props = {
   viewer: Viewer;
 };
 
-function sortNotifications(rows: UserNotificationRow[]): UserNotificationRow[] {
-  return [...rows].sort((a, b) => {
-    const aUnread = a.read_at == null;
-    const bUnread = b.read_at == null;
-    if (aUnread !== bUnread) return aUnread ? -1 : 1;
-    const aT = new Date(aUnread ? a.created_at : (a.read_at ?? a.created_at)).getTime();
-    const bT = new Date(bUnread ? b.created_at : (b.read_at ?? b.created_at)).getTime();
-    return bT - aT;
-  });
+function sortUnreadNotifications(rows: UserNotificationRow[]): UserNotificationRow[] {
+  return rows
+    .filter((row) => row.read_at == null)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
 const NotificationBell = ({ viewer }: Props) => {
@@ -30,14 +29,16 @@ const NotificationBell = ({ viewer }: Props) => {
   const [rows, setRows] = useState<UserNotificationRow[]>([]);
   const [nameByUserId, setNameByUserId] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [markingAll, setMarkingAll] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const list = await fetchUserNotifications();
-      setRows(sortNotifications(list));
-      const senderIds = [...new Set(list.map((r) => r.sender_user_id))];
+      const unread = sortUnreadNotifications(list);
+      setRows(unread);
+      const senderIds = [...new Set(unread.map((r) => r.sender_user_id))];
       if (senderIds.length === 0) {
         setNameByUserId({});
         return;
@@ -85,7 +86,7 @@ const NotificationBell = ({ viewer }: Props) => {
     if (open) void load();
   }, [open, load]);
 
-  const unreadCount = useMemo(() => rows.filter((r) => r.read_at == null).length, [rows]);
+  const unreadCount = useMemo(() => rows.length, [rows]);
 
   const senderLine = (row: UserNotificationRow) => {
     if (row.kind === "quotation_request_reviewed" && viewer.role === "employer") {
@@ -93,6 +94,22 @@ const NotificationBell = ({ viewer }: Props) => {
     }
     const name = nameByUserId[row.sender_user_id] ?? "User";
     return row.kind === "chat_message" ? `From ${name}` : name;
+  };
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await markAllNotificationsRead();
+      setRows([]);
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const handleNotificationClick = (notification: UserNotificationRow) => {
+    setRows((prev) => prev.filter((row) => row.id !== notification.id));
+    setOpen(false);
+    void markNotificationReadForRow(notification);
   };
 
   return (
@@ -114,39 +131,39 @@ const NotificationBell = ({ viewer }: Props) => {
 
       {open && (
         <div className="absolute right-0 top-12 z-[60] w-[min(100vw-2rem,22rem)] rounded-xl border border-black/10 bg-white p-2 text-primary shadow-xl ring-1 ring-black/5">
-          <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Notifications</p>
+          <div className="flex items-center justify-between gap-2 px-2 py-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Notifications</p>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="text-xs font-semibold text-primary underline hover:no-underline disabled:opacity-60"
+                disabled={markingAll}
+                onClick={() => void handleMarkAllRead()}
+              >
+                {markingAll ? "Marking…" : "Mark all as read"}
+              </button>
+            )}
+          </div>
           {loading && <p className="px-2 py-4 text-sm text-ink-muted">Loading…</p>}
           {!loading && rows.length === 0 && (
-            <p className="px-2 py-4 text-sm text-ink-muted">No notifications yet.</p>
+            <p className="px-2 py-4 text-sm text-ink-muted">No new notifications.</p>
           )}
           {!loading && rows.length > 0 && (
             <ul className="max-h-[min(70vh,20rem)] overflow-auto">
               {rows.map((n) => {
-                const unread = n.read_at == null;
                 const href = notificationHref(n, viewer.role);
                 const category = notificationCategoryLabel(n.kind);
                 return (
                   <li key={n.id}>
                     <a
                       href={href}
-                      className={[
-                        "block rounded-lg px-2 py-2.5 text-left hover:bg-paper",
-                        unread ? "bg-primary/5" : "opacity-80",
-                      ].join(" ")}
-                      onClick={() => {
-                        void markNotificationReadForRow(n);
-                        setOpen(false);
-                      }}
+                      className="block rounded-lg bg-primary/5 px-2 py-2.5 text-left hover:bg-paper"
+                      onClick={() => handleNotificationClick(n)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-xs font-semibold text-ink">{category}</span>
-                        <span
-                          className={[
-                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                            unread ? "bg-amber-100 text-amber-900" : "bg-black/10 text-ink-muted",
-                          ].join(" ")}
-                        >
-                          {unread ? "Unread" : "Read"}
+                        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                          Unread
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs font-semibold text-ink-muted">{senderLine(n)}</p>

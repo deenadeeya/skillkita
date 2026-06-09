@@ -43,10 +43,16 @@ export function notificationHref(row: UserNotificationRow, role: Viewer["role"])
 
   if (row.kind === "document_submission_new") {
     const preview = row.preview.toLowerCase();
+    const isPaymentReceipt = preview.includes("payment receipt");
     if (role === "admin") {
-      return preview.includes("payment receipt") ? "/admin/payment-receipts" : "/admin/jd14";
+      if (row.document_submission_id) {
+        return isPaymentReceipt
+          ? `/admin/payment-receipts/review/${row.document_submission_id}`
+          : `/admin/jd14/review/${row.document_submission_id}`;
+      }
+      return isPaymentReceipt ? "/admin/payment-receipts" : "/admin/jd14";
     }
-    return preview.includes("payment receipt") ? "/employer/payment-receipt" : "/employer/jd14";
+    return isPaymentReceipt ? "/employer/payment-receipt" : "/employer/jd14";
   }
 
   return role === "admin" ? "/admin" : "/employer";
