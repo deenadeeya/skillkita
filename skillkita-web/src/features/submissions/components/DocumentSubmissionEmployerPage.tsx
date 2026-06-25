@@ -174,7 +174,7 @@ export function DocumentSubmissionEmployerPage({
 
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-primary">
-              Proposed date
+              Course date
               <RequiredMark />
             </span>
             <input
