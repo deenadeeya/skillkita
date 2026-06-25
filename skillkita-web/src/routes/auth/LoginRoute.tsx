@@ -116,7 +116,7 @@ const Login = () => {
       if (row.status === "rejected") {
         await supabase.auth.signOut();
         window.localStorage.removeItem("skillkita-role");
-        throw new Error("Your account was rejected. Please contact support.");
+        throw new Error("Your account was deactivated. Please contact support.");
       }
 
       window.location.href = getPostLoginRedirectUrl("employer");
