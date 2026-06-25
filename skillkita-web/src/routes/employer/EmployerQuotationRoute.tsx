@@ -2,7 +2,6 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
-import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import { createEmployerQuotationRequest } from "../../features/quotation/api/quotationRequestsApi";
@@ -128,9 +127,6 @@ const EmployerQuotationRequest = () => {
       items={employerNavItems}
       userName={viewerState.kind === "signedIn" ? viewerState.viewer.displayName : "Employer"}
       userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
-      onLogout={() => {
-        void signOutAndRedirectHome();
-      }}
     >
       <a
         href="/employer"

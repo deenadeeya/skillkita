@@ -14,12 +14,12 @@ import {
 } from "../../features/quotation/storage";
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { AdminQuotationRequestsTable } from "../../features/quotation/components/AdminQuotationRequestsTable";
+import { EmployerQuotationDetailPanel } from "../../features/quotation/components/EmployerQuotationDetailPanel";
 import {
   deleteQuotationRequest,
   listEmployerLabels,
   listQuotationRequests,
 } from "../../features/quotation/api/quotationRequestsApi";
-import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 
@@ -39,6 +39,7 @@ const AdminQuotations = () => {
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [invoiceDownloadId, setInvoiceDownloadId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailRow, setDetailRow] = useState<QuotationRequestRow | null>(null);
 
   const viewerState = useViewer();
 
@@ -148,12 +149,7 @@ const AdminQuotations = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title="Quotation Requests"
         headerVariant="hero"
@@ -172,7 +168,12 @@ const AdminQuotations = () => {
           onDownloadQuotation={(row) => void downloadQuotationPdf(row)}
           onDownloadInvoice={(row) => void downloadInvoicePdf(row)}
           onDeleteRequest={(row) => void handleDelete(row)}
+          onViewDetails={setDetailRow}
         />
+
+        {detailRow ? (
+          <EmployerQuotationDetailPanel row={detailRow} onClose={() => setDetailRow(null)} />
+        ) : null}
       </AdminPageFrame>
     </DashboardLayout>
   );

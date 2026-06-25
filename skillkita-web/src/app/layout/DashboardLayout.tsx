@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import LeftNav, { type NavItem } from "./LeftNav";
 import SiteHeader from "./SiteHeader";
 import { DASHBOARD_SIDEBAR_WIDTH_PX, useDashboardMainInset } from "./DashboardMainInsetContext";
+import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 
 type Props = {
   items: NavItem[];
@@ -9,7 +10,7 @@ type Props = {
   userRole?: string;
   userEmail?: string | null;
   profilePicUrl?: string | null;
-  onLogout: () => void | Promise<void>;
+  onLogout?: () => void | Promise<void>;
   children: React.ReactNode;
   /** If false, parent page renders its own header. */
   showHeader?: boolean;
@@ -23,7 +24,7 @@ const DashboardLayout = ({
   userRole,
   userEmail,
   profilePicUrl,
-  onLogout,
+  onLogout = signOutAndRedirectHome,
   children,
   showHeader = true,
   fullWidth = false,

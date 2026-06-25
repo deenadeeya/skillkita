@@ -1,26 +1,32 @@
 import type { QuotationRequestRow } from "../types";
 import { canDownloadInvoicePdf } from "../quotationRowToPdf";
-import { QuotationActionButton, StatusBadge } from "./quotationRequestTableUi";
+import {
+  formatQuotationReviewedDate,
+  QuotationActionButton,
+  QuotationCourseCell,
+  QuotationRequestsTableHead,
+  QUOTATION_REQUESTS_TABLE_MIN_WIDTH,
+  QuotationStatusCell,
+  QuotationViewIconButton,
+} from "./quotationRequestTableUi";
 
 type Props = {
   rows: QuotationRequestRow[];
   isLoading: boolean;
   downloadId: string | null;
   invoiceDownloadId: string | null;
+  onViewDetails: (row: QuotationRequestRow) => void;
   onDownloadQuotation: (row: QuotationRequestRow) => void;
   onDownloadInvoice: (row: QuotationRequestRow) => void;
   requestHref?: string;
 };
-
-function formatSubmitted(createdAt: string): string {
-  return new Date(createdAt).toLocaleString();
-}
 
 export function EmployerQuotationRequestsTable({
   rows,
   isLoading,
   downloadId,
   invoiceDownloadId,
+  onViewDetails,
   onDownloadQuotation,
   onDownloadInvoice,
   requestHref = "/employer/quotation",
@@ -54,15 +60,8 @@ export function EmployerQuotationRequestsTable({
         {!isLoading && rows.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-black/10">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="bg-primary/5 text-primary">
-                    <th className="px-4 py-2.5 font-semibold">Course</th>
-                    <th className="px-4 py-2.5 font-semibold">Proposed</th>
-                    <th className="px-4 py-2.5 font-semibold">Status</th>
-                    <th className="px-4 py-2.5 font-semibold">Actions</th>
-                  </tr>
-                </thead>
+              <table className={`w-full ${QUOTATION_REQUESTS_TABLE_MIN_WIDTH} border-collapse text-left text-sm`}>
+                <QuotationRequestsTableHead />
                 <tbody>
                   {rows.map((row) => {
                     const busy = downloadId === row.id || invoiceDownloadId === row.id;
@@ -75,24 +74,21 @@ export function EmployerQuotationRequestsTable({
                         className="border-t border-black/10 bg-white transition hover:bg-primary/5/60"
                       >
                         <td className="px-4 py-3 align-top">
-                          <p className="font-medium text-ink">{row.course_name}</p>
-                          {row.quotation_no != null ? (
-                            <p className="mt-0.5 text-xs text-ink/55">
-                              Quotation #{String(row.quotation_no).padStart(4, "0")}
-                            </p>
-                          ) : null}
-                          <p className="mt-0.5 text-xs text-ink/55">
-                            Submitted {formatSubmitted(row.created_at)}
-                          </p>
+                          <QuotationCourseCell row={row} />
                         </td>
                         <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">
                           {row.proposed_date}
                         </td>
+                        <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">
+                          {formatQuotationReviewedDate(row.reviewed_at)}
+                        </td>
                         <td className="px-4 py-3 align-top">
-                          <StatusBadge status={row.status} />
+                          <QuotationStatusCell row={row} />
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex flex-wrap gap-2">
+                            <QuotationViewIconButton onClick={() => onViewDetails(row)} />
+
                             {canDownloadQuotation ? (
                               <QuotationActionButton
                                 onClick={() => onDownloadQuotation(row)}
@@ -106,9 +102,7 @@ export function EmployerQuotationRequestsTable({
                               </span>
                             ) : row.status === "pending" ? (
                               <span className="self-center text-xs text-ink-muted">Awaiting review</span>
-                            ) : (
-                              <span className="self-center text-xs text-ink-muted">—</span>
-                            )}
+                            ) : null}
 
                             {canDownloadInvoice ? (
                               <QuotationActionButton

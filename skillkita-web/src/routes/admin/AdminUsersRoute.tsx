@@ -13,7 +13,6 @@ import {
   updateEmployerProfile,
   type ProfileRow,
 } from "../../features/users/api/adminUsersApi";
-import { supabase } from "../../shared/api/supabaseClient";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { hideImageOnError } from "../../shared/ui/hideImageOnError";
@@ -387,12 +386,7 @@ const AdminUsers = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title="Manage Users"
         headerVariant="hero"

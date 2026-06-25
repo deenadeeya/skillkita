@@ -13,7 +13,6 @@ import {
   getDocumentSubmissionById,
 } from "../../features/submissions/submissionsApi";
 import type { DocumentSubmissionRow } from "../../features/submissions/types";
-import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 
@@ -132,12 +131,7 @@ const AdminPaymentReceiptReviewRoute = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title={PAYMENT_RECEIPT_PAGE_TITLE}
         headerVariant="hero"

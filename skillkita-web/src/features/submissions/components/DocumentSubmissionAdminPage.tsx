@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../../../app/layout/DashboardLayout";
 import { adminNavItems } from "../../../app/layout/navItems";
-import { supabase } from "../../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../../shared/hooks/useViewer";
 import { listEmployerLabels } from "../../quotation/api/quotationRequestsApi";
@@ -143,12 +142,7 @@ export function DocumentSubmissionAdminPage({ submissionType, title, subtitle }:
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title={title}
         headerVariant="hero"

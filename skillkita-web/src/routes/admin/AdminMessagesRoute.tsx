@@ -172,12 +172,7 @@ const AdminMessages = () => {
       items={adminNavItems}
       userName={adminProfile ? getProfileDisplayName(adminProfile, "Admin") : "Admin"}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <DashboardPageHeader
           className="flex-1"

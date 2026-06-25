@@ -497,12 +497,7 @@ export default function AdminCreateCourse() {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title={editingId ? "Update Course" : "Add New Course"}
         headerVariant="hero"

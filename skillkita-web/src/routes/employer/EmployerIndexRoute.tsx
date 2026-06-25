@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../app/layout/navItems";
 import { buildQuotationPdfBlob } from "../../features/quotation/buildQuotationPdf";
+import { EmployerQuotationDetailPanel } from "../../features/quotation/components/EmployerQuotationDetailPanel";
 import { EmployerQuotationRequestsTable } from "../../features/quotation/components/EmployerQuotationRequestsTable";
 import {
   resolveQuotationPdfInput,
@@ -15,7 +16,6 @@ import {
 import type { QuotationRequestRow } from "../../features/quotation/types";
 import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
-import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 type UserProfileRow = {
@@ -36,6 +36,7 @@ const EmployerDashboard = () => {
   const [quotationError, setQuotationError] = useState<string | null>(null);
   const [downloadQuotationId, setDownloadQuotationId] = useState<string | null>(null);
   const [downloadInvoiceId, setDownloadInvoiceId] = useState<string | null>(null);
+  const [detailRow, setDetailRow] = useState<QuotationRequestRow | null>(null);
 
   const loadQuotations = useCallback(async (userId: string) => {
     setQuotationsLoading(true);
@@ -150,13 +151,10 @@ const EmployerDashboard = () => {
       items={employerNavItems}
       userName={profile ? getProfileDisplayName(profile, "Employer") : "Employer"}
       userEmail={email}
-      onLogout={() => {
-        void signOutAndRedirectHome();
-      }}
     >
       <DashboardPageHeader
         title="Quotation Application History"
-        subtitle="View your quotation requests, track their status, and download quotation or invoice PDFs once approved."
+        subtitle="View submitted details for each request, track status, and download quotation or invoice PDFs once approved."
       />
 
       {quotationError && (
@@ -170,9 +168,14 @@ const EmployerDashboard = () => {
           isLoading={quotationsLoading}
           downloadId={downloadQuotationId}
           invoiceDownloadId={downloadInvoiceId}
+          onViewDetails={setDetailRow}
           onDownloadQuotation={(row) => void downloadQuotationPdf(row)}
           onDownloadInvoice={(row) => void downloadInvoicePdf(row)}
         />
+
+        {detailRow ? (
+          <EmployerQuotationDetailPanel row={detailRow} onClose={() => setDetailRow(null)} />
+        ) : null}
 
         {errorMessage && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

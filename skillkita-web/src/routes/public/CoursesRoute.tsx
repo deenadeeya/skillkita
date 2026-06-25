@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../../app/layout/DashboardLayout";
 import { adminNavItems, employerNavItems } from "../../app/layout/navItems";
 import SiteHeader from "../../app/layout/SiteHeader";
-import { supabase } from "../../shared/api/supabaseClient";
 import { listVisibleCourses } from "../../features/courses/api/coursesApi";
 import { compareCoursesUpcomingFirst } from "../../features/courses/courseDate";
 import { CoursesGrid } from "../../features/courses/components/CoursesGrid";
@@ -139,12 +138,6 @@ const ViewCourses = () => {
     </div>
   );
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    window.localStorage.removeItem("skillkita-role");
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
@@ -154,7 +147,6 @@ const ViewCourses = () => {
           items={viewerRole === "admin" ? adminNavItems : employerNavItems}
           userName={viewerName}
           userEmail={viewerEmail}
-          onLogout={logout}
         >
           {body}
         </DashboardLayout>

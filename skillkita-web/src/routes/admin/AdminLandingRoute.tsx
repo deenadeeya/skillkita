@@ -21,7 +21,6 @@ import { LandingContentEditor } from "../../features/landing/components/LandingC
 import { AdminLandingSectionNav, type AdminLandingTabId } from "../../features/landing/components/admin/AdminLandingSectionNav";
 import { SiteMediaEditor } from "../../features/landing/components/admin/SiteMediaEditor";
 import { getDisplayFileName } from "../../features/landing/components/admin/MediaUploadField";
-import { supabase } from "../../shared/api/supabaseClient";
 import { useViewer } from "../../shared/hooks/useViewer";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 
@@ -263,12 +262,7 @@ const AdminLandingEditor = () => {
       userName={adminName}
       userEmail={adminEmail}
       fullWidth
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title="Manage Home"
         headerVariant="hero"

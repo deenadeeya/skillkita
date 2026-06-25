@@ -41,13 +41,11 @@ const AdminProfile = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
-      <DashboardPageHeader title="Profile" subtitle="Update your admin profile details." />
+>
+      <DashboardPageHeader
+        title="Profile"
+        subtitle="View your account email and password, and update your admin profile details."
+      />
       <div className="mt-10">
         <ProfileEditor expectedRole="admin" />
       </div>
