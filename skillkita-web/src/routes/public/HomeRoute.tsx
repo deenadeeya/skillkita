@@ -164,12 +164,6 @@ const HomePage = () => {
     />
   );
 
-  const logout = () => {
-    void supabase.auth.signOut();
-    window.localStorage.removeItem("skillkita-role");
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
@@ -181,7 +175,6 @@ const HomePage = () => {
           userRole={viewerRole}
           userEmail={viewerEmail}
           profilePicUrl={profilePicUrl}
-          onLogout={logout}
         >
           {page}
         </DashboardLayout>

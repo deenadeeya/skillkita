@@ -13,7 +13,6 @@ import {
   listEmployerLabels,
   updateQuotationRequest,
 } from "../../features/quotation/api/quotationRequestsApi";
-import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 
@@ -122,7 +121,7 @@ const AdminQuotationReview = () => {
     navigate("/admin/quotations");
   };
 
-  const handleReject = async () => {
+  const handleReject = async (rejectionReason: string) => {
     if (!request) return;
 
     setIsSaving(true);
@@ -132,6 +131,7 @@ const AdminQuotationReview = () => {
     try {
       await updateQuotationRequest(request.id, {
         status: "rejected",
+        rejection_reason: rejectionReason,
         reviewed_at: new Date().toISOString(),
         reviewed_by: reviewer,
         updated_at: new Date().toISOString(),
@@ -215,15 +215,10 @@ const AdminQuotationReview = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title="Review quotation request"
-        subtitle="Set pricing from the course catalog, confirm PDF details, then approve or reject."
+        subtitle="Set pricing from the course catalog, confirm PDF details, then approve or reject with a reason."
         errorMessage={errorMessage}
         isAuthChecking={viewerState.kind === "loading"}
         isAuthorized={viewerState.kind === "signedIn" && viewerState.viewer.role === "admin"}
@@ -271,7 +266,7 @@ const AdminQuotationReview = () => {
             onChangeCourseMode={setCourseMode}
             onChangeUnitPrice={setUnitPrice}
             onApprove={() => void handleApprove()}
-            onReject={() => void handleReject()}
+            onReject={(reason) => void handleReject(reason)}
           />
         )}
       </AdminPageFrame>

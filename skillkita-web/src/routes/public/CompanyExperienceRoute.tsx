@@ -343,12 +343,6 @@ const CompanyExperience = () => {
     </div>
   );
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    window.localStorage.removeItem("skillkita-role");
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen w-full bg-paper">
       {viewerRole ? (
@@ -360,7 +354,6 @@ const CompanyExperience = () => {
           userRole={viewerRole}
           userEmail={viewerEmail}
           profilePicUrl={profilePicUrl}
-          onLogout={logout}
         >
           {body}
         </DashboardLayout>

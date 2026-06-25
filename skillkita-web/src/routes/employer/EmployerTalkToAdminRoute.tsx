@@ -5,7 +5,6 @@ import ChatChannel from "../../features/chat/ChatChannel";
 import type { ChatConversationRow } from "../../features/chat/types";
 import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
-import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 type UserProfileRow = {
@@ -162,10 +161,7 @@ const EmployerTalkToAdmin = () => {
       items={employerNavItems}
       userName={profile ? getProfileDisplayName(profile, "Employer") : "Employer"}
       userEmail={email}
-      onLogout={() => {
-        void signOutAndRedirectHome();
-      }}
-    >
+>
         <DashboardPageHeader
           title="Talk to Admin"
           subtitle={

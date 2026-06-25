@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { QuotationRequestRow } from "../types";
 import { QUOTATION_COURSE_MODES } from "../quotationCourseMode";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
@@ -23,7 +24,7 @@ type Props = {
   onChangeCourseMode: (next: string) => void;
   onChangeUnitPrice: (next: string) => void;
   onApprove: () => void;
-  onReject: () => void;
+  onReject: (reason: string) => void;
 };
 
 export function AdminQuotationReviewPanel({
@@ -44,6 +45,18 @@ export function AdminQuotationReviewPanel({
   onReject,
 }: Props) {
   const employer = employerLabels[activeReview.employer_user_id];
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectError, setRejectError] = useState<string | null>(null);
+
+  const handleReject = () => {
+    if (!rejectionReason.trim()) {
+      setRejectError("Please enter a reason when rejecting.");
+      return;
+    }
+    setRejectError(null);
+    onReject(rejectionReason.trim());
+  };
+
   return (
     <section className="sk-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -192,17 +205,47 @@ export function AdminQuotationReviewPanel({
         </label>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-3 border-t border-black/10 pt-6">
         <button type="button" disabled={isSaving} onClick={onApprove} className="sk-button-primary">
           {isSaving ? "Saving…" : "Approve & generate PDF"}
         </button>
+      </div>
+
+      <div className="mt-6 rounded-lg border border-red-200 bg-red-50/60 p-4">
+        <h3 className="text-sm font-bold text-red-900">Reject this request</h3>
+        <p className="mt-1 text-xs text-red-800">
+          Provide a reason below. The employer will see it on their quotation history.
+        </p>
+
+        <label className="mt-4 block">
+          <span className="mb-1 block text-sm font-semibold text-red-900">
+            Rejection reason
+            <RequiredMark />
+          </span>
+          <textarea
+            value={rejectionReason}
+            onChange={(e) => {
+              setRejectionReason(e.currentTarget.value);
+              if (rejectError) setRejectError(null);
+            }}
+            rows={3}
+            className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+            placeholder="Explain why this quotation request is rejected…"
+            disabled={isSaving}
+          />
+        </label>
+
+        {rejectError ? (
+          <p className="mt-2 text-sm font-semibold text-red-700">{rejectError}</p>
+        ) : null}
+
         <button
           type="button"
           disabled={isSaving}
-          onClick={onReject}
-          className="sk-button-secondary border-red-200 text-red-800 hover:bg-red-50"
+          onClick={handleReject}
+          className="mt-4 sk-button-secondary border-red-300 text-red-800 hover:bg-red-100"
         >
-          Reject
+          Reject request
         </button>
       </div>
     </section>

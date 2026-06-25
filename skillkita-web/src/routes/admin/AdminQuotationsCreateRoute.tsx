@@ -15,7 +15,6 @@ import {
   type QuotationFormValues,
 } from "../../features/quotation/components/QuotationRequestFormFields";
 import { isQuotationCourseMode } from "../../features/quotation/quotationCourseMode";
-import { supabase } from "../../shared/api/supabaseClient";
 import { AdminPageFrame } from "../../shared/ui/AdminPageFrame";
 import { useViewer } from "../../shared/hooks/useViewer";
 import {
@@ -243,12 +242,7 @@ const AdminCreateQuotation = () => {
       items={adminNavItems}
       userName={adminName}
       userEmail={adminEmail}
-      onLogout={async () => {
-        await supabase.auth.signOut();
-        window.localStorage.removeItem("skillkita-role");
-        window.location.href = "/";
-      }}
-    >
+>
       <AdminPageFrame
         title="Create Quotation"
         headerVariant="hero"

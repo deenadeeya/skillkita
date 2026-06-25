@@ -4,7 +4,6 @@ import { employerNavItems } from "../../app/layout/navItems";
 import ProfileEditor from "../../features/profile/ProfileEditor";
 import { getProfileDisplayName } from "../../features/profile/displayName";
 import { supabase } from "../../shared/api/supabaseClient";
-import { signOutAndRedirectHome } from "../../shared/auth/signOutAndRedirectHome";
 import { DashboardPageHeader } from "../../shared/ui/DashboardPageHeader";
 
 const EmployerProfile = () => {
@@ -42,10 +41,7 @@ const EmployerProfile = () => {
       items={employerNavItems}
       userName={name}
       userEmail={email}
-      onLogout={() => {
-        void signOutAndRedirectHome();
-      }}
-    >
+>
       <DashboardPageHeader title="Profile" subtitle="Update your employer profile details." />
       <div className="mt-10">
         <ProfileEditor expectedRole="employer" />

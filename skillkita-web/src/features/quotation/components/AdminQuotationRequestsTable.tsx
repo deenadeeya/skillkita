@@ -1,7 +1,16 @@
 import { useMemo, useState } from "react";
 import type { QuotationRequestRow } from "../types";
 import { canDownloadInvoicePdf } from "../quotationRowToPdf";
-import { QuotationActionButton, StatusBadge } from "./quotationRequestTableUi";
+import {
+  formatQuotationReviewedDate,
+  QuotationActionButton,
+  QuotationCourseCell,
+  QuotationDeleteIconButton,
+  QuotationRequestsTableHead,
+  QUOTATION_REQUESTS_TABLE_MIN_WIDTH,
+  QuotationStatusCell,
+  QuotationViewIconButton,
+} from "./quotationRequestTableUi";
 
 type EmployerLabel = {
   full_name: string;
@@ -19,6 +28,7 @@ type Props = {
   onDownloadQuotation: (row: QuotationRequestRow) => void;
   onDownloadInvoice: (row: QuotationRequestRow) => void;
   onDeleteRequest: (row: QuotationRequestRow) => void;
+  onViewDetails: (row: QuotationRequestRow) => void;
 };
 
 type EmployerGroup = {
@@ -37,15 +47,7 @@ function getEmployerDisplayName(
   return label.company_name ? `${label.full_name} (${label.company_name})` : label.full_name;
 }
 
-function formatReviewedDate(reviewedAt: string | null): string {
-  if (!reviewedAt) return "—";
-  const d = new Date(reviewedAt);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-CA");
-}
-
-function groupRowsByEmployer(
-  rows: QuotationRequestRow[],
+function groupRowsByEmployer(  rows: QuotationRequestRow[],
   labels: Record<string, EmployerLabel>
 ): EmployerGroup[] {
   const byEmployer = new Map<string, QuotationRequestRow[]>();
@@ -98,6 +100,7 @@ function QuotationRequestRowCells({
   onDownloadQuotation,
   onDownloadInvoice,
   onDeleteRequest,
+  onViewDetails,
 }: {
   row: QuotationRequestRow;
   busy: boolean;
@@ -108,24 +111,23 @@ function QuotationRequestRowCells({
   onDownloadQuotation: (row: QuotationRequestRow) => void;
   onDownloadInvoice: (row: QuotationRequestRow) => void;
   onDeleteRequest: (row: QuotationRequestRow) => void;
+  onViewDetails: (row: QuotationRequestRow) => void;
 }) {
   return (
-    <tr className="border-t border-black/10 transition hover:bg-primary/5/60">
-      <td className="px-4 py-3 align-top text-ink">{row.course_name}</td>
+    <tr className="border-t border-black/10 bg-white transition hover:bg-primary/5/60">
+      <td className="px-4 py-3 align-top">
+        <QuotationCourseCell row={row} />
+      </td>
       <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">{row.proposed_date}</td>
       <td className="px-4 py-3 align-top whitespace-nowrap text-ink-muted">
-        {formatReviewedDate(row.reviewed_at)}
+        {formatQuotationReviewedDate(row.reviewed_at)}
       </td>
       <td className="px-4 py-3 align-top">
-        <StatusBadge status={row.status} />
+        <QuotationStatusCell row={row} />
       </td>
       <td className="px-4 py-3 align-top">
         <div className="flex flex-wrap gap-2">
-          {row.status === "pending" && (
-            <QuotationActionButton href={`/admin/quotations/review/${row.id}`}>
-              Review
-            </QuotationActionButton>
-          )}
+          
 
           {row.status === "approved" && (
             <>
@@ -148,13 +150,20 @@ function QuotationRequestRowCells({
             </>
           )}
 
-          <QuotationActionButton
-            variant="danger"
+          {row.status === "pending" ? (
+            <QuotationViewIconButton
+              href={`/admin/quotations/review/${row.id}`}
+              label="Review quotation"
+            />
+          ) : (
+            <QuotationViewIconButton onClick={() => onViewDetails(row)} label="View details" />
+          )}
+
+          <QuotationDeleteIconButton
             onClick={() => onDeleteRequest(row)}
             disabled={busy}
-          >
-            {deleteId === row.id ? "Deleting…" : "Delete"}
-          </QuotationActionButton>
+            busy={deleteId === row.id}
+          />
         </div>
       </td>
     </tr>
@@ -171,6 +180,7 @@ export function AdminQuotationRequestsTable({
   onDownloadQuotation,
   onDownloadInvoice,
   onDeleteRequest,
+  onViewDetails,
 }: Props) {
   const pendingCount = rows.filter((r) => r.status === "pending").length;
   const approvedCount = rows.filter((r) => r.status === "approved").length;
@@ -247,16 +257,8 @@ export function AdminQuotationRequestsTable({
                   </button>
                   {isExpanded && (
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                        <thead>
-                          <tr className="bg-white text-primary">
-                            <th className="px-4 py-2.5 font-semibold">Course</th>
-                            <th className="px-4 py-2.5 font-semibold">Proposed</th>
-                            <th className="px-4 py-2.5 font-semibold">Reviewed</th>
-                            <th className="px-4 py-2.5 font-semibold">Status</th>
-                            <th className="px-4 py-2.5 font-semibold">Actions</th>
-                          </tr>
-                        </thead>
+                      <table className={`w-full ${QUOTATION_REQUESTS_TABLE_MIN_WIDTH} border-collapse text-left text-sm`}>
+                        <QuotationRequestsTableHead />
                         <tbody>
                           {group.requests.map((r) => {
                             const busy =
@@ -277,6 +279,7 @@ export function AdminQuotationRequestsTable({
                                 onDownloadQuotation={onDownloadQuotation}
                                 onDownloadInvoice={onDownloadInvoice}
                                 onDeleteRequest={onDeleteRequest}
+                                onViewDetails={onViewDetails}
                               />
                             );
                           })}

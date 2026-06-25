@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../shared/api/supabaseClient";
 import { hideImageOnError } from "../../shared/ui/hideImageOnError";
+import { PasswordInput } from "../../shared/ui/PasswordInput";
 import { getProfileDisplayName, getProfileInitials } from "./displayName";
 import { uploadProfilePic } from "./profilePicStorage";
 import type { UserProfileRow } from "./types";
@@ -21,14 +22,17 @@ const ProfileEditor = ({ expectedRole }: Props) => {
   const [phone, setPhone] = useState("");
 
   const [pendingPic, setPendingPic] = useState<File | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const canEditEmployerFields = expectedRole === "employer";
-  const showEmail = expectedRole === "employer";
+  const showAccountFields = true;
   const showCompany = expectedRole === "employer";
   const showPhone = expectedRole === "employer";
 
@@ -171,6 +175,34 @@ const ProfileEditor = ({ expectedRole }: Props) => {
     }
   };
 
+  const updatePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (newPassword.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword("");
+      setConfirmPassword("");
+      setSuccessMessage("Password updated.");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Could not update password.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   return (
     <section className="sk-card mt-8 p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -250,16 +282,32 @@ const ProfileEditor = ({ expectedRole }: Props) => {
             />
           </label>
 
-          {showEmail && (
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-primary">Email</span>
-              <input
-                value={email ?? ""}
-                readOnly
-                className="w-full rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-ink-muted"
-              />
-              <p className="mt-1 text-xs text-ink-muted">Email is managed by Supabase Auth.</p>
-            </label>
+          {showAccountFields && (
+            <>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-primary">Email</span>
+                <input
+                  value={email ?? ""}
+                  readOnly
+                  className="w-full rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-ink-muted"
+                />
+                <p className="mt-1 text-xs text-ink-muted">Email is managed by Supabase Auth.</p>
+              </label>
+
+              {expectedRole === "admin" && (
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-primary">Password</span>
+                  <input
+                    value="••••••••"
+                    readOnly
+                    className="w-full rounded-lg border border-black/10 bg-primary/5 px-3 py-2 text-ink-muted"
+                  />
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Your current password is hidden. Set a new one below.
+                  </p>
+                </label>
+              )}
+            </>
           )}
 
           {showCompany && (
@@ -307,8 +355,46 @@ const ProfileEditor = ({ expectedRole }: Props) => {
           )}
 
           <div className="md:col-span-2">
-            <button type="submit" className="sk-button-primary px-4 py-2" disabled={isSaving}>
+            <button type="submit" className="sk-button-primary px-4 py-2" disabled={isSaving || isUpdatingPassword}>
               {isSaving ? "Saving…" : "Save changes"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!isLoading && expectedRole === "admin" && (
+        <form className="mt-8 grid gap-4 border-t border-black/10 pt-8 md:grid-cols-2" onSubmit={updatePassword}>
+          <h3 className="text-lg font-bold text-primary md:col-span-2">Change password</h3>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-primary">New password</span>
+            <PasswordInput
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.currentTarget.value)}
+              autoComplete="new-password"
+              disabled={isSaving || isUpdatingPassword}
+              required
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-primary">Confirm new password</span>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+              autoComplete="new-password"
+              disabled={isSaving || isUpdatingPassword}
+              required
+            />
+          </label>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="sk-button-secondary px-4 py-2"
+              disabled={isSaving || isUpdatingPassword}
+            >
+              {isUpdatingPassword ? "Updating…" : "Update password"}
             </button>
           </div>
         </form>

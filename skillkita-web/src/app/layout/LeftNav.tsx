@@ -20,15 +20,60 @@ type Props = {
   onNavigate?: () => void;
 };
 
-function isItemActive(item: NavItem, currentPath: string): boolean {
-  if (item.href && item.href === currentPath) return true;
-  return (item.children ?? []).some((c) => isItemActive(c, currentPath));
+function normalizeNavPath(path: string): string {
+  return path.replace(/\/+$/, "") || "/";
 }
 
-function isLinkActive(href: string | undefined, currentPath: string): boolean {
-  if (!href) return false;
-  const path = href.split("?")[0] ?? href;
-  return currentPath === path || currentPath.startsWith(path + "/");
+function navHrefPath(href: string | undefined): string | null {
+  if (!href) return null;
+  return normalizeNavPath(href.split("?")[0] ?? href);
+}
+
+/** Dashboard index routes must not stay active for every child path. */
+const DASHBOARD_ROOTS = new Set(["/admin", "/employer"]);
+
+function pathMatchesLink(currentPath: string, linkPath: string): boolean {
+  const current = normalizeNavPath(currentPath);
+  const path = normalizeNavPath(linkPath);
+  if (current === path) return true;
+  if (DASHBOARD_ROOTS.has(path)) return false;
+  return current.startsWith(`${path}/`);
+}
+
+function collectNavHrefs(items: NavItem[]): string[] {
+  const hrefs: string[] = [];
+  for (const item of items) {
+    if (item.href) hrefs.push(item.href);
+    if (item.children?.length) hrefs.push(...collectNavHrefs(item.children));
+  }
+  return hrefs;
+}
+
+function isLinkActive(
+  href: string | undefined,
+  currentPath: string,
+  peerHrefs?: string[]
+): boolean {
+  const path = navHrefPath(href);
+  if (!path || !pathMatchesLink(currentPath, path)) return false;
+
+  const peers = peerHrefs ?? [];
+  if (peers.length === 0) return true;
+
+  const bestMatch = peers
+    .map(navHrefPath)
+    .filter((p): p is string => p != null && pathMatchesLink(currentPath, p))
+    .sort((a, b) => b.length - a.length)[0];
+
+  return bestMatch === path;
+}
+
+function isItemActive(item: NavItem, currentPath: string, scopeHrefs: string[]): boolean {
+  if (isLinkActive(item.href, currentPath, scopeHrefs)) return true;
+  return (item.children ?? []).some((child) => {
+    const childScope = collectNavHrefs(item.children ?? []);
+    return isItemActive(child, currentPath, childScope.length > 0 ? childScope : scopeHrefs);
+  });
 }
 
 const navTransition = "transition-all duration-200 ease-out";
@@ -87,7 +132,8 @@ const LeftNav = ({
   const initialOpen = useMemo(() => {
     const open: Record<string, boolean> = {};
     items.forEach((cat) => {
-      open[cat.label] = isItemActive(cat, currentPath);
+      const scopeHrefs = collectNavHrefs(cat.children ?? []);
+      open[cat.label] = isItemActive(cat, currentPath, scopeHrefs);
     });
     return open;
   }, [items, currentPath]);
@@ -98,6 +144,16 @@ const LeftNav = ({
   const initials = (userName.trim()[0] ?? "U").toUpperCase();
   const roleLabel =
     userRole === "admin" ? "Administrator" : userRole === "employer" ? "Employer" : "User";
+
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    void Promise.resolve(onLogout()).catch(() => {
+      setLoggingOut(false);
+    });
+  };
 
   return (
     <aside className="flex h-full w-full flex-col bg-white">
@@ -123,7 +179,8 @@ const LeftNav = ({
           }
 
           const open = openByLabel[cat.label] ?? false;
-          const active = isItemActive(cat, currentPath);
+          const scopeHrefs = collectNavHrefs(cat.children ?? []);
+          const active = isItemActive(cat, currentPath, scopeHrefs);
 
           return (
             <div key={cat.label} className="mb-1">
@@ -142,9 +199,10 @@ const LeftNav = ({
               {open && (cat.children?.length ?? 0) > 0 && (
                 <div className="mt-1 space-y-0.5 border-l-2 border-primary/10 pl-3">
                   {(cat.children ?? []).map((child) => {
-                    const childHrefActive = isLinkActive(child.href, currentPath);
-                    const hasActiveGrandchild = (child.children ?? []).some((g) =>
-                      isLinkActive(g.href, currentPath)
+                    const childHrefActive = isLinkActive(child.href, currentPath, scopeHrefs);
+                    const grandchildScope = collectNavHrefs(child.children ?? []);
+                    const hasActiveGrandchild = grandchildScope.some((href) =>
+                      isLinkActive(href, currentPath, scopeHrefs)
                     );
                     const childActive = childHrefActive || hasActiveGrandchild;
                     const ChildIcon = child.icon;
@@ -172,7 +230,7 @@ const LeftNav = ({
                             {childOpen && (
                               <div className="mt-0.5 space-y-0.5 pl-2">
                                 {(child.children ?? []).map((g) => {
-                                  const grandActive = isLinkActive(g.href, currentPath);
+                                  const grandActive = isLinkActive(g.href, currentPath, scopeHrefs);
                                   const GrandIcon = g.icon;
                                   return (
                                     <a
@@ -236,10 +294,11 @@ const LeftNav = ({
 
         <button
           type="button"
-          onClick={() => void onLogout()}
-          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border border-primary/30 px-3 py-2 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-white"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border border-primary/30 px-3 py-2 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Logout
+          {loggingOut ? "Logging out…" : "Logout"}
         </button>
       </div>
     </aside>

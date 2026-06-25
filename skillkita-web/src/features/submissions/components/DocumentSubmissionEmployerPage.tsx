@@ -2,7 +2,6 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "../../../app/layout/DashboardLayout";
 import { employerNavItems } from "../../../app/layout/navItems";
-import { signOutAndRedirectHome } from "../../../shared/auth/signOutAndRedirectHome";
 import { useViewer } from "../../../shared/hooks/useViewer";
 import { RequiredMark } from "../../../shared/ui/RequiredMark";
 import { insertDocumentSubmission, listMyDocumentSubmissions } from "../submissionsApi";
@@ -148,10 +147,7 @@ export function DocumentSubmissionEmployerPage({
       items={employerNavItems}
       userName={viewerState.kind === "signedIn" ? viewerState.viewer.displayName : "Employer"}
       userEmail={viewerState.kind === "signedIn" ? viewerState.viewer.email : null}
-      onLogout={() => {
-        void signOutAndRedirectHome();
-      }}
-    >
+>
       <div className="mx-auto w-full max-w-3xl">
         <DashboardPageHeader title={title} subtitle={subtitle} />
 
